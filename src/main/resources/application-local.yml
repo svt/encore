@@ -1,0 +1,11 @@
+service:
+  name: encore-local
+
+redis:
+  db: 0
+  uri: redis://localhost:6379
+
+profile:
+  location: url:http://localhost/profiles.yml
+
+

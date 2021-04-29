@@ -1,0 +1,225 @@
+name: program
+description: Program profile
+scaling: bicubic
+encodes:
+  - type: X264Encode
+    suffix: 3100
+    twoPass: true
+    height: 1080
+    params:
+      b:v: 3100k
+      maxrate: 4700k
+      bufsize: 6200k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: high
+      level: 4.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 2069
+    twoPass: true
+    height: 720
+    params:
+      b:v: 2069k
+      maxrate: 3104k
+      bufsize: 4138k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: main
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 1312
+    twoPass: true
+    height: 540
+    params:
+      b:v: 1312k
+      maxrate: 1968k
+      bufsize: 2524k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      level: 3.1
+      profile:v: main
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 806
+    twoPass: true
+    height: 360
+    params:
+      b:v: 806121
+      maxrate: 1209182
+      bufsize: 1612242
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: main
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 324
+    twoPass: true
+    height: 234
+    params:
+      b:v: 324051
+      maxrate: 486077
+      bufsize: 648102
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: baseline
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      chroma-qp-offset: -2
+      direct: auto
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 0
+      8x8dct: 0
+      ref: 3
+      scenecut: 40
+      subme: 9
+      trellis: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: STEREO_DE
+    audioMixPreset: de
+    skipIfNoAudioMixPreset: true
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: SURROUND
+    skipIfNoAudioMixPreset: true
+    channels: 6
+
+  - type: ThumbnailMapEncode
+
+  - type: ThumbnailEncode
+
+

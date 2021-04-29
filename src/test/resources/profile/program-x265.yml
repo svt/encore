@@ -1,0 +1,475 @@
+name: program-x265
+description: HEVC profile
+scaling: bicubic
+encodes:
+  - type: X265Encode
+    suffix: 2600
+    twoPass: true
+    height: 1080
+    params:
+      b:v: 2600k
+      maxrate: 3900k
+      bufsize: 5200k
+      r: 25
+      pix_fmt: yuv420p10le
+      profile:v: main10
+      tag:v: hvc1
+      force_key_frames: expr:not(mod(n,96))
+    x265-params:
+      min-keyint: 96
+      keyint: 96
+      pmode: 1
+      level-idc: 4.1
+      ctu: 64
+      min-cu-size: 8
+      bframes: 6
+      b-adapt: 2
+      rc-lookahead: 25
+      lookahead-slices: 1
+      scenecut: 40
+      ref: 4
+      limit-refs: 1
+      me: star
+      merange: 57
+      subme: 3
+      rect: 1
+      amp: 0
+      limit-modes: 0
+      max-merge: 4
+      early-skip: 0
+      rskip: 1
+      fast-intra: 0
+      b-intra: 1
+      sao: 1
+      signhide: 1
+      weightp: 1
+      weightb: 1
+      aq-mode: 2
+      cutree: 1
+      rd: 4
+      rdoq-level: 2
+      tu-intra-depth: 4
+      tu-inter-depth: 4
+      limit-tu: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 192k
+      suffix: STEREO
+
+  - type: X265Encode
+    suffix: 1598
+    twoPass: true
+    height: 720
+    params:
+      b:v: 1536847
+      maxrate: 2305271
+      bufsize: 3073694
+      r: 25
+      pix_fmt: yuv420p10le
+      profile:v: main10
+      tag:v: hvc1
+      force_key_frames: expr:not(mod(n,96))
+    x265-params:
+      min-keyint: 96
+      keyint: 96
+      pmode: 1
+      level-idc: 4.1
+      ctu: 64
+      min-cu-size: 8
+      bframes: 4
+      b-adapt: 2
+      rc-lookahead: 20
+      lookahead-slices: 1
+      scenecut: 40
+      ref: 4
+      limit-refs: 1
+      me: star
+      merange: 57
+      subme: 3
+      rect: 1
+      amp: 0
+      limit-modes: 0
+      max-merge: 3
+      early-skip: 0
+      rskip: 1
+      fast-intra: 0
+      b-intra: 0
+      sao: 1
+      signhide: 1
+      weightp: 1
+      weightb: 0
+      aq-mode: 2
+      cutree: 1
+      rd: 4
+      rdoq-level: 2
+      tu-intra-depth: 4
+      tu-inter-depth: 4
+      limit-tu: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X265Encode
+    suffix: 865
+    twoPass: true
+    height: 540
+    params:
+      b:v: 865857
+      maxrate: 1298786
+      bufsize: 1731714
+      r: 25
+      pix_fmt: yuv420p10le
+      profile:v: main10
+      tag:v: hvc1
+      force_key_frames: expr:not(mod(n,96))
+    x265-params:
+      min-keyint: 96
+      keyint: 96
+      pmode: 1
+      ctu: 64
+      level-idc: 4.1
+      min-cu-size: 8
+      bframes: 4
+      b-adapt: 2
+      rc-lookahead: 20
+      lookahead-slices: 1
+      scenecut: 40
+      ref: 4
+      limit-refs: 1
+      me: star
+      merange: 57
+      subme: 3
+      rect: 1
+      amp: 0
+      limit-modes: 0
+      max-merge: 3
+      early-skip: 0
+      rskip: 1
+      fast-intra: 0
+      b-intra: 0
+      sao: 1
+      signhide: 1
+      weightp: 1
+      weightb: 0
+      aq-mode: 2
+      cutree: 1
+      rd: 4
+      rdoq-level: 2
+      tu-intra-depth: 3
+      tu-inter-depth: 3
+      limit-tu: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+      samplerate: 48000
+      channels: 2
+
+  - type: X265Encode
+    suffix: 474
+    twoPass: true
+    height: 360
+    params:
+      b:v: 695711
+      maxrate: 1043567
+      bufsize: 1391422
+      r: 25
+      pix_fmt: yuv420p
+      profile:v: main
+      tag:v: hvc1
+      force_key_frames: expr:not(mod(n,96))
+    x265-params:
+      min-keyint: 96
+      keyint: 96
+      level-idc: 4.1
+      pmode: 1
+      ctu: 64
+      min-cu-size: 8
+      bframes: 4
+      b-adapt: 2
+      rc-lookahead: 20
+      lookahead-slices: 1
+      scenecut: 40
+      ref: 4
+      limit-refs: 1
+      me: star
+      merange: 57
+      subme: 3
+      rect: 1
+      amp: 0
+      limit-modes: 0
+      max-merge: 3
+      early-skip: 0
+      rskip: 1
+      fast-intra: 0
+      b-intra: 0
+      sao: 1
+      signhide: 1
+      weightp: 1
+      weightb: 0
+      aq-mode: 2
+      cutree: 1
+      rd: 4
+      rdoq-level: 2
+      tu-intra-depth: 3
+      tu-inter-depth: 3
+      limit-tu: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 243
+    height: 234
+    twoPass: true
+    params:
+      b:v: 324051
+      maxrate: 486077
+      bufsize: 648102
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: baseline
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      chroma-qp-offset: -2
+      direct: auto
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 0
+      8x8dct: 0
+      ref: 3
+      scenecut: 40
+      subme: 9
+      trellis: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+      samplerate: 48000
+      channels: 2
+
+  - type: X264Encode
+    suffix: 2500
+    twoPass: true
+    height: 1080
+    params:
+      b:v: 3100k
+      maxrate: 4700k
+      bufsize: 6200k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: high
+      level: 4.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 1300
+    height: 720
+    twoPass: true
+    params:
+      b:v: 2069k
+      maxrate: 3104k
+      bufsize: 4138k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: main
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: X264Encode
+    suffix: 870
+    twoPass: true
+    height: 540
+    params:
+      b:v: 1312k
+      maxrate: 1968k
+      bufsize: 2524k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      level: 3.1
+      profile:v: main
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+      samplerate: 48000
+      channels: 2
+
+  - type: X264Encode
+    suffix: 470
+    twoPass: true
+    height: 360
+    params:
+      b:v: 806121
+      maxrate: 1209182
+      bufsize: 1612242
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: main
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+      samplerate: 48000
+      channels: 2
+
+  - type: X264Encode
+    suffix: 240
+    twoPass: true
+    height: 234
+    params:
+      b:v: 324051
+      maxrate: 486077
+      bufsize: 648102
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: baseline
+      level: 3.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      chroma-qp-offset: -2
+      direct: auto
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 0
+      8x8dct: 0
+      ref: 3
+      scenecut: 40
+      subme: 9
+      trellis: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 96k
+      suffix: STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: STEREO
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: SURROUND
+    channels: 6
+
+  - type: ThumbnailMapEncode
+
+  - type: ThumbnailEncode

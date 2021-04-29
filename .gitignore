@@ -1,0 +1,24 @@
+generated-java
+*.iml
+
+# Gradle 4.1 + IntelliJ build directory:
+out/
+gradlew.bat
+
+**/build
+
+*.log
+*.swp
+.gradle
+schema
+
+.idea/*
+## Videocore shared settings:
+!.idea/vcs.xml
+!.idea/codeStyles
+!.idea/codeStyles/Project.xml
+!.idea/codeStyles/codeStyleConfig.xml
+!.idea/encodings.xml
+!.idea/sqldialects.xml
+!.idea/compiler.xml
+

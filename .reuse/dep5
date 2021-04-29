@@ -1,0 +1,67 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: *.sh
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: Dockerfile
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: .gitignore
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.kts
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.xml
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.md
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.adoc
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.yml
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.json
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.txt
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.gradle
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: *.properties
+Copyright: 2020 Sveriges Television AB
+License: CC0-1.0
+
+Files: encore_logo.png
+Copyright: 2021 Sveriges Television AB
+License: CC-BY-SA-4.0
+
+Files: *.mp4
+Copyright: 2021 Sveriges Television AB
+License: CC-BY-SA-4.0
+
+# Third-party files.
+
+Files: gradlew*
+Copyright: 2007-2020 The original author or authors <info@gradle.com>
+License: Apache-2.0
+
+Files: gradle/*
+Copyright: 2007-2020 The original author or authors <info@gradle.com>
+License: Apache-2.0
