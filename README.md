@@ -1,54 +1,55 @@
-# Encore
+# SVT Encore
 [![License](https://img.shields.io/badge/license-EUPL-brightgreen.svg)](https://eupl.eu/)
 [![REUSE status](https://api.reuse.software/badge/github.com/fsfe/reuse-tool)](https://api.reuse.software/info/github.com/fsfe/reuse-tool)
 
 
-<!--
-<img align="right" height="120" src="https://raw.githubusercontent.com/svt/encore/encore_logo.png">
--->
+<img align="center" width="30%" src="https://raw.githubusercontent.com/svt/encore-doc/main/src/img/svt_encore_logo.png">
 
-Encore is a scalable video transcoding tool, built on Open Source giants like [FFmpeg](https://www.ffmpeg.org/) and [Redisson](https://github.com/redisson).
+&nbsp;
+&nbsp;
+  
+SVT *Encore* is a scalable video transcoding tool, built on Open Source giants like [FFmpeg](https://www.ffmpeg.org/) and [Redisson](https://github.com/redisson).
 
-Encore was created as to provide an easy way to scale and somewhat abstract the power of FFmpeg. 
 
-Encore is aimed at the advanced technical user that needs a scalable video transcoding tool - for example as a part of a VoD (Video On Demand) Transcoding pipeline.
+*Encore* was created to scale, and abstract the transcoding _power of FFmpeg_, and to offer a simple solution for Transcoding - Transcoding-as-a-Service.
+
+*Encore* is aimed at the advanced technical user that needs a scalable video transcoding tool - for example, as a part of their VOD (Video On Demand) transcoding pipeline.
 
 ## Features
 
-- Scalable, with queuing possibilities
-- Profile Configuration
+- Scalable - queuing and concurrency options
+- Flexible profile configuration
 - Possibility to extend FFmpeg functionality
 - Tested and tried in production
 
-Encore is not 
-
+_Encore_ is not
 
 - A live/stream transcoder
-- Having packager functions (like Shaka, Bento and friends).
-- Having a GUI
+- A Video packager (see <<faq>>)
+- An GUI application
 
-## Built with
+_Built with_
 
-- Kotlin
-- Spring Boot
-- Gradle
-- FFmpeg
-- mediainfo
-- Redisson
-- and many other great projects
+* Kotlin
+* Gradle
+* Spring Boot
+* FFmpeg
+* Redisson
+* and many other great projects
 
 ## Documentation
 
-Comprehensive documentation for Encore can (and should) be read at:
+Comprehensive documentation for _Encore_ can (and should) be read:
 
 [Online](https://svt.github.io/encore-doc/)
 
-or can be downloaded from it's
+or downloaded from the:
 
-[GitHub Repo](https://github.com/svt/encore-doc)
+[GitHub Repository](https://github.com/svt/encore-doc)
 
-If you have a running instance you can also directly see your
-**OpenAPI-endpoints**:
+If you have a running instance, you can also view the
+
+**OpenAPI Endpoints**:
 
 ```
 http(s)://yourinstance/swagger-ui.html
@@ -64,29 +65,16 @@ http(s)://yourinstance/v3/api-docs.yaml
 
 ### Local development
 
-Please, see the documentation, but here are a few hints.
-
-**Make sure you have Redis, FFmpeg and Mediainfo installed. for example from the [SVT Brew AVTools Tap](https://github.com/svt/homebrew-avtools)**
-
-To run all tests and build:
-
-```
-$ ./gradlew clean build
-```
-
-To run an instance on your local machine 
-```
-$ SPRING_PROFILES_ACTIVE=local ./gradlew clean bootRun
-```
-
-To run a local Docker Image, you must first have a Docker Image with FFmpeg and tools installed <see documentation>, and then you could it use like this:
-```
- 
-$ docker build -t encore --build-arg DOCKER_BASE_IMAGE=<yourdockerbaseimage>. && docker run -e SPRING_PROFILES_ACTIVE='local' encore
-```
+Please see the [online documentation](https://svt.github.io/encore-doc/#the-user-guide)
 
 ## License
 
+Copyright 2020 Sveriges Television AB.
+
 Encore is licensed under the 
 
-[EUPL-1.2-or-later](LICENSE)
+[EUPL-1.2-or-later](LICENSE) license
+
+## Primary maintainer
+
+SVT Videcore Team - (videocore svt se)
