@@ -77,4 +77,4 @@ Encore is licensed under the
 
 ## Primary maintainer
 
-SVT Videcore Team - (videocore svt se)
+SVT Videocore Team - (videocore svt se)
