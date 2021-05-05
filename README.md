@@ -26,7 +26,7 @@ _Encore_ is not
 
 - A live/stream transcoder
 - A Video packager (see <<faq>>)
-- An GUI application
+- A GUI application
 
 _Built with_
 
