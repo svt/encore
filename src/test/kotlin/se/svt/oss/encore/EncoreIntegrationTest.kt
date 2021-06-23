@@ -7,16 +7,20 @@ package se.svt.oss.encore
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.awaitility.Awaitility.await
 import org.awaitility.Durations
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
-import se.svt.oss.redisson.starter.queue.QueueItem
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
+import se.svt.oss.encore.model.input.AudioInput
+import se.svt.oss.encore.model.input.VideoInput
+import se.svt.oss.mediaanalyzer.file.MediaContainer
+import se.svt.oss.mediaanalyzer.file.VideoFile
+import se.svt.oss.redisson.starter.queue.QueueItem
 import java.io.File
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @ActiveProfiles("test")
@@ -25,37 +29,91 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
     @Test
     fun jobIsSuccessfulSurround(@TempDir outputDir: File) {
         successfulTest(
-            outputDir,
+            job(outputDir = outputDir, file = testFileSurround),
             defaultExpectedOutputFiles(outputDir, testFileSurround) +
                 listOf(
                     expectedFile(outputDir, testFileSurround, "STEREO_DE.mp4"),
                     expectedFile(outputDir, testFileSurround, "SURROUND.mp4")
-                ),
-            testFileSurround,
-            6
+                )
         )
     }
 
     @Test
-    fun jobIsSuccessfulStereo(@TempDir outputDir: File) {
-        successfulTest(outputDir, defaultExpectedOutputFiles(outputDir, testFileStereo), testFileStereo, 1)
+    fun multipleInputsWithSeekAndDuration(@TempDir outputDir: File) {
+        val baseName = "clip"
+        val job = job(outputDir).copy(
+            baseName = baseName,
+            profile = "multiple-inputs",
+            seekTo = 1.0,
+            duration = 6.0,
+            thumbnailTime = 4.0,
+            inputs = listOf(
+                VideoInput(
+                    uri = testFileMultipleVideo.file.absolutePath,
+                    videoStream = 1,
+                    probeInterlaced = false
+                ),
+                AudioInput(
+                    uri = testFileMultipleAudio.file.absolutePath,
+                    audioStream = 1
+                ),
+                AudioInput(
+                    uri = testFileSurround.file.absolutePath,
+                    useFirstAudioStreams = 6,
+                    audioLabel = "alt"
+                ),
+            )
+        )
+
+        val expectedOutputFiles = listOf(
+            "x264_3100.mp4",
+            "STEREO.mp4",
+            "STEREO_DE.mp4",
+            "STEREO_ALT.mp4",
+            "SURROUND.mp4",
+            "thumb01.jpg",
+            "6x10_160x90_thumbnail_map.jpg"
+        ).map { expectedFile(outputDir, baseName, it) }
+
+        val createdJob = successfulTest(job, expectedOutputFiles)
+
+        val videoOutput = createdJob.output.first { it.file.endsWith("_x264_3100.mp4") }
+        assertThat(videoOutput).isInstanceOf(VideoFile::class.java)
+        videoOutput as VideoFile
+        assertThat(videoOutput.highestBitrateVideoStream)
+            .hasWidth(1920)
+            .hasHeight(1080)
+        assertThat(createdJob.output.filterIsInstance<MediaContainer>())
+            .hasSize(5)
+            .allSatisfy {
+                assertThat(it).hasDurationCloseTo(6.0, 0.1)
+            }
     }
 
     @Test
-    @Disabled("Flaky")
+    fun jobIsSuccessfulStereo(@TempDir outputDir: File) {
+        successfulTest(
+            job(outputDir = outputDir, file = testFileStereo),
+            defaultExpectedOutputFiles(outputDir, testFileStereo)
+        )
+    }
+
+    @Test
     fun highPriorityJobIsRunInParallel(@TempDir outputDir1: File, @TempDir outputDir2: File) {
         val standardPriorityJob = createAndAwaitJob(
-            job(
+            job = job(
                 outputDir = outputDir1,
                 priority = 0,
-            )
+            ),
+            pollInterval = Duration.ofMillis(200)
         ) { it.status == Status.IN_PROGRESS }
 
         val highPriorityJob = createAndAwaitJob(
-            job(
+            job = job(
                 outputDir = outputDir2,
                 priority = 100
-            )
+            ),
+            pollInterval = Duration.ofMillis(200)
         ) { it.status == Status.IN_PROGRESS }
 
         encoreClient.cancel(standardPriorityJob.id)
@@ -68,7 +126,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
     @Test
     fun jobIsCancelled(@TempDir outputDir: File) {
         var createdJob = encoreClient.createJob(job(outputDir))
-        await().pollInterval(1, TimeUnit.SECONDS)
+        await().pollInterval(200, TimeUnit.MILLISECONDS)
             .atMost(Durations.ONE_MINUTE)
             .until { mockServer.requestCount > 0 }
 

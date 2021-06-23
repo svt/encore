@@ -4,6 +4,8 @@
 
 package se.svt.oss.encore.model.profile
 
+import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
+
 data class GenericVideoEncode(
     override val width: Int?,
     override val height: Int?,
@@ -13,5 +15,6 @@ data class GenericVideoEncode(
     override val audioEncode: AudioEncode?,
     override val suffix: String,
     override val format: String,
-    override val codec: String
+    override val codec: String,
+    override val inputLabel: String = DEFAULT_VIDEO_LABEL
 ) : VideoEncode

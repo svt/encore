@@ -1,4 +1,5 @@
 program: program.yml
+multiple-inputs: multiple_inputs.yml
 dpb_size_failed: dpb_size_failed.yml
 program-x265: program-x265.yml
 archive: archive.yml

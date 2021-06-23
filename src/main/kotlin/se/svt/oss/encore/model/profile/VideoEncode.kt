@@ -5,10 +5,10 @@
 package se.svt.oss.encore.model.profile
 
 import se.svt.oss.encore.config.AudioMixPreset
+import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
-import se.svt.oss.mediaanalyzer.file.VideoFile
-import java.io.File
 
 interface VideoEncode : OutputProducer {
     val width: Int?
@@ -20,25 +20,38 @@ interface VideoEncode : OutputProducer {
     val suffix: String
     val format: String
     val codec: String
+    val inputLabel: String
 
-    private val codecWithoutPrefix
-        get() = codec.removePrefix("lib")
-
-    override fun getOutput(
-        videoFile: VideoFile,
-        outputFolder: String,
-        debugOverlay: Boolean,
-        thumbnailTime: Int?,
-        audioMixPresets: Map<String, AudioMixPreset>
-    ): Output? {
-        val videoFilter = videoFilter(debugOverlay)
-        val paramsList = (params + Pair("c:v", codec)).flatMap { listOf("-${it.key}", it.value) }
+    override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
+        val audio = audioEncode?.getOutput(job, audioMixPresets)?.audio
         return Output(
-            VideoStreamEncode(paramsList, videoFilter, twoPass),
-            audioEncode?.getOutput(videoFile, outputFolder, debugOverlay, thumbnailTime, audioMixPresets)?.audio,
-            getOutputFilename(videoFile.file, outputFolder)
+            id = "$suffix.$format",
+            video = VideoStreamEncode(
+                params = secondPassParams().toParams(),
+                firstPassParams = firstPassParams().toParams(),
+                inputLabels = listOf(inputLabel),
+                twoPass = twoPass,
+                filter = videoFilter(job.debugOverlay),
+            ),
+            audio = audio,
+            output = "${job.baseName}$suffix.$format"
         )
     }
+
+    fun firstPassParams(): Map<String, String> {
+        return if (!twoPass) {
+            emptyMap()
+        } else params + Pair("c:v", codec) + passParams(1)
+    }
+
+    fun secondPassParams(): Map<String, String> {
+        return if (!twoPass) {
+            params + Pair("c:v", codec)
+        } else params + Pair("c:v", codec) + passParams(2)
+    }
+
+    fun passParams(pass: Int): Map<String, String> =
+        mapOf("pass" to pass.toString(), "passlogfile" to "log$suffix")
 
     private fun videoFilter(debugOverlay: Boolean): String? {
         val videoFilters = mutableListOf<String>()
@@ -49,13 +62,8 @@ interface VideoEncode : OutputProducer {
         }
         filters?.let { videoFilters.addAll(it) }
         if (debugOverlay) {
-            videoFilters.add("drawtext=text=$suffix-$codecWithoutPrefix:fontcolor=white:fontsize=50:box=1:boxcolor=black@0.75:boxborderw=5:x=10:y=10")
+            videoFilters.add("drawtext=text=$suffix:fontcolor=white:fontsize=50:box=1:boxcolor=black@0.75:boxborderw=5:x=10:y=10")
         }
         return if (videoFilters.isEmpty()) null else videoFilters.joinToString(",")
     }
-
-    private fun getOutputFilename(
-        filename: String,
-        folder: String
-    ) = "$folder/${File(filename).nameWithoutExtension}_${codecWithoutPrefix}_$suffix.$format"
 }

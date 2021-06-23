@@ -7,9 +7,11 @@ package se.svt.oss.encore.model.mediafile
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
+import se.svt.oss.encore.multipleAudioFile
 import se.svt.oss.encore.defaultVideoFile
+import se.svt.oss.encore.multipleVideoFile
 
-internal class VideoFileExtensionsTest {
+internal class MediaFileExtensionsTest {
     @Test
     @DisplayName("Video file without audio streams has AudioLayout NONE")
     fun testAudioLayoutNone() {
@@ -85,8 +87,57 @@ internal class VideoFileExtensionsTest {
     @DisplayName("Video file discards audio streams according to config")
     fun testTrimAudio() {
         val trimmed = defaultVideoFile.trimAudio(6)
-        assertThat(trimmed).usingRecursiveComparison().ignoringFields("audioStreams")
-            .isEqualTo(defaultVideoFile)
+        assertThat(trimmed).hasOnlyVideoStreams(*defaultVideoFile.videoStreams.toTypedArray())
         assertThat(trimmed.audioStreams).hasSize(6)
+    }
+
+    @Test
+    @DisplayName("Audio file discards audio streams according to config")
+    fun testTrimAudioAudioFile() {
+        val trimmed = multipleAudioFile.trimAudio(1)
+        assertThat(trimmed)
+            .hasOnlyAudioStreams(multipleAudioFile.audioStreams.first())
+    }
+
+    @Test
+    @DisplayName("Audio file selects audio stream according to config")
+    fun testSelectAudioStreamAudioFile() {
+        val audio = multipleAudioFile.selectAudioStream(1)
+        assertThat(audio).hasOnlyAudioStreams(multipleAudioFile.audioStreams.last())
+    }
+
+    @Test
+    @DisplayName("Video file selects audio stream according to config")
+    fun testSelectAudioStreamVideoFile() {
+        val video = defaultVideoFile.selectAudioStream(3)
+        assertThat(video).hasOnlyAudioStreams(defaultVideoFile.audioStreams[3])
+    }
+
+    @Test
+    @DisplayName("Video file selects video stream according to config")
+    fun testSelectVideoStreamVideoFile() {
+        val video = multipleVideoFile.selectVideoStream(1)
+        assertThat(video).hasOnlyVideoStreams(multipleVideoFile.videoStreams.last())
+    }
+
+    @Test
+    @DisplayName("Video file select video stream null does nothing")
+    fun testSelectVideoStreamNullVideoFile() {
+        val video = multipleVideoFile.selectVideoStream(null)
+        assertThat(video).isSameAs(multipleVideoFile)
+    }
+
+    @Test
+    @DisplayName("Video file select audio stream null does nothing")
+    fun testSelectAudioStreamNullVideoFile() {
+        val video = defaultVideoFile.selectAudioStream(null)
+        assertThat(video).isSameAs(defaultVideoFile)
+    }
+
+    @Test
+    @DisplayName("Audio file select audio stream null does nothing")
+    fun testSelectAudioStreamNullAudioFile() {
+        val video = multipleAudioFile.selectAudioStream(null)
+        assertThat(video).isSameAs(multipleAudioFile)
     }
 }

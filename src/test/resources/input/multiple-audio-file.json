@@ -1,0 +1,26 @@
+{
+  "file": "/input/multiple_audio.mp4",
+  "fileSize": 515776,
+  "format": "MPEG-4",
+  "overallBitrate": 412167,
+  "duration": 10.011,
+  "audioStreams": [
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 10.005,
+      "channels": 2,
+      "samplingRate": 48000,
+      "bitrate": 84538
+    },
+    {
+      "format": "AC-3",
+      "codec": "ac3",
+      "duration": 10.01,
+      "channels": 6,
+      "samplingRate": 48000,
+      "bitrate": 320000
+    }
+  ],
+  "type": "AudioFile"
+}

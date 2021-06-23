@@ -26,6 +26,7 @@ import se.svt.oss.junit5.redis.EmbeddedRedisExtension
 import se.svt.oss.randomportinitializer.RandomPortInitializer
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.config.EncoreProperties
+import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
@@ -58,6 +59,12 @@ class EncoreIntegrationTestBase() {
     @Value("classpath:input/test_stereo.mp4")
     lateinit var testFileStereo: Resource
 
+    @Value("classpath:input/multiple_video.mp4")
+    lateinit var testFileMultipleVideo: Resource
+
+    @Value("classpath:input/multiple_audio.mp4")
+    lateinit var testFileMultipleAudio: Resource
+
     lateinit var mockServer: MockWebServer
 
     @BeforeEach
@@ -79,20 +86,15 @@ class EncoreIntegrationTestBase() {
     }
 
     fun successfulTest(
-        outputDir: File,
+        job: EncoreJob,
         expectedOutputFiles: List<String>,
-        file: Resource,
-        expectedNumberOfAudioStreams: Int
-    ) {
+    ): EncoreJob {
         val createdJob = createAndAwaitJob(
-            job = job(outputDir = outputDir, file = file),
+            job = job,
             timeout = Durations.FIVE_MINUTES
         ) { it.status.isCompleted }
 
         assertThat(createdJob).hasStatus(Status.SUCCESSFUL)
-
-        // check audio trimming
-        assertThat(createdJob.inputOrThrow.audioStreams).hasSize(expectedNumberOfAudioStreams)
 
         val requestCount = mockServer.requestCount
         assertThat(requestCount).isGreaterThan(0)
@@ -114,13 +116,9 @@ class EncoreIntegrationTestBase() {
 
         expectedOutputFiles
             .map { File(it) }
-            .forEach {
-                assertThat(it)
-                    .exists()
+            .forEach { assertThat(it).isNotEmpty }
 
-                assertThat(it.readBytes())
-                    .isNotEmpty()
-            }
+        return createdJob
     }
 
     fun createAndAwaitJob(
@@ -159,13 +157,18 @@ class EncoreIntegrationTestBase() {
     ) =
         EncoreJob(
             externalId = "externalId",
-            filename = file.file.absolutePath,
+            baseName = file.file.nameWithoutExtension,
             profile = "program",
             outputFolder = outputDir.absolutePath,
             progressCallbackUri = URI.create("http://localhost:${mockServer.port}/callbacks/111"),
             debugOverlay = true,
             priority = priority,
-            useFirstAudioStreams = 6,
+            inputs = listOf(
+                AudioVideoInput(
+                    uri = file.file.absolutePath,
+                    useFirstAudioStreams = 6
+                )
+            ),
             logContext = mapOf("FlowId" to UUID.randomUUID().toString())
         )
 
@@ -184,6 +187,9 @@ class EncoreIntegrationTestBase() {
         )
     }
 
-    fun expectedFile(outputDir: File, testFile: Resource, fileName: String) =
-        "${outputDir.absolutePath}/${testFile.file.nameWithoutExtension}_$fileName"
+    fun expectedFile(outputDir: File, baseName: String, suffix: String) =
+        "${outputDir.absolutePath}/${baseName}_$suffix"
+
+    fun expectedFile(outputDir: File, testFile: Resource, suffix: String) =
+        expectedFile(outputDir, testFile.file.nameWithoutExtension, suffix)
 }

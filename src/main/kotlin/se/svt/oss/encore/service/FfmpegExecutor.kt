@@ -10,6 +10,7 @@ import kotlinx.coroutines.channels.sendBlocking
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.maxDuration
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.profile.Profile
 import se.svt.oss.encore.process.CommandBuilder
@@ -18,6 +19,8 @@ import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
+import kotlin.math.round
 
 @Service
 class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
@@ -27,32 +30,34 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
     private val logLevelRegex = Regex(".*\\[(?<level>debug|info|warning|error)].*")
 
     fun getLoglevel(line: String) = logLevelRegex.matchEntire(line)?.groups?.get("level")?.value
-    val progressRegex = Regex(".*frame= *(?<frame>[\\d+]+) fps= *(?<fps>[\\d.+]+) .* speed= *(?<speed>[0-9.e-]+x) *")
+    val progressRegex = Regex(".*frame= *(?<frame>[\\d+]+) fps= *(?<fps>[\\d.+]+) .* time=(?<hours>\\d{2}):(?<minutes>\\d{2}):(?<seconds>\\d{2}\\.\\d+) .* speed= *(?<speed>[0-9.e-]+x) *")
 
     fun run(
         encoreJob: EncoreJob,
         profile: Profile,
         outputs: List<Output>,
+        outputFolder: String,
         progressChannel: SendChannel<Int>
     ): List<MediaFile> {
-        val commands = CommandBuilder(encoreJob, profile).buildCommands(outputs)
-        log.info { "Start encoding ${encoreJob.filename}..." }
+        val commands = CommandBuilder(encoreJob, profile, outputFolder).buildCommands(outputs)
+        log.info { "Start encoding ${encoreJob.baseName}..." }
         val workDir = Files.createTempDirectory("encore_").toFile()
-
+        val duration = encoreJob.duration ?: encoreJob.inputs.maxDuration()
         return try {
-            outputs.forEach { File(it.output).parentFile.mkdirs() }
+            File(outputFolder).mkdirs()
+            progressChannel.sendBlocking(0)
             commands.forEachIndexed { index, command ->
-                runFfmpeg(command, workDir, encoreJob.inputOrThrow.highestBitrateVideoStream.numFrames) {
+                runFfmpeg(command, workDir, duration) {
                     progressChannel.sendBlocking(totalProgress(it, index, commands.size))
                 }
             }
             progressChannel.close()
             outputs.flatMap { out ->
                 if (out.fileFilter != null) {
-                    File(out.output).parentFile.listFiles(out.fileFilter)
+                    File(outputFolder).listFiles(out.fileFilter)
                         .map { mediaAnalyzer.analyze(it.path) }
                 } else {
-                    listOf(mediaAnalyzer.analyze(out.output))
+                    listOf(mediaAnalyzer.analyze(File(outputFolder).resolve(out.output).toString()))
                 }
             }
         } catch (e: CancellationException) {
@@ -69,10 +74,10 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
     private fun runFfmpeg(
         command: List<String>,
         workDir: File,
-        numFrames: Int,
+        duration: Double?,
         onProgress: (Int) -> Unit
     ) {
-        log.info { "Running" }
+        log.info { "Running duration: $duration" }
         log.info { command.joinToString(" ") }
 
         val ffmpegProcess = ProcessBuilder(command)
@@ -83,7 +88,7 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
         val errorLines = mutableListOf<String>()
         ffmpegProcess.inputStream.reader().useLines { lines ->
             lines.forEach { line ->
-                val progress = getProgress(numFrames, line)
+                val progress = getProgress(duration, line)
                 if (progress != null) {
                     onProgress(progress)
                 } else {
@@ -136,11 +141,14 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
     private fun totalProgress(subtaskProgress: Int, subtaskIndex: Int, subtaskCount: Int) =
         (subtaskIndex * 100 + subtaskProgress) / subtaskCount
 
-    private fun getProgress(numFrames: Int, line: String): Int? {
-        return if (numFrames > 0) {
-            progressRegex.matchEntire(line)?.let { matchResult ->
-                val frame = matchResult.groups["frame"]?.value?.toInt() ?: 0
-                100 * frame / numFrames
+    private fun getProgress(duration: Double?, line: String): Int? {
+        return if (duration != null && duration > 0) {
+            progressRegex.matchEntire(line)?.let {
+                val hours = it.groups["hours"]!!.value.toInt()
+                val minutes = it.groups["minutes"]!!.value.toInt()
+                val seconds = it.groups["seconds"]!!.value.toDouble()
+                val time = hours * 3600 + minutes * 60 + seconds
+                min(100, round(100 * time / duration).toInt())
             }
         } else {
             null

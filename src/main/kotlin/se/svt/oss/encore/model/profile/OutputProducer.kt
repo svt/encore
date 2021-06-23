@@ -7,8 +7,8 @@ package se.svt.oss.encore.model.profile
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import se.svt.oss.encore.config.AudioMixPreset
+import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.output.Output
-import se.svt.oss.mediaanalyzer.file.VideoFile
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
@@ -20,11 +20,5 @@ import se.svt.oss.mediaanalyzer.file.VideoFile
     JsonSubTypes.Type(value = ThumbnailMapEncode::class, name = "ThumbnailMapEncode")
 )
 interface OutputProducer {
-    fun getOutput(
-        videoFile: VideoFile,
-        outputFolder: String,
-        debugOverlay: Boolean,
-        thumbnailTime: Int?,
-        audioMixPresets: Map<String, AudioMixPreset>
-    ): Output?
+    fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output?
 }

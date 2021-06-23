@@ -51,11 +51,11 @@ class EncoreJobRepositoryTest {
         val encoreJob = EncoreJob(
             id = UUID.randomUUID(),
             externalId = "externalId",
-            filename = "/shares/test.mxf",
             profile = "animerat",
             outputFolder = "/shares/test",
             createdDate = OffsetDateTime.now(),
-            progressCallbackUri = URI.create(url)
+            progressCallbackUri = URI.create(url),
+            baseName = "test"
         )
         encoreJob.status = status
         encoreJob.startedDate = OffsetDateTime.now()

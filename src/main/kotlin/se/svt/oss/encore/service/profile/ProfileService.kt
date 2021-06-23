@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service
 import se.svt.oss.encore.model.profile.Profile
 import java.io.File
 import java.io.IOException
+import java.util.Locale
 
 @Service
 class ProfileService(
@@ -28,7 +29,7 @@ class ProfileService(
     private val log = KotlinLogging.logger { }
 
     private val mapper =
-        if (profileLocation.filename?.let { File(it).extension.toLowerCase() in setOf("yml", "yaml") } == true)
+        if (profileLocation.filename?.let { File(it).extension.lowercase(Locale.getDefault()) in setOf("yml", "yaml") } == true)
             yamlMapper() else objectMapper
 
     @Retryable(

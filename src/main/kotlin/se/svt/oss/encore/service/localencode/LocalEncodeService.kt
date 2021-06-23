@@ -46,7 +46,7 @@ class LocalEncodeService(
             if (!destination.exists()) destination.mkdirs()
             moveTempLocalFiles(destination, outputFolder)
             val files = resolveMovedOutputFiles(output, encoreJob)
-            log.debug { "Locally encoded files have been successfully moved to NAS." }
+            log.debug { "Locally encoded files have been successfully moved to output folder." }
             return files
         }
         return output
@@ -63,8 +63,7 @@ class LocalEncodeService(
         filesBeforeMove?.forEach { moveFile(it, destination) }
         val fileCountAfterMove = destination.list()?.size
         if (fileCountAfterMove != filesBeforeMove?.count()) {
-            log.error { "File count after moving to NAS differs." }
-            throw RuntimeException("Error while moving files to NAS.")
+            throw RuntimeException("File count after moving files from temp to output folder differs.")
         }
     }
 

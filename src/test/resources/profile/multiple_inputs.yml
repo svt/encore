@@ -1,0 +1,73 @@
+name: multiple-inputs
+description: Test profile multiple inputs
+scaling: bicubic
+encodes:
+  - type: X264Encode
+    suffix: _x264_3100
+    twoPass: true
+    params:
+      b:v: 3100k
+      maxrate: 4700k
+      bufsize: 6200k
+      r: 25
+      vsync: 1
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: high
+      level: 4.1
+    x264-params:
+      deblock: 0,0
+      aq-mode: 1
+      aq-strength: 1.0
+      b-adapt: 2
+      bframes: 6
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 60
+      keyint: 192
+      keyint_min: 96
+      me: hex
+      merange: 16
+      cabac: 1
+      partitions: all
+      ref: 4
+      scenecut: 40
+      subme: 9
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE
+    audioMixPreset: de
+    optional: true
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: _SURROUND
+    optional: true
+    channels: 6
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_ALT
+    inputLabel: alt
+
+  - type: ThumbnailMapEncode
+    cols: 6
+    rows: 10
+
+  - type: ThumbnailEncode
+
+

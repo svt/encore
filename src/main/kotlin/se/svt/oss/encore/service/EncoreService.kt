@@ -30,14 +30,13 @@ import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.CancelEvent
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
-import se.svt.oss.encore.model.mediafile.trimAudio
 import se.svt.oss.encore.repository.EncoreJobRepository
 import se.svt.oss.encore.service.callback.CallbackService
 import se.svt.oss.encore.service.localencode.LocalEncodeService
+import se.svt.oss.encore.service.mediaanalyzer.MediaAnalyzerService
 import se.svt.oss.encore.service.profile.ProfileService
-import se.svt.oss.mediaanalyzer.MediaAnalyzer
+import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.MediaFile
-import se.svt.oss.mediaanalyzer.file.VideoFile
 import java.util.Locale
 
 @Service
@@ -50,7 +49,7 @@ class EncoreService(
     private val ffmpegExecutor: FfmpegExecutor,
     private val redissonClient: RedissonClient,
     private val redisKeyValueTemplate: RedisKeyValueTemplate,
-    private val mediaAnalyzer: MediaAnalyzer,
+    private val mediaAnalyzerService: MediaAnalyzerService,
     private val localEncodeService: LocalEncodeService,
     private val encoreProperties: EncoreProperties
 ) {
@@ -69,12 +68,9 @@ class EncoreService(
             cancelTopic = redissonClient.getTopic(cancelTopicName)
             cancelTopic.addListener(CancelEvent::class.java, cancelListener)
 
-            log.debug { "Analyzing file $encoreJob" }
-            var videoFile = mediaAnalyzer.analyze(encoreJob.filename, true) as? VideoFile
-                ?: throw RuntimeException("${encoreJob.filename} is not a video file!")
-
-            videoFile = videoFile.trimAudio(encoreJob.useFirstAudioStreams)
-            encoreJob.input = videoFile
+            encoreJob.inputs.forEach { input ->
+                mediaAnalyzerService.analyzeInput(input)
+            }
 
             log.info { "Start $encoreJob" }
             encoreJob.status = Status.IN_PROGRESS
@@ -86,12 +82,13 @@ class EncoreService(
 
             val outputs = profile.encodes.mapNotNull {
                 it.getOutput(
-                    videoFile,
-                    outputFolder,
-                    encoreJob.debugOverlay,
-                    encoreJob.thumbnailTime,
+                    encoreJob,
                     encoreProperties.audioMixPresets
                 )
+            }
+
+            check(outputs.distinctBy { it.id }.size == outputs.size) {
+                "Profile ${encoreJob.profile} contains duplicate suffixes: ${outputs.map { it.id }}!"
             }
 
             val start = System.currentTimeMillis()
@@ -99,14 +96,16 @@ class EncoreService(
             var outputFiles = runBlocking(coroutineJob + MDCContext()) {
                 val progressChannel = Channel<Int>()
                 handleProgress(progressChannel, encoreJob)
-                ffmpegExecutor.run(encoreJob, profile, outputs, progressChannel)
+                ffmpegExecutor.run(encoreJob, profile, outputs, outputFolder, progressChannel)
             }
 
             outputFiles = localEncodeService.localEncodedFilesToCorrectDir(outputFolder, outputFiles, encoreJob)
 
             val time = (System.currentTimeMillis() - start) / 1000
-            val speed = "%.3f".format(Locale.US, videoFile.duration / time).toDouble()
-            log.info { "DONE ENCODING time: ${time}s, speed: ${speed}X" }
+            val speed = outputFiles.filterIsInstance<MediaContainer>().firstOrNull()?.let {
+                "%.3f".format(Locale.US, it.duration / time).toDouble()
+            } ?: 0.0
+            log.info { "Done encoding, time: ${time}s, speed: ${speed}X" }
             updateSuccessfulJob(encoreJob, outputFiles, speed)
             log.info { "Done with $encoreJob" }
         } catch (e: InterruptedException) {
@@ -141,7 +140,7 @@ class EncoreService(
                 .distinctUntilChanged()
                 .sample(10_000)
                 .collect {
-                    log.info { "RECEIVED PROGRESS $it" }
+                    log.info { "Received progress $it" }
                     try {
                         encoreJob.progress = it
                         val partialUpdate = PartialUpdate(encoreJob.id, EncoreJob::class.java)

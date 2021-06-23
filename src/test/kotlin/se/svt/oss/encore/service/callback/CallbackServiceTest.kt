@@ -27,11 +27,11 @@ class CallbackServiceTest {
     private lateinit var callbackService: CallbackService
 
     private val encoreJob = EncoreJob(
-        filename = "/some/file.mp4",
         outputFolder = "/some/output",
         profile = "program",
         progressCallbackUri = URI.create("wwww.callback.com"),
-        progress = 50
+        progress = 50,
+        baseName = "file"
     )
 
     private val progress = JobProgress(

@@ -4,71 +4,69 @@
 
 package se.svt.oss.encore.model.profile
 
-import org.apache.commons.io.FilenameUtils
+import mu.KotlinLogging
 import se.svt.oss.encore.config.AudioMixPreset
+import se.svt.oss.encore.model.input.DEFAULT_AUDIO_LABEL
+import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.analyzedAudio
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
 import se.svt.oss.encore.model.mediafile.channelCount
+import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
-import se.svt.oss.mediaanalyzer.file.VideoFile
 
 data class AudioEncode(
     val codec: String = "libfdk_aac",
     val bitrate: String? = null,
     val samplerate: Int = 48000,
     val channels: Int = 2,
-    val suffix: String = "${codec}_${channels}ch",
+    val suffix: String = "_${codec}_${channels}ch",
     val params: LinkedHashMap<String, String> = linkedMapOf(),
     val filters: List<String> = emptyList(),
     val audioMixPreset: String = "default",
-    val skipIfNoAudioMixPreset: Boolean = false,
-    val format: String = "mp4"
+    val optional: Boolean = false,
+    val format: String = "mp4",
+    val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : OutputProducer {
 
-    override fun getOutput(
-        videoFile: VideoFile,
-        outputFolder: String,
-        debugOverlay: Boolean,
-        thumbnailTime: Int?,
-        audioMixPresets: Map<String, AudioMixPreset>
-    ): Output? {
-        if (videoFile.audioLayout() == AudioLayout.INVALID) {
-            throw RuntimeException("Audio layout of input is not supported! ")
+    private val log = KotlinLogging.logger { }
+
+    override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
+        val outputName = "${job.baseName}$suffix.$format"
+        val analyzed = job.inputs.analyzedAudio(inputLabel)
+            ?: return logOrThrow("Can not generate $outputName! No audio input with label '$inputLabel'.")
+        if (analyzed.audioLayout() == AudioLayout.INVALID) {
+            throw RuntimeException("Audio layout of audio input '$inputLabel' is not supported!")
         }
-        val paramsList = mutableListOf(
-            "-c:a",
-            codec,
-            "-ar",
-            "$samplerate"
-        )
-        val inputChannels = videoFile.channelCount()
-        val preset = audioMixPresets[audioMixPreset] ?: throw RuntimeException("Audio mix preset $audioMixPreset not found!")
+        val inputChannels = analyzed.channelCount()
+        val preset = audioMixPresets[audioMixPreset]
+            ?: throw RuntimeException("Audio mix preset '$audioMixPreset' not found!")
         val pan = preset.panMapping[inputChannels]?.get(channels)
             ?: if (channels <= inputChannels) preset.defaultPan[channels] else null
 
+        val outParams = linkedMapOf<String, Any>()
         if (pan == null) {
-            when {
-                preset.fallbackToAuto && isApplicable(inputChannels) -> paramsList.addAll(0, listOf("-ac", "$channels"))
-                skipIfNoAudioMixPreset -> return null
-                else -> throw RuntimeException("No audio mix preset for $audioMixPreset: $inputChannels -> $channels channels!")
+            if (preset.fallbackToAuto && isApplicable(inputChannels)) {
+                outParams["ac"] = channels
+            } else {
+                return logOrThrow("Can not generate $outputName! No audio mix preset for '$audioMixPreset': $inputChannels -> $channels channels!")
             }
         }
-
-        bitrate?.let {
-            paramsList.add("-b:a")
-            paramsList.add(it)
-        }
-
-        params.forEach {
-            paramsList.add("-${it.key}")
-            paramsList.add(it.value)
-        }
+        outParams["c:a"] = codec
+        outParams["ar"] = samplerate
+        bitrate?.let { outParams["b:a"] = it }
+        outParams += params
 
         return Output(
-            null,
-            AudioStreamEncode(paramsList, filtersToString(pan)),
-            getOutputFilename(videoFile.file, outputFolder)
+            id = "$suffix.$format",
+            video = null,
+            audio = AudioStreamEncode(
+                params = outParams.toParams(),
+                inputLabels = listOf(inputLabel),
+                filter = filtersToString(pan)
+            ),
+            output = outputName,
         )
     }
 
@@ -81,6 +79,12 @@ data class AudioEncode(
         return channelCount > 0 && (channels == 2 || channels in 1..channelCount)
     }
 
-    private fun getOutputFilename(filename: String, folder: String) =
-        "$folder/${FilenameUtils.getBaseName(filename)}_$suffix.$format"
+    private fun logOrThrow(message: String): Output? {
+        if (optional) {
+            log.info { message }
+            return null
+        } else {
+            throw RuntimeException(message)
+        }
+    }
 }
