@@ -5,18 +5,12 @@ jacocoTestCoverageVerification {
             includes = ['se.svt.oss.encore.*']
             excludes = [
                     '*.invoke()',
-                    '*.SecurityConfig.*',
+                    '*.Security.getEnabled()',
+                    '*.DefaultConstructorMarker*',
                     '*.EncoreApplicationKt.*',
-                    '*.*Properties*',
-                    '*.command.FfmpegCommand.*',
-                    '*.ffprobe.AudioStream.*',
-                    '*.analyze.FFProbeMediaFile.get*',
-                    '*.analyze.AnalyzeServiceFFProbe.runAndParse.*',
-                    '*.analyze.OutputFile.*',
+                    '*.static {...}',
                     '*.model.*.*.get*',
-                    '*.model.output.AudioStreamEncode.AudioStreamEncode*',
-                    '*.service.localencode.LocalEncodeService.moveFile*',
-                    '*.mediafile.ExtensionsKt.soundType*'
+                    '*.service.localencode.LocalEncodeService.moveFile*'
             ]
             limit {
                 counter = 'LINE'
@@ -27,6 +21,8 @@ jacocoTestCoverageVerification {
         failOnViolation = true
     }
 }
-
+jacoco {
+    toolVersion = '0.8.7'
+}
 jacocoTestCoverageVerification.dependsOn jacocoTestReport
 check.dependsOn jacocoTestCoverageVerification

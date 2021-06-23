@@ -43,7 +43,7 @@ class EncoreJobHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        every { mediaAnalyzer.analyze(job.filename) } returns videoFile
+        every { mediaAnalyzer.analyze(any()) } returns videoFile
         every { repository.save(job) } returns job
     }
 

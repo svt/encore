@@ -8,5 +8,5 @@ data class Profile(
     val name: String,
     val description: String,
     val encodes: List<OutputProducer>,
-    val scaling: String? = "lanczos"
+    val scaling: String? = "bicubic"
 )

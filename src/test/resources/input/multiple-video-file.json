@@ -1,0 +1,47 @@
+{
+  "file": "/input/multiple_video.mp4",
+  "fileSize": 2874830,
+  "format": "MPEG-4",
+  "overallBitrate": 2299864,
+  "duration": 10.0,
+  "videoStreams": [
+    {
+      "format": "AVC",
+      "codec": "h264",
+      "profile": "High 4:2:2",
+      "level": "3.2",
+      "width": 1280,
+      "height": 720,
+      "sampleAspectRatio": "1:1",
+      "displayAspectRatio": "16:9",
+      "pixelFormat": "yuv422p10le",
+      "frameRate": "50/1",
+      "duration": 10.0,
+      "bitrate": 259266,
+      "bitDepth": 10,
+      "numFrames": 500,
+      "isInterlaced": false,
+      "transferCharacteristics": null
+    },
+    {
+      "format": "AVC",
+      "codec": "h264",
+      "profile": "High 4:2:2",
+      "level": "5.1",
+      "width": 1920,
+      "height": 1080,
+      "sampleAspectRatio": "1:1",
+      "displayAspectRatio": "16:9",
+      "pixelFormat": "yuv422p10le",
+      "frameRate": "25/1",
+      "duration": 10.0,
+      "bitrate": 2030127,
+      "bitDepth": 10,
+      "numFrames": 250,
+      "isInterlaced": false,
+      "transferCharacteristics": null
+    }
+  ],
+  "audioStreams": [],
+  "type": "VideoFile"
+}

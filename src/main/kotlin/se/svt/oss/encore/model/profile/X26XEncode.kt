@@ -11,9 +11,10 @@ abstract class X26XEncode : VideoEncode {
     abstract val codecParams: LinkedHashMap<String, String>
     abstract val codecParamName: String
 
-    private val codecParam: Pair<String, String>
-        get() = codecParamName to codecParams.map { "${it.key}=${it.value}" }.joinToString(":")
-
     override val params: Map<String, String>
-        get() = ffmpegParams + codecParam
+        get() = ffmpegParams + if (codecParams.isNotEmpty()) {
+            mapOf(codecParamName to codecParams.map { "${it.key}=${it.value}" }.joinToString(":"))
+        } else {
+            emptyMap()
+        }
 }

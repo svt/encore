@@ -5,8 +5,8 @@ plugins {
     jacoco
     id("org.springframework.boot") version "2.4.2"
     id("se.ascp.gradle.gradle-versions-filter") version "0.1.6"
-    kotlin("jvm") version "1.4.31"
-    kotlin("plugin.spring") version "1.4.31"
+    kotlin("jvm") version "1.5.10"
+    kotlin("plugin.spring") version "1.5.10"
     id("com.github.fhermansson.assertj-generator") version "1.1.2"
     id("org.jmailen.kotlinter") version "3.3.0"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
@@ -23,7 +23,11 @@ group = "se.svt.oss"
 project.version = scmVersion.version
 
 assertjGenerator {
-    classOrPackageNames = arrayOf("se.svt.oss.encore.model", "se.svt.oss.redisson.starter.queue")
+    classOrPackageNames = arrayOf(
+        "se.svt.oss.encore.model",
+        "se.svt.oss.redisson.starter.queue",
+        "se.svt.oss.mediaanalyzer.file"
+    )
     entryPointPackage = "se.svt.oss.encore"
 }
 

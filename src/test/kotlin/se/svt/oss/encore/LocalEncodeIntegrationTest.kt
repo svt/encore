@@ -15,16 +15,14 @@ class LocalEncodeIntegrationTest : EncoreIntegrationTestBase() {
     @Test
     fun jobIsSuccessfulAndNoAudioPresets(@TempDir outputDir: File) {
         successfulTest(
-            outputDir,
+            job(outputDir = outputDir, file = testFileSurround),
             defaultExpectedOutputFiles(outputDir, testFileSurround) + listOf(
                 expectedFile(
                     outputDir,
                     testFileSurround,
                     "SURROUND.mp4"
                 )
-            ),
-            testFileSurround,
-            6
+            )
         )
     }
 }

@@ -11,21 +11,16 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 import org.springframework.data.redis.core.index.Indexed
 import org.springframework.validation.annotation.Validated
-import se.svt.oss.mediaanalyzer.file.FractionString
+import se.svt.oss.encore.model.input.Input
 import se.svt.oss.mediaanalyzer.file.MediaFile
-import se.svt.oss.mediaanalyzer.file.VideoFile
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Pattern
+import javax.validation.constraints.NotEmpty
 import javax.validation.constraints.Positive
-import javax.validation.constraints.PositiveOrZero
-
-private const val AR_REGEX = "^[1-9]\\d*[:/][1-9]\\d*$"
-private const val AR_MESSAGE = "Must be positive fraction, e.g. 16:9"
 
 @Validated
 @RedisHash("encore-jobs", timeToLive = 60 * 60 * 24 * 7) // 1 week ttl
@@ -45,13 +40,6 @@ data class EncoreJob(
     val externalId: String? = null,
 
     @Schema(
-        description = "The input file that the EncoreJob should process",
-        example = "/path/to/a/file/file.mxf", required = true
-    )
-    @NotBlank
-    val filename: String,
-
-    @Schema(
         description = "The name of the encoding profile to use",
         example = "x264-animated", required = true
     )
@@ -66,10 +54,18 @@ data class EncoreJob(
     val outputFolder: String,
 
     @Schema(
+        description = "Base filename of output files",
+        example = "any_file", required = true
+    )
+    @NotBlank
+    val baseName: String,
+
+    @Schema(
         description = "The Creation date for the EncoreJob",
         example = "2021-04-22T03:00:48.759168+02:00", accessMode = Schema.AccessMode.READ_ONLY,
         defaultValue = "now()"
     )
+    @Indexed
     val createdDate: OffsetDateTime = OffsetDateTime.now(),
 
     @Schema(
@@ -85,27 +81,6 @@ data class EncoreJob(
     @Min(0)
     @Max(100)
     val priority: Int = 0,
-
-    @Schema(
-        description = "The Display Aspect Ratio to use if the input is anamorphic." +
-            " Overrides DAR found from input metadata (for corrupt video metadata)",
-        example = "16:9", nullable = true
-    )
-    @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
-    val dar: FractionString? = null,
-
-    @Schema(
-        description = "List of FFmpeg filters to apply to all video outputs",
-        example = "proxy=filter_path=/ffmpeg-filters/libsvg_filter.so:config='svg=/path/logo-white.svg",
-        defaultValue = "[]"
-    )
-    val globalVideoFilters: List<String> = emptyList(),
-
-    @Schema(
-        description = "List of FFmpeg filters to apply to all audio outputs",
-        example = "to-do", defaultValue = "[]"
-    )
-    val globalAudioFilters: List<String> = emptyList(),
 
     @Schema(
         description = "The exception message, if the EncoreJob failed",
@@ -148,55 +123,22 @@ data class EncoreJob(
     )
     val logContext: Map<String, String> = emptyMap(),
 
-    @Schema(
-        description = "Crop output video to given aspect ratio",
-        example = "1:1", nullable = true
-    )
-    @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
-    val cropTo: FractionString? = null,
+    @Schema(description = "Seek to given time in seconds before encoding output.", nullable = true, example = "60.0")
+    val seekTo: Double? = null,
+
+    @Schema(description = "Limit output to given duration.", nullable = true, example = "60.0")
+    val duration: Double? = null,
 
     @Schema(
-        description = "Pad output video to given aspect ratio",
-        example = "16:9", nullable = true
-    )
-    @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
-    val padTo: FractionString? = null,
-
-    @Schema(
-        description = "Seek in video stream to given start time in ms (end time must currently be given)",
-        example = "10000", nullable = true
-    )
-    @PositiveOrZero
-    val startTime: Int? = null,
-
-    @Schema(
-        description = "Seek in video stream to given end time in ms (start time must currently be given)",
-        example = "20000", nullable = true
+        description = "Time in seconds for when the thumbnail should be picked. Overrides profile configuration for thumbnails",
+        example = "1800.5", nullable = true
     )
     @Positive
-    val endTime: Int? = null,
+    val thumbnailTime: Double? = null,
 
-    @Schema(
-        description = "Time in ms for when the thumbnail should be picked. Overrides profile configuration for thumbnails",
-        example = "5000", nullable = true
-    )
-    @PositiveOrZero
-    val thumbnailTime: Int? = null,
-
-    @Schema(
-        description = "Only the audio input streams up to the given value",
-        example = "2", nullable = true
-    )
-    @Positive
-    val useFirstAudioStreams: Int? = null
+    @NotEmpty
+    val inputs: List<Input> = emptyList()
 ) {
-
-    @Schema(
-        description = "Analyzed model of the input file",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
-    )
-    var input: VideoFile? = null
 
     @Schema(
         description = "Analyzed models of the output files",
@@ -204,14 +146,11 @@ data class EncoreJob(
     )
     var output = emptyList<MediaFile>()
 
-    val inputOrThrow: VideoFile
-        @JsonIgnore
-        get() = input ?: throw RuntimeException("Missing media information for $filename!")
-
     @Schema(
         description = "The Job Status",
         accessMode = Schema.AccessMode.READ_ONLY
     )
+
     @Indexed
     var status = Status.NEW
         set(value) {
@@ -228,7 +167,7 @@ data class EncoreJob(
         @JsonIgnore
         get() = mapOf(
             "id" to id.toString(),
-            "file" to filename,
+            "file" to baseName,
             "externalId" to (externalId ?: ""),
             "profile" to profile
         ) + logContext

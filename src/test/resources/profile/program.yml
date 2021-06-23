@@ -3,7 +3,7 @@ description: Program profile
 scaling: bicubic
 encodes:
   - type: X264Encode
-    suffix: 3100
+    suffix: _x264_3100
     twoPass: true
     height: 1080
     params:
@@ -44,7 +44,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 2069
+    suffix: _x264_2069
     twoPass: true
     height: 720
     params:
@@ -85,7 +85,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 1312
+    suffix: _x264_1312
     twoPass: true
     height: 540
     params:
@@ -126,7 +126,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 806
+    suffix: _x264_806
     twoPass: true
     height: 360
     params:
@@ -167,7 +167,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 324
+    suffix: _x264_324
     twoPass: true
     height: 234
     params:
@@ -203,19 +203,19 @@ encodes:
 
   - type: AudioEncode
     bitrate: 128k
-    suffix: STEREO
+    suffix: _STEREO
 
   - type: AudioEncode
     bitrate: 128k
-    suffix: STEREO_DE
+    suffix: _STEREO_DE
     audioMixPreset: de
-    skipIfNoAudioMixPreset: true
+    optional: true
 
   - type: AudioEncode
     codec: ac3
     bitrate: 448k
-    suffix: SURROUND
-    skipIfNoAudioMixPreset: true
+    suffix: _SURROUND
+    optional: true
     channels: 6
 
   - type: ThumbnailMapEncode

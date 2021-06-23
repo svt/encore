@@ -7,34 +7,30 @@ package se.svt.oss.encore.process
 import mu.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.AudioIn
+import se.svt.oss.encore.model.input.Input
+import se.svt.oss.encore.model.input.VideoIn
+import se.svt.oss.encore.model.input.inputParams
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
 import se.svt.oss.encore.model.mediafile.channelCount
 import se.svt.oss.encore.model.output.Output
-import se.svt.oss.encore.model.output.StreamEncode
 import se.svt.oss.encore.model.profile.Profile
+import se.svt.oss.mediaanalyzer.file.MediaContainer
+import se.svt.oss.mediaanalyzer.file.VideoFile
 import se.svt.oss.mediaanalyzer.file.stringValue
 import se.svt.oss.mediaanalyzer.file.toFraction
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
-import kotlin.math.min
+import java.io.File
 
-private val commonAspectRatios = setOf(
-    Fraction(16, 9),
-    Fraction(4, 3),
-    Fraction(9, 16),
-    Fraction(1, 1),
-)
 private val defaultAspectRatio = Fraction(16, 9)
 
 class CommandBuilder(
     private val encoreJob: EncoreJob,
-    private val profile: Profile
+    private val profile: Profile,
+    private val outputFolder: String
 ) {
     private val log = KotlinLogging.logger { }
-    private val input = encoreJob.inputOrThrow
-    private val videoStream = input.highestBitrateVideoStream
-    private val dar =
-        encoreJob.dar?.toFraction() ?: videoStream.displayAspectRatio?.toFractionOrNull() ?: defaultAspectRatio
 
     fun buildCommands(outputs: List<Output>): List<List<String>> {
         val (twoPassOuts, singlePassOuts) = outputs.partition { it.video?.twoPass == true }
@@ -51,210 +47,190 @@ class CommandBuilder(
     private fun firstPassCommand(
         outputs: List<Output>
     ): List<String> {
-        val videoFilters = streamFilters(outputs.map { it.video }, StreamType.VIDEO, globalVideoFilters())
-        val outputParams = outputs.mapIndexed(this::firstPassParams).flatten()
-        return inputParams() + filterParam(videoFilters) + outputParams
+        val inputs = encoreJob.inputs.filterIsInstance<VideoIn>()
+            .filter { input ->
+                outputs.any { it.video?.inputLabels?.contains(input.videoLabel) == true }
+            }
+        val videoFilters = videoFilters(inputs, outputs)
+        val outputParams = outputs.flatMap(this::firstPassParams)
+        return inputParams(inputs) + filterParam(videoFilters) + outputParams
     }
 
     private fun secondPassCommand(outputs: List<Output>): List<String> {
-        val videoFilters = streamFilters(outputs.map { it.video }, StreamType.VIDEO, globalVideoFilters())
-        val audioFilters = streamFilters(outputs.map { it.audio }, audioStreamType(), globalAudioFilters())
-        val outputParams = outputs.mapIndexed(this::secondPassParams).flatten()
-        return inputParams() + filterParam(videoFilters + audioFilters) + outputParams
+        val videoFilters = videoFilters(encoreJob.inputs, outputs)
+        val audioFilters = audioFilters(outputs)
+        val outputParams = outputs.flatMap(this::secondPassParams)
+        return inputParams(encoreJob.inputs) + filterParam(videoFilters + audioFilters) + outputParams
+    }
+
+    private fun audioFilters(outputs: List<Output>): List<String> {
+        val audioSplits = encoreJob.inputs.mapIndexedNotNull { index, input ->
+            if (input !is AudioIn) return@mapIndexedNotNull null
+            val analyzed = input.analyzedAudio
+            val splits = outputs.filter { it.audio?.inputLabels?.contains(input.audioLabel) == true }
+                .map { output ->
+                    output.audio?.filter?.let {
+                        MapName.AUDIO.preFilterLabel(input.audioLabel, output.id)
+                    }
+                        ?: MapName.AUDIO.mapLabel(output.id)
+                }
+            if (splits.isEmpty()) {
+                log.debug { "No audio outputs for audio input ${input.audioLabel}" }
+                return@mapIndexedNotNull null
+            }
+            val split = "asplit=${splits.size}${splits.joinToString("")}"
+            val globalAudioFilters = globalAudioFilters(input, analyzed)
+            val selector = input.audioStream?.let { "[$index:a:$it]" }
+                ?: if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) "[$index:a]" else "[$index:a:0]"
+            val filters = (globalAudioFilters + split).joinToString(",")
+            "$selector$filters"
+        }
+        val streamFilters = outputs.filter { it.audio?.filter != null }
+            .mapNotNull { output ->
+                output.audio?.let { audioStreamEncode ->
+                    val prelabels = audioStreamEncode.inputLabels.map {
+                        MapName.AUDIO.preFilterLabel(it, output.id)
+                    }.filterNot { audioStreamEncode.filter?.contains(it) == true }
+                    "${prelabels.joinToString("")}${audioStreamEncode.filter ?: ""}${MapName.AUDIO.mapLabel(output.id)}"
+                }
+            }
+        return audioSplits + streamFilters
+    }
+
+    private fun videoFilters(inputs: List<Input>, outputs: List<Output>): List<String> {
+        val videoSplits = inputs.mapIndexedNotNull { index, input ->
+            if (input !is VideoIn) return@mapIndexedNotNull null
+            val analyzed = input.analyzedVideo
+            val splits = outputs.filter { it.video?.inputLabels?.contains(input.videoLabel) == true }
+                .map { output ->
+                    output.video?.filter?.let {
+                        MapName.VIDEO.preFilterLabel(input.videoLabel, output.id)
+                    }
+                        ?: MapName.VIDEO.mapLabel(output.id)
+                }
+            if (splits.isEmpty()) {
+                log.debug { "No video outputs for video input ${input.videoLabel}" }
+                return@mapIndexedNotNull null
+            }
+            val split = "split=${splits.size}${splits.joinToString("")}"
+            val globalVideoFilters = globalVideoFilters(input, analyzed)
+            val filters = (globalVideoFilters + split).joinToString(",")
+            "[$index:v${input.videoStream?.let { ":$it" } ?: ""}]$filters"
+        }
+        val streamFilters = outputs.filter { it.video?.filter != null }
+            .mapNotNull { output ->
+                output.video?.let { videoStreamEncode ->
+                    val prelabels = videoStreamEncode.inputLabels.map {
+                        MapName.VIDEO.preFilterLabel(it, output.id)
+                    }.filterNot { videoStreamEncode.filter?.contains(it) == true }
+                    "${prelabels.joinToString("")}${videoStreamEncode.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}"
+                }
+            }
+        return videoSplits + streamFilters
     }
 
     private fun filterParam(filters: List<String>): List<String> {
         return listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
     }
 
-    private fun audioStreamType() =
-        if (input.audioLayout() == AudioLayout.MULTI_TRACK)
-            StreamType.MULTI_TRACK_AUDIO
-        else
-            StreamType.MONO_STREAMS_AUDIO
-
-    private fun inputParams(): List<String> {
-        val inputParams = listOf(
+    private fun inputParams(inputs: List<Input>): List<String> {
+        val readDuration = encoreJob.duration?.let {
+            it + (encoreJob.seekTo ?: 0.0)
+        }
+        return listOf(
             "ffmpeg",
             "-hide_banner",
             "-loglevel",
             "+level",
-            "-y",
-            "-i",
-            input.file
-        )
-
-        return inputParams
+            "-y"
+        ) + inputs.inputParams(readDuration)
     }
 
-    private fun highlightSeekParams(): List<String> {
-        val params = mutableListOf<String>()
-        val startTime = encoreJob.startTime
-        if (startTime != null) {
-            params += listOf("-ss", ffmpegTimestamp(startTime))
-            val endTime = encoreJob.endTime
-            if (endTime != null) {
-                val durationInMillis = endTime - startTime
-                params += listOf("-t", ffmpegTimestamp(durationInMillis))
-            }
-            return params
-        }
-        return emptyList()
-    }
-
-    private fun globalVideoFilters(): List<String> {
+    private fun globalVideoFilters(input: VideoIn, videoFile: VideoFile): List<String> {
         val filters = mutableListOf<String>()
-
+        val videoStream = videoFile.highestBitrateVideoStream
         if (videoStream.isInterlaced) {
+            log.debug { "Video input ${input.videoLabel} is interlaced. Applying deinterlace filter." }
             filters.add("yadif")
         }
+        val isAnamorphic = videoStream.sampleAspectRatio?.toFractionOrNull()
+            ?.let { it != Fraction(1, 1) } == true
 
-        if (isAnamorphic()) {
+        if (isAnamorphic) {
+            log.debug { "Video input ${input.videoLabel} is anamorphic. Scaling to square pixels." }
+            val dar = input.dar?.toFraction()
+                ?: videoStream.displayAspectRatio?.toFractionOrNull()
+                ?: defaultAspectRatio
             filters.add("setdar=${dar.stringValue()}")
             filters.add("scale=iw*sar:ih")
         } else if (videoStream.sampleAspectRatio?.toFractionOrNull() == null) {
             filters.add("setsar=1/1")
         }
 
-        encoreJob.cropTo?.toFraction()?.let {
+        input.cropTo?.toFraction()?.let {
             filters.add("crop=ih*${it.stringValue()}:ih")
         }
-        encoreJob.padTo?.toFraction()?.let {
+        input.padTo?.toFraction()?.let {
             filters.add("pad=aspect=${it.stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2")
         }
-        return filters + encoreJob.globalVideoFilters
+        return filters + input.videoFilters
     }
 
-    private fun isAnamorphic(): Boolean {
-        val sar = videoStream.sampleAspectRatio
-        val preferredCheck = sar?.toFractionOrNull()?.let { it != Fraction(1, 1) } == true
-        val par = Fraction(videoStream.width, videoStream.height)
-        val maybeAnamorphic = par !in commonAspectRatios
-        log.debug { "Anamorphic: $maybeAnamorphic ${videoStream.width}x${videoStream.height} SAR:$sar PAR:${par.stringValue(":")} DAR:${videoStream.displayAspectRatio}" }
-        if (maybeAnamorphic != preferredCheck) {
-            log.debug { "Anamorphic: checks differ! old method: $maybeAnamorphic, preferred method: $preferredCheck" }
-        }
-        return preferredCheck
-    }
-
-    private fun globalAudioFilters(): List<String> {
-        return if (input.audioLayout() == AudioLayout.MONO_STREAMS) {
-            listOf("amerge=inputs=${min(input.channelCount(), 6)}")
+    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> {
+        return if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
+            listOf("amerge=inputs=${analyzed.channelCount()}")
         } else {
             emptyList()
-        } + encoreJob.globalAudioFilters
+        } + input.audioFilters
     }
 
-    private fun streamFilters(
-        streamEncodes: List<StreamEncode?>,
-        streamType: StreamType,
-        globalFilters: List<String>
-    ): List<String> {
-        val split = streamEncodes
-            .mapIndexedNotNull { index, streamEncode ->
-                if (streamEncode == null) {
-                    null
-                } else {
-                    streamEncode.filter
-                        ?.let { streamType.mapName.preFilterLabel(index) }
-                        ?: streamType.mapName.mapLabel(index)
-                }
-            }
-        val filters = streamEncodes
-            .mapIndexedNotNull { index, streamEncode ->
-                streamEncode?.filter?.let {
-                    "${streamType.mapName.preFilterLabel(index)}$it${streamType.mapName.mapLabel(index)}"
-                }
-            }
-        return if (split.isEmpty()) {
-            emptyList()
-        } else {
-            val initialFilters = initialFilter(globalFilters, streamType, split)
-            withStreamSelector(streamType, initialFilters, split) + filters
-        }
-    }
-
-    private fun initialFilter(
-        globalFilters: List<String>,
-        streamType: StreamType,
-        split: List<String>
-    ): String {
-        val initialFilter = globalFilters + listOf("${streamType.split}=${split.size}")
-        return initialFilter.joinToString(",")
-    }
-
-    private fun withStreamSelector(
-        streamType: StreamType,
-        initialFilter: String,
-        split: List<String>
-    ): List<String> =
-        listOf("${streamType.selector}${initialFilter}${split.joinToString("")}")
-
-    private fun firstPassParams(index: Int, output: Output): List<String> {
+    private fun firstPassParams(output: Output): List<String> {
         if (output.video == null) {
             return emptyList()
         }
-        return listOf("-map", MapName.VIDEO.mapLabel(index)) +
-            highlightSeekParams() +
-            listOf("-an") +
-            appendPassParams(1, index, output.video.params) +
+        return listOf("-map", MapName.VIDEO.mapLabel(output.id)) +
+            seekParams(output) +
+            "-an" +
+            durationParams(output) +
+            output.video.firstPassParams +
             listOf("-f", output.format, "/dev/null")
     }
 
-    private fun secondPassParams(index: Int, output: Output): List<String> {
+    private fun secondPassParams(output: Output): List<String> {
         val mapV: List<String> =
-            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(index)) + highlightSeekParams() }
+            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams(output) }
                 ?: emptyList()
         val mapA: List<String> =
-            output.audio?.let { listOf("-map", MapName.AUDIO.mapLabel(index)) + highlightSeekParams() }
+            output.audio?.let { listOf("-map", MapName.AUDIO.mapLabel(output.id)) + seekParams(output) }
                 ?: emptyList()
+
         val maps = mapV + mapA
         if (maps.isEmpty()) {
             throw RuntimeException("Neither video or audio in output: $output")
         }
-        val videoParams = if (output.video?.twoPass == true) {
-            appendPassParams(2, index, output.video.params)
-        } else {
-            output.video?.params ?: listOf("-vn")
-        }
+
+        val videoParams = output.video?.params ?: listOf("-vn")
         val audioParams = output.audio?.params ?: listOf("-an")
         val metaDataParams = listOf("-metadata", "comment=Transcoded using Encore")
-        return maps + videoParams + audioParams + metaDataParams + output.output
+
+        return maps +
+            durationParams(output) +
+            videoParams + audioParams +
+            metaDataParams +
+            File(outputFolder).resolve(output.output).toString()
     }
 
-    private fun appendPassParams(pass: Int, index: Int, videoParams: List<String>): List<String> {
-        val modifiedParams = videoParams.toMutableList()
-        if (videoParams.contains("libx265")) {
-            val indexOfParams = videoParams.indexOf("-x265-params") + 1
-            if (indexOfParams > 0) {
-                modifiedParams[indexOfParams] += ":pass=$pass:stats=out$index"
-            } else {
-                modifiedParams.add("-x265-params")
-                modifiedParams.add("pass=$pass:stats=out$index")
-            }
-        } else {
-            modifiedParams += listOf("-pass", "$pass", "-passlogfile", "out$index")
-        }
-        return modifiedParams.toList()
-    }
+    private fun seekParams(output: Output): List<String> = if (!output.seekable) emptyList() else
+        encoreJob.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()
+
+    private fun durationParams(output: Output): List<String> = if (!output.seekable) emptyList() else
+        encoreJob.duration?.let { listOf("-t", "$it") } ?: emptyList()
 
     private enum class MapName {
         VIDEO,
         AUDIO;
 
-        fun mapLabel(index: Int) = "[$this$index]"
-        fun preFilterLabel(index: Int) = "[$this-pre$index]"
-    }
-
-    private enum class StreamType(val selector: String, val split: String, val mapName: MapName) {
-        VIDEO("[0:v]", "split", MapName.VIDEO),
-        MONO_STREAMS_AUDIO("[0:a]", "asplit", MapName.AUDIO),
-        MULTI_TRACK_AUDIO("[0:a:0]", "asplit", MapName.AUDIO)
-    }
-
-    private fun ffmpegTimestamp(durationInMillis: Int): String {
-        val millis: Int = (durationInMillis % 1000)
-        val second: Int = (durationInMillis / 1000)
-        return String.format("%d.%d", second, millis)
+        fun mapLabel(id: String) = "[$this-$id]"
+        fun preFilterLabel(label: String, id: String) = "[$this-$label-$id]"
     }
 }

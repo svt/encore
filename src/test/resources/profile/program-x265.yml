@@ -3,7 +3,7 @@ description: HEVC profile
 scaling: bicubic
 encodes:
   - type: X265Encode
-    suffix: 2600
+    suffix: _x265_2600
     twoPass: true
     height: 1080
     params:
@@ -57,7 +57,7 @@ encodes:
       suffix: STEREO
 
   - type: X265Encode
-    suffix: 1598
+    suffix: _x265_1598
     twoPass: true
     height: 720
     params:
@@ -111,7 +111,7 @@ encodes:
       suffix: STEREO
 
   - type: X265Encode
-    suffix: 865
+    suffix: _x265_865
     twoPass: true
     height: 540
     params:
@@ -167,7 +167,7 @@ encodes:
       channels: 2
 
   - type: X265Encode
-    suffix: 474
+    suffix: _x265_474
     twoPass: true
     height: 360
     params:
@@ -221,7 +221,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 243
+    suffix: _x264_243
     height: 234
     twoPass: true
     params:
@@ -258,7 +258,7 @@ encodes:
       channels: 2
 
   - type: X264Encode
-    suffix: 2500
+    suffix: _x264_2500
     twoPass: true
     height: 1080
     params:
@@ -299,7 +299,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 1300
+    suffix: _x264_1300
     height: 720
     twoPass: true
     params:
@@ -340,7 +340,7 @@ encodes:
       suffix: STEREO
 
   - type: X264Encode
-    suffix: 870
+    suffix: _x264_870
     twoPass: true
     height: 540
     params:
@@ -383,7 +383,7 @@ encodes:
       channels: 2
 
   - type: X264Encode
-    suffix: 470
+    suffix: _x264_470
     twoPass: true
     height: 360
     params:
@@ -426,7 +426,7 @@ encodes:
       channels: 2
 
   - type: X264Encode
-    suffix: 240
+    suffix: _x264_240
     twoPass: true
     height: 234
     params:
@@ -462,12 +462,12 @@ encodes:
 
   - type: AudioEncode
     bitrate: 128k
-    suffix: STEREO
+    suffix: _STEREO
 
   - type: AudioEncode
     codec: ac3
     bitrate: 448k
-    suffix: SURROUND
+    suffix: _SURROUND
     channels: 6
 
   - type: ThumbnailMapEncode

@@ -7,7 +7,7 @@ encodes:
     params:
       b:v: 185M
       pix_fmt: yuv422p10le
-    suffix: DNxHD_185x
+    suffix: _DNxHD_185x
     format: mxf
     twoPass: false
     audioEncode:
