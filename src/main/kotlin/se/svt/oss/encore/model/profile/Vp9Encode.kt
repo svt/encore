@@ -25,7 +25,7 @@ data class Vp9Encode (
     override fun passParams(pass: Int): Map<String, String> {
         // codec args work differently with libvpx than than x26(4|5)
         // we don't need to concat the codecparams into a single string here
-        val modifiedCodecParams = codecParams + mapOf("pass" to pass.toString(), "stats" to "log$suffix")
+        val modifiedCodecParams = codecParams + mapOf("pass" to pass.toString(), "passlogfile" to "log$suffix")
         return modifiedCodecParams
     }
 }
