@@ -24,6 +24,7 @@ encodes:
       type: AudioEncode
       bitrate: 192k
       suffix: STEREO
+      codec: libvorbis
 
   - type: Vp9Encode
     suffix: _vp9_1024
@@ -47,6 +48,8 @@ encodes:
       type: AudioEncode
       bitrate: 128k
       suffix: STEREO
+      codec: libvorbis
+
   - type: Vp9Encode
     suffix: _vp9_865
     twoPass: true
@@ -69,6 +72,7 @@ encodes:
       type: AudioEncode
       bitrate: 128k
       suffix: STEREO
+      codec: libvorbis
 
   - type: Vp9Encode
     suffix: _vp9_276
@@ -92,6 +96,7 @@ encodes:
       type: AudioEncode
       bitrate: 128k
       suffix: STEREO
+      codec: libvorbis
 
 
 
