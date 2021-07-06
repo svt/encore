@@ -1,0 +1,97 @@
+name: program-vp9
+description: VP9 profile
+scaling: bicubic
+encodes:
+  - type: Vp9Encode
+    suffix: _vp9_3000
+    twoPass: true
+    height: 1080
+    params:
+      b:v: 3000k
+      maxrate: 2610k
+      bufsize: 6000k
+      r: 25
+      pix_fmt: yuv420p10le
+    vp9-params:
+      g: 96
+      keyint_min: 96
+      rc_lookahead: 25
+      tile-columns: 6
+      frame-parallel: 1
+      quality: good
+      speed: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 192k
+      suffix: STEREO
+
+  - type: Vp9Encode
+    suffix: _vp9_1024
+    twoPass: true
+    height: 720
+    params:
+      b:v: 1024k
+      maxrate: 1485k
+      bufsize: 2048k
+      r: 25
+      pix_fmt: yuv420p10le
+    vp9-params:
+      g: 96
+      keyint_min: 96
+      rc_lookahead: 25
+      tile-columns: 6
+      frame-parallel: 1
+      quality: good
+      speed: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+  - type: Vp9Encode
+    suffix: _vp9_865
+    twoPass: true
+    height: 540
+    params:
+      b:v: 865k
+      maxrate: 1298k
+      bufsize: 1730k
+      r: 25
+      pix_fmt: yuv420p10le
+    vp9-params:
+      g: 96
+      keyint_min: 96
+      rc_lookahead: 25
+      tile-columns: 6
+      frame-parallel: 1
+      quality: good
+      speed: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: Vp9Encode
+    suffix: _vp9_276
+    twoPass: true
+    height: 360
+    params:
+      b:v: 276k
+      maxrate: 400k
+      bufsize: 552k
+      r: 25
+      pix_fmt: yuv420p
+    vp9-params:
+      g: 96
+      keyint_min: 96
+      rc_lookahead: 25
+      tile-columns: 6
+      frame-parallel: 1
+      quality: good
+      speed: 0
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+
+
