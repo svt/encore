@@ -8,7 +8,7 @@ encodes:
     height: 1080
     params:
       b:v: 3000k
-      maxrate: 2610k
+      maxrate: 4500k
       bufsize: 6000k
       r: 25
       pix_fmt: yuv420p10le
