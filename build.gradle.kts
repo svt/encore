@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.OutputStream
 
 plugins {
     idea
@@ -116,3 +117,20 @@ tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
     gradleVersion = "6.8.3"
 }
+
+val integrationTestsPreReq = setOf("mediainfo", "ffmpeg", "ffprobe").map {
+
+    tasks.create("Verify $it is in path, required for integration tests", Exec::class.java) {
+        isIgnoreExitValue = true
+        executable = it
+
+        if (!it.equals("mediainfo")) {
+            args("-hide_banner")
+        }
+    }
+}
+
+tasks.test {
+    dependsOn(integrationTestsPreReq)
+}
+
