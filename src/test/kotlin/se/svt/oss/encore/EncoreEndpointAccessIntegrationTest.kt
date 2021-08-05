@@ -91,6 +91,12 @@ class AdminEndpointAccessIntegrationTest : EncoreEndpointAccessIntegrationTest()
 
 class NoUserEndpointAccessIntegrationTest : EncoreEndpointAccessIntegrationTest() {
 
+    data class MyHealth(
+        val status: String,
+        val components: Map<String, Any>?,
+        val groups: List<String>?
+    )
+
     @Test
     fun `Anonymous user is not authorized GET`() {
         assertThrows<FeignException.Unauthorized> {
@@ -100,7 +106,9 @@ class NoUserEndpointAccessIntegrationTest : EncoreEndpointAccessIntegrationTest(
 
     @Test
     fun `Anonymous user is authorized GET health without details`() {
-        assertThat(encoreClient.health()).isEqualTo("""{"status":"UP"}""")
+        val health = objectMapper.readValue(encoreClient.health(), MyHealth::class.java)
+        assertThat(health.status).isEqualTo("UP")
+        assertThat(health.components).isNull()
     }
 
     @Test
