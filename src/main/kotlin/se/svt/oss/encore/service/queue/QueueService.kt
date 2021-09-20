@@ -7,9 +7,9 @@ import mu.KotlinLogging
 import org.redisson.api.RPriorityBlockingQueue
 import org.redisson.api.RedissonClient
 import org.springframework.stereotype.Component
-import se.svt.oss.redisson.starter.queue.QueueItem
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.encore.service.queue.QueueUtil.getQueueNumberByPriority
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.TimeUnit

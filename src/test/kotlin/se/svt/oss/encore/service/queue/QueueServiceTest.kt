@@ -18,10 +18,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.redisson.api.RPriorityBlockingQueue
 import org.redisson.api.RedissonClient
-import se.svt.oss.redisson.starter.queue.QueueItem
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.queue.QueueItem
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockKExtension::class)

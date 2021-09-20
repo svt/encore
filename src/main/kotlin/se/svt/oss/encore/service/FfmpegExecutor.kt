@@ -6,7 +6,7 @@ package se.svt.oss.encore.service
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.sendBlocking
+import kotlinx.coroutines.channels.trySendBlocking
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.model.EncoreJob
@@ -30,7 +30,8 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
     private val logLevelRegex = Regex(".*\\[(?<level>debug|info|warning|error)].*")
 
     fun getLoglevel(line: String) = logLevelRegex.matchEntire(line)?.groups?.get("level")?.value
-    val progressRegex = Regex(".*frame= *(?<frame>[\\d+]+) fps= *(?<fps>[\\d.+]+) .* time=(?<hours>\\d{2}):(?<minutes>\\d{2}):(?<seconds>\\d{2}\\.\\d+) .* speed= *(?<speed>[0-9.e-]+x) *")
+    val progressRegex =
+        Regex(".*frame= *(?<frame>[\\d+]+) fps= *(?<fps>[\\d.+]+) .* time=(?<hours>\\d{2}):(?<minutes>\\d{2}):(?<seconds>\\d{2}\\.\\d+) .* speed= *(?<speed>[0-9.e-]+x) *")
 
     fun run(
         encoreJob: EncoreJob,
@@ -45,10 +46,10 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
         val duration = encoreJob.duration ?: encoreJob.inputs.maxDuration()
         return try {
             File(outputFolder).mkdirs()
-            progressChannel.sendBlocking(0)
+            progressChannel.trySendBlocking(0).getOrThrow()
             commands.forEachIndexed { index, command ->
-                runFfmpeg(command, workDir, duration) {
-                    progressChannel.sendBlocking(totalProgress(it, index, commands.size))
+                runFfmpeg(command, workDir, duration) { progress ->
+                    progressChannel.trySendBlocking(totalProgress(progress, index, commands.size)).getOrThrow()
                 }
             }
             progressChannel.close()
@@ -100,9 +101,11 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
                             if (line.contains("DPB size")) {
                                 errorLines.add(line)
                                 throw RuntimeException(
-                                    "Coding might not be compatible on all devices:\n${errorLines.joinToString(
+                                    "Coding might not be compatible on all devices:\n${
+                                    errorLines.joinToString(
                                         "\n"
-                                    )}"
+                                    )
+                                    }"
                                 )
                             }
                         }

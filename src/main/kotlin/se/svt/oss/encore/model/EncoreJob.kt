@@ -23,7 +23,7 @@ import javax.validation.constraints.NotEmpty
 import javax.validation.constraints.Positive
 
 @Validated
-@RedisHash("encore-jobs", timeToLive = 60 * 60 * 24 * 7) // 1 week ttl
+@RedisHash("encore-jobs", timeToLive = (60 * 60 * 24 * 7).toLong()) // 1 week ttl
 @Tag(name = "encorejob")
 data class EncoreJob(
 

@@ -16,9 +16,9 @@ import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
 import se.svt.oss.encore.model.input.AudioInput
 import se.svt.oss.encore.model.input.VideoInput
+import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.VideoFile
-import se.svt.oss.redisson.starter.queue.QueueItem
 import java.io.File
 import java.time.Duration
 import java.util.concurrent.TimeUnit

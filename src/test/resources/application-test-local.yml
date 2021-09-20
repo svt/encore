@@ -1,4 +1,6 @@
 spring:
+  redis:
+    port: ${embedded-redis.port}
   main:
     allow-bean-definition-overriding: true
 
@@ -24,10 +26,6 @@ encore-settings:
           2: stereo|c0=1.0*c0+0.707*c2+0.707*c4|c1=1.0*c1+0.707*c2+0.707*c5
     de:
       fallback-to-auto: false
-
-redis:
-  uri: redis://localhost:${embedded-redis.port}
-  db: 0
 
 profile:
   location: classpath:profile/profiles.yml
