@@ -3,6 +3,9 @@ spring:
     name: encore
   banner:
     location: classpath:asciilogo.txt
+  cloud:
+    config:
+      enabled: false
 
 health:
   config:

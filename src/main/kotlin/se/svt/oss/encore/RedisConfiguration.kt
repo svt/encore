@@ -4,8 +4,9 @@
 
 package se.svt.oss.encore
 
-import org.redisson.api.RedissonClient
-import org.redisson.spring.data.connection.RedissonConnectionFactory
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.redisson.codec.JsonJacksonCodec
+import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.core.RedisKeyValueAdapter
@@ -35,5 +36,9 @@ class RedisConfiguration {
     )
 
     @Bean
-    fun redissonConnectionFactory(redisson: RedissonClient) = RedissonConnectionFactory(redisson)
+    fun redissonCustomizer(objectMapper: ObjectMapper): RedissonAutoConfigurationCustomizer {
+        return RedissonAutoConfigurationCustomizer { configuration ->
+            configuration.codec = JsonJacksonCodec(objectMapper)
+        }
+    }
 }

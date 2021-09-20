@@ -22,11 +22,11 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import se.svt.oss.redisson.starter.queue.QueueItem
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.model.Status
+import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.encore.repository.EncoreJobRepository
 import se.svt.oss.encore.service.EncoreService
 import se.svt.oss.encore.service.queue.QueueService

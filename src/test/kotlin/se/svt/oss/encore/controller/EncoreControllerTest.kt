@@ -22,10 +22,10 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import se.svt.oss.redisson.starter.queue.QueueItem
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.model.CancelEvent
 import se.svt.oss.encore.model.Status
+import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.encore.repository.EncoreJobRepository
 import se.svt.oss.encore.service.queue.QueueService
 import java.util.UUID
