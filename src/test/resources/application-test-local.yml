@@ -18,7 +18,7 @@ encore-settings:
   concurrency: 3
   local-temporary-encode: true
   poll-initial-delay: 1s
-  poll-delaly: 1s
+  poll-delay: 1s
   audio-mix-presets:
     default:
       pan-mapping:
