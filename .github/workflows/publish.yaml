@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     container: 
         image: ghcr.io/janderssonse/avtools-osadl-debian
-        options: --user root
+        options: --user avtools
     permissions:
       contents: read
       packages: write
