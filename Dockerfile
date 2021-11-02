@@ -3,9 +3,8 @@ FROM ${DOCKER_BASE_IMAGE}
 
 LABEL org.opencontainers.image.url="https://github.com/janderssonse/encore"
 LABEL org.opencontainers.image.source="https://github.com/janderssonse/encore"
-LABEL org.opencontainers.image.title="svt-encore-debian"
+LABEL org.opencontainers.image.title="encore-debian"
 
-ARG ARTIFACTDIR="build/libs"
 ARG USR="root"
 ARG JRE="openjdk-11-jre-headless"
 
@@ -17,7 +16,7 @@ RUN apt-get update --allow-releaseinfo-change && \
 
 USER ${USR}
 
-COPY --chown=${USR}:${USR} ${ARTIFACTDIR}/encore.jar /app/encore.jar
+COPY --chown=${USR}:${USR} build/libs/encore.jar /app/encore.jar
 COPY --chown=${USR}:${USR} bin/start.sh /app/start.sh
 
 WORKDIR /app

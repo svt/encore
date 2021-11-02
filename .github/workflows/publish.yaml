@@ -8,13 +8,13 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: svt-encore-debian
+  IMAGE_NAME: encore-debian
 
 jobs:
   build-artifact:
     runs-on: ubuntu-latest
     container: 
-        image: ghcr.io/janderssonse/avtools-debian
+        image: ghcr.io/janderssonse/avtools-osadl-debian
         options: --user root
     permissions:
       contents: read
@@ -35,12 +35,6 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build -x test
-
-####### # - name: Upload build
-####### uses: actions/upload-artifact@v2
-####### with:
-#######    name: builddir
-#######    path: build/libs/encore*.jar
 
       - name: cache build
         uses: actions/cache@v2
@@ -67,11 +61,6 @@ jobs:
           path: ./build
           key: ${{ github.sha }}
       - run: ls ./build    
-#     - name: Download Build
-#       id: download
-#       uses: actions/download-artifact@v2
-#       with:
-#          name: builddir
 
       - name: 'Echo download path'
         run: echo ${{steps.download.outputs.download-path}}
@@ -101,18 +90,10 @@ jobs:
         with:
           context: .
           build-args: |
-                  DOCKER_BASE_IMAGE=ghcr.io/janderssonse/avtools-debian:latest
+                  DOCKER_BASE_IMAGE=ghcr.io/janderssonse/avtools-osadl-debian:latest
                   USR=avtools
           platforms: x86_64
-          no-cache: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           
-          #registry: ${{ env.REGISTRY }}
-          #username: ${{ github.actor }}
-          #password: ${{ secrets.GITHUB_TOKEN }}
-          #repository: ghcr.io/janderssonse/encore 
-          #always_pull: true
-          #build_args: DOCKER_BASE_IMAGE=ghcr.io/janderssonse/avtools-debian-squash,ARTIFACTDIR=
-          #tag_with_ref: true 
