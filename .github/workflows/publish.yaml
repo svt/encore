@@ -9,13 +9,14 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: encore-debian
+  DOCKER_BASE_IMAGE: ghcr.io/janderssonse/avtools-osadl-debian:latest
 
 jobs:
   build-artifact:
     runs-on: ubuntu-latest
     container: 
-        image: ghcr.io/janderssonse/avtools-osadl-debian
-        options: --user avtools
+    image: ${{ env.DOCKER_BASE_IMAGE }}
+        options: --user root
     permissions:
       contents: read
       packages: write
@@ -90,7 +91,7 @@ jobs:
         with:
           context: .
           build-args: |
-                  DOCKER_BASE_IMAGE=ghcr.io/janderssonse/avtools-osadl-debian:latest
+                  DOCKER_BASE_IMAGE=${{ env.DOCKER_BASE_IMAGE }} 
                   USR=avtools
           platforms: x86_64
           push: true
