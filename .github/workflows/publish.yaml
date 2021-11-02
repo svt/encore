@@ -15,7 +15,7 @@ jobs:
   build-artifact:
     runs-on: ubuntu-latest
     container: 
-        image: ${{ env.DOCKER_BASE_IMAGE }}
+        image: ghcr.io/janderssonse/avtools-osadl-debian:latest
         options: --user root
     permissions:
       contents: read
