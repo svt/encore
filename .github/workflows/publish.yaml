@@ -9,13 +9,13 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: encore-debian
-  DOCKER_BASE_IMAGE: ghcr.io/janderssonse/avtools-osadl-debian:latest
+  DOCKER_BASE_IMAGE: ghcr.io/svt/avtools-osadl-debian:latest
 
 jobs:
   build-artifact:
     runs-on: ubuntu-latest
     container: 
-        image: ghcr.io/janderssonse/avtools-osadl-debian:latest
+        image: ghcr.io/svt/avtools-osadl-debian:latest
         options: --user root
     permissions:
       contents: read

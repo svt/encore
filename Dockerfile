@@ -1,8 +1,8 @@
 ARG DOCKER_BASE_IMAGE
 FROM ${DOCKER_BASE_IMAGE}
 
-LABEL org.opencontainers.image.url="https://github.com/janderssonse/encore"
-LABEL org.opencontainers.image.source="https://github.com/janderssonse/encore"
+LABEL org.opencontainers.image.url="https://github.com/svt/encore"
+LABEL org.opencontainers.image.source="https://github.com/svt/encore"
 LABEL org.opencontainers.image.title="encore-debian"
 
 ARG USR="root"
