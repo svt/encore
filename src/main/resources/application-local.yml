@@ -9,7 +9,6 @@ spring:
 profile:
   location: url:https://raw.githubusercontent.com/svt/encore/master/src/test/resources/profile/profiles.yml
 
-
 encore-settings:
   concurrency: 3
   local-temporary-encode: false
@@ -22,8 +21,4 @@ encore-settings:
         6:
           2: stereo|c0=1.0*c0+0.707*c2+0.707*c4|c1=1.0*c1+0.707*c2+0.707*c5
     de:
-      fallback-to-auto: false
-      pan-mapping:
-        6:
-          2: stereo|c0<0.25*c0+1.5*c2+0.25*c4|c1<0.25*c1+1.5*c2+0.25*c5
-
+      fallback-to-auto: true
