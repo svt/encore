@@ -2,7 +2,7 @@ name: Create and publish a Docker image
 
 on:
   push:
-    branches: ['master','main','basicgithubci']
+    branches: ['master','main']
     tags:
       - 'v*'
 
