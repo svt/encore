@@ -22,12 +22,17 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew build -x test
-
-      - name: Release Jar
+      - name: Build jars with Gradle
+        run: |
+          ./gradlew build -x test
+          echo -e '\ntasks.bootJar {\n launchScript() \n archiveName="encore.linux.exe.jar" \n }' >> build.gradle.kts 
+          ./gradlew build -x test
+      
+      - name: Release Jars
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: build/libs/encore.jar
+          files: |
+            build/libs/encore.jar
+            build/libs/encore.linux.exe.jar
 
