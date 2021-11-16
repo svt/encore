@@ -2,7 +2,6 @@ name: Create and publish a Spring Boot jar/Spring Boot LaunchScript Jar
 
 on:
   push:
-    branches: ['master','main','releasebuild']
     tags:
       - 'v*'
 
@@ -28,6 +27,7 @@ jobs:
 
       - name: Release Jar
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: build/libs/encore.jar
 
