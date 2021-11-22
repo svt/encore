@@ -8,6 +8,8 @@ on:
 jobs:
   build-artifacts:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout repository
@@ -25,8 +27,6 @@ jobs:
       - name: Build jars with Gradle
         run: |
           ./gradlew build -x test
-          echo -e '\ntasks.bootJar {\n launchScript() \n archiveName="encore.linux.exe.jar" \n }' >> build.gradle.kts 
-          ./gradlew build -x test
       
       - name: Release Jars
         uses: softprops/action-gh-release@v1
@@ -34,5 +34,4 @@ jobs:
         with:
           files: |
             build/libs/encore.jar
-            build/libs/encore.linux.exe.jar
 
