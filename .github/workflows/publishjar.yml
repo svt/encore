@@ -33,5 +33,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            build/libs/encore.jar
+            build/libs/encore*.jar
 
