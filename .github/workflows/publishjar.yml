@@ -2,6 +2,7 @@ name: Create and publish a Spring Boot jar/Spring Boot LaunchScript Jar
 
 on:
   push:
+    branches: ['master','main']
     tags:
       - 'v*'
 
