@@ -17,6 +17,9 @@ plugins {
     id("org.springdoc.openapi-gradle-plugin") version "1.3.3"
 }
 
+
+project.version = scmVersion.version
+
 apply(from = "checks.gradle")
 
 group = "se.svt.oss"
@@ -47,6 +50,12 @@ tasks.withType<KotlinCompile> {
 
 repositories {
     mavenCentral()
+}
+
+//don't build the extra plain jars that was auto-added in Spring Boot 2.5.0,
+//https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.and-plain-archives
+tasks.getByName<Jar>("jar") {
+    enabled = false
 }
 
 configurations {
