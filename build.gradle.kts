@@ -73,6 +73,8 @@ dependencyManagement {
 
 val redissonVersion = "3.16.2"
 
+extra["log4j2.version"] = "2.15.0"
+
 dependencies {
     implementation("se.svt.oss:media-analyzer:1.0.3")
     implementation(kotlin("reflect"))
