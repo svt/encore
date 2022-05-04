@@ -17,13 +17,15 @@ interface VideoEncode : OutputProducer {
     val params: Map<String, String>
     val filters: List<String>?
     val audioEncode: AudioEncode?
+    val audioEncodes: List<AudioEncode>
     val suffix: String
     val format: String
     val codec: String
     val inputLabel: String
 
     override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
-        val audio = audioEncode?.getOutput(job, audioMixPresets)?.audio
+        val audioEncodesToUse = audioEncodes.ifEmpty { listOfNotNull(audioEncode) }
+        val audio = audioEncodesToUse.flatMap { it.getOutput(job, audioMixPresets)?.audioStreams.orEmpty() }
         return Output(
             id = "$suffix.$format",
             video = VideoStreamEncode(
@@ -33,7 +35,7 @@ interface VideoEncode : OutputProducer {
                 twoPass = twoPass,
                 filter = videoFilter(job.debugOverlay),
             ),
-            audio = audio,
+            audioStreams = audio,
             output = "${job.baseName}$suffix.$format"
         )
     }

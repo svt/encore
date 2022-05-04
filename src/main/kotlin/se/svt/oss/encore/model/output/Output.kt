@@ -8,13 +8,17 @@ import java.io.File
 
 data class Output(
     val video: VideoStreamEncode?,
-    val audio: AudioStreamEncode?,
+    val audioStreams: List<AudioStreamEncode> = emptyList(),
     val output: String,
     val format: String = "mp4",
-    val fileFilter: ((File) -> Boolean)? = null,
+    val postProcessor: PostProcessor = PostProcessor { outputFolder -> listOf(outputFolder.resolve(output)) },
     val id: String,
     val seekable: Boolean = true
 )
+
+fun interface PostProcessor {
+    fun process(outputFolder: File): List<File>
+}
 
 interface StreamEncode {
     val params: List<String>

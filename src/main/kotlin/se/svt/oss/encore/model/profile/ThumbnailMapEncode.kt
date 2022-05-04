@@ -7,13 +7,14 @@ package se.svt.oss.encore.model.profile
 import mu.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.config.AudioMixPreset
-import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.analyzedVideo
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.stringValue
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
+import kotlin.io.path.createTempDirectory
 import kotlin.math.round
 
 data class ThumbnailMapEncode(
@@ -49,20 +50,48 @@ data class ThumbnailMapEncode(
                 "Video input $inputLabel did not contain enough frames to generate thumbnail map $suffix: $numFrames < $cols cols * $rows rows"
             return logOrThrow(message)
         }
-        val pad = "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2" // pad to aspect ratio
+        val tempFolder = createTempDirectory(suffix).toFile()
+        tempFolder.deleteOnExit()
+        val pad =
+            "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2" // pad to aspect ratio
         val nthFrame = numFrames / (cols * rows)
         var select = "not(mod(n\\,$nthFrame))"
         job.seekTo?.let { select += "*gte(t\\,$it)" }
         return Output(
             id = "$suffix.$format",
             video = VideoStreamEncode(
-                params = listOf("-frames", "1", "-q:v", "5"),
-                filter = "select=$select,pad=$pad,scale=-1:$tileHeight,tile=${cols}x$rows",
+                params = listOf("-q:v", "5"),
+                filter = "select=$select,pad=$pad,scale=-1:$tileHeight",
                 inputLabels = listOf(inputLabel)
             ),
-            audio = null,
-            output = "${job.baseName}$suffix.$format",
-            seekable = false
+            output = tempFolder.resolve("${job.baseName}$suffix%03d.$format").toString(),
+            seekable = false,
+            postProcessor = { outputFolder ->
+                try {
+                    val targetFile = outputFolder.resolve("${job.baseName}$suffix.$format")
+                    val process = ProcessBuilder(
+                        "ffmpeg",
+                        "-i",
+                        "${job.baseName}$suffix%03d.$format",
+                        "-vf",
+                        "tile=${cols}x$rows",
+                        "-frames:v",
+                        "1",
+                        "$targetFile"
+                    )
+                        .directory(tempFolder)
+                        .start()
+                    val status = process.waitFor()
+                    tempFolder.deleteRecursively()
+                    if (status != 0) {
+                        throw RuntimeException("Ffmpeg returned status code $status")
+                    }
+                    listOf(targetFile)
+                } catch (e: Exception) {
+                    logOrThrow("Error creating thumbnail map! ${e.message}")
+                    emptyList()
+                }
+            }
         )
     }
 

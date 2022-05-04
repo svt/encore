@@ -6,8 +6,8 @@ package se.svt.oss.encore.model.profile
 
 import mu.KotlinLogging
 import se.svt.oss.encore.config.AudioMixPreset
-import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.analyzedVideo
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
@@ -59,14 +59,15 @@ data class ThumbnailEncode(
 
         return Output(
             id = "${suffix}02d.jpg",
-            audio = null,
             video = VideoStreamEncode(
                 params = params.toParams(),
                 filter = filter,
                 inputLabels = listOf(inputLabel)
             ),
             output = "${job.baseName}$suffix%02d.jpg",
-            fileFilter = { file -> file.name.matches(fileRegex) },
+            postProcessor = { outputFolder ->
+                outputFolder.listFiles().orEmpty().filter { it.name.matches(fileRegex) }
+            },
             seekable = false
         )
     }

@@ -1,0 +1,20 @@
+name: audio-streams
+description: Video file with multiple audio streams
+encodes:
+  - type: X264Encode
+    suffix: ''
+    twoPass: false
+    format: mp4
+    height: 720
+    params:
+      preset: fast
+      pix_fmt: yuv420p
+    audioEncodes:
+      - type: AudioEncode
+        codec: ac3
+        bitrate: 448k
+        channels: 6
+        optional: true
+      - type: AudioEncode
+        bitrate: 128k
+        channels: 2

@@ -8,5 +8,6 @@ data class Profile(
     val name: String,
     val description: String,
     val encodes: List<OutputProducer>,
-    val scaling: String? = "bicubic"
+    val scaling: String? = "bicubic",
+    val deinterlaceFilter: String = "yadif"
 )

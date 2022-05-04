@@ -3,12 +3,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     idea
     jacoco
-    id("org.springframework.boot") version "2.5.4"
+    id("org.springframework.boot") version "2.6.6"
     id("se.ascp.gradle.gradle-versions-filter") version "0.1.10"
-    kotlin("jvm") version "1.5.30"
-    kotlin("plugin.spring") version "1.5.30"
-    id("com.github.fhermansson.assertj-generator") version "1.1.2"
-    id("org.jmailen.kotlinter") version "3.6.0"
+    kotlin("jvm") version "1.6.20"
+    kotlin("plugin.spring") version "1.6.20"
+    id("com.github.fhermansson.assertj-generator") version "1.1.4"
+    id("org.jmailen.kotlinter") version "3.9.0"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("pl.allegro.tech.build.axion-release") version "1.13.3"
 
@@ -67,13 +67,11 @@ configurations {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2020.0.3")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2021.0.1")
     }
 }
 
-val redissonVersion = "3.16.2"
-
-extra["log4j2.version"] = "2.17.0"
+val redissonVersion = "3.17.0"
 
 dependencies {
     implementation("se.svt.oss:media-analyzer:1.0.3")
@@ -89,12 +87,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
 
     implementation("org.redisson:redisson-spring-boot-starter:$redissonVersion")
-    implementation("org.redisson:redisson-spring-data-25:$redissonVersion") // match boot version
-    implementation("io.github.microutils:kotlin-logging:2.0.11")
+    implementation("org.redisson:redisson-spring-data-26:$redissonVersion") // match boot version
+    implementation("io.github.microutils:kotlin-logging:2.1.21")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.5.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.6.0")
 
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation("io.github.openfeign:feign-okhttp")
@@ -109,13 +107,13 @@ dependencies {
 
     testImplementation("se.svt.oss:junit5-redis-extension:3.0.0")
     testImplementation("se.svt.oss:random-port-initializer:1.0.5")
-    testImplementation("org.awaitility:awaitility:4.1.0")
+    testImplementation("org.awaitility:awaitility:4.1.1")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.assertj:assertj-core")
-    testImplementation("io.mockk:mockk:1.12.0")
-    testImplementation("com.squareup.okhttp3:mockwebserver:3.14.4")//shall match with okhttp version used
-    testImplementation("com.ninja-squad:springmockk:3.0.1")
+    testImplementation("org.assertj:assertj-core:3.20.2") // Can be bumped with future kotlin 1.7 release, https://github.com/assertj/assertj-core/issues/2357
+    testImplementation("io.mockk:mockk:1.12.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:3.14.9")//shall match with okhttp version used
+    testImplementation("com.ninja-squad:springmockk:3.1.1")
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
@@ -123,7 +121,7 @@ dependencies {
 
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion = "6.8.3"
+    gradleVersion = "7.4"
 }
 
 val integrationTestsPreReq = setOf("mediainfo", "ffmpeg", "ffprobe").map {

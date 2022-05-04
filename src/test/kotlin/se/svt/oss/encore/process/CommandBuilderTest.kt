@@ -35,6 +35,7 @@ internal class CommandBuilderTest {
         commandBuilder = CommandBuilder(encoreJob, profile, encoreJob.outputFolder)
 
         every { profile.scaling } returns "scaling"
+        every { profile.deinterlaceFilter } returns "yadif"
     }
 
     @Test
@@ -44,7 +45,7 @@ internal class CommandBuilderTest {
         assertThat(buildCommands).hasSize(1)
 
         val command = buildCommands.first().joinToString(" ")
-        assertThat(command).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out];[AUDIO-main-test-out]audio-filter[AUDIO-test-out] -map [VIDEO-test-out] -map [AUDIO-test-out] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
+        assertThat(command).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
     }
 
     @Test
@@ -56,7 +57,7 @@ internal class CommandBuilderTest {
         val secondPass = buildCommands[1].joinToString(" ")
 
         assertThat(firstPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -an first pass -f mp4 /dev/null")
-        assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out];[AUDIO-main-test-out]audio-filter[AUDIO-test-out] -map [VIDEO-test-out] -map [AUDIO-test-out] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
+        assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
     }
 
     @Test
@@ -105,7 +106,6 @@ internal class CommandBuilderTest {
                 params = linkedMapOf("ac" to "4"),
                 audioFilters = listOf("audio-main", "main-filter"),
                 analyzed = mainAudioFile,
-
             ),
             AudioInput(
                 uri = secondaryAudioFile.file,
@@ -130,7 +130,7 @@ internal class CommandBuilderTest {
         val secondPass = buildCommands[1].joinToString(" ")
 
         assertThat(firstPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=ih*1/1:ih,pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -ss 12.1 -an -t 10.4 first pass -f mp4 /dev/null")
-        assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -ac 4 -t 22.5 -i /input/main-audio.mp4 -t 22.5 -i /input/other-audio.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=ih*1/1:ih,pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[1:a]amerge=inputs=4,audio-main,main-filter,asplit=1[AUDIO-main-test-out];[2:a:3]asplit=1[AUDIO-other-extra];[AUDIO-main-test-out]audio-filter[AUDIO-test-out];[AUDIO-other-extra]audio-filter-extra[AUDIO-extra] -map [VIDEO-test-out] -ss 12.1 -map [AUDIO-test-out] -ss 12.1 -t 10.4 video params audio params -metadata comment=Transcoded using Encore /tmp/123/out.mp4 -map [AUDIO-extra] -ss 12.1 -t 10.4 -vn audio extra -metadata comment=Transcoded using Encore /tmp/123/extra.mp4")
+        assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -ac 4 -t 22.5 -i /input/main-audio.mp4 -t 22.5 -i /input/other-audio.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=ih*1/1:ih,pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[1:a]amerge=inputs=4,audio-main,main-filter,asplit=1[AUDIO-main-test-out-0];[2:a:3]asplit=1[AUDIO-other-extra-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0];[AUDIO-other-extra-0]audio-filter-extra[AUDIO-extra-0] -map [VIDEO-test-out] -ss 12.1 -map [AUDIO-test-out-0] -ss 12.1 -t 10.4 video params audio params -metadata comment=Transcoded using Encore /tmp/123/out.mp4 -map [AUDIO-extra-0] -ss 12.1 -t 10.4 -vn audio extra -metadata comment=Transcoded using Encore /tmp/123/extra.mp4")
     }
 
     private fun output(twoPass: Boolean): Output {
@@ -148,7 +148,7 @@ internal class CommandBuilderTest {
         )
         return Output(
             video = videoStreamEncode,
-            audio = audioStreamEncode,
+            audioStreams = listOf(audioStreamEncode),
             output = "out.mp4",
             id = "test-out"
         )
@@ -159,10 +159,12 @@ internal class CommandBuilderTest {
             id = id,
             output = "$id.mp4",
             video = null,
-            audio = AudioStreamEncode(
-                params = listOf("audio", id),
-                filter = "audio-filter-$id",
-                inputLabels = listOf(label)
+            audioStreams = listOf(
+                AudioStreamEncode(
+                    params = listOf("audio", id),
+                    filter = "audio-filter-$id",
+                    inputLabels = listOf(label)
+                )
             )
         )
     }

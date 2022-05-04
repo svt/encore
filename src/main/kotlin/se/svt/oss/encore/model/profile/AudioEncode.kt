@@ -48,23 +48,25 @@ data class AudioEncode(
         val outParams = linkedMapOf<String, Any>()
         if (pan == null) {
             if (preset.fallbackToAuto && isApplicable(inputChannels)) {
-                outParams["ac"] = channels
+                outParams["ac:a:{stream_index}"] = channels
             } else {
                 return logOrThrow("Can not generate $outputName! No audio mix preset for '$audioMixPreset': $inputChannels -> $channels channels!")
             }
         }
-        outParams["c:a"] = codec
-        outParams["ar"] = samplerate
-        bitrate?.let { outParams["b:a"] = it }
+        outParams["c:a:{stream_index}"] = codec
+        outParams["ar:a:{stream_index}"] = samplerate
+        bitrate?.let { outParams["b:a:{stream_index}"] = it }
         outParams += params
 
         return Output(
             id = "$suffix.$format",
             video = null,
-            audio = AudioStreamEncode(
-                params = outParams.toParams(),
-                inputLabels = listOf(inputLabel),
-                filter = filtersToString(pan)
+            audioStreams = listOf(
+                AudioStreamEncode(
+                    params = outParams.toParams(),
+                    inputLabels = listOf(inputLabel),
+                    filter = filtersToString(pan)
+                )
             ),
             output = outputName,
         )

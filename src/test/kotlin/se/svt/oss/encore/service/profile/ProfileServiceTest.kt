@@ -41,7 +41,7 @@ class ProfileServiceTest {
     fun `unknown profile throws error`() {
         assertThatThrownBy { profileService.getProfile("test-non-existing") }
             .isInstanceOf(RuntimeException::class.java)
-            .hasMessage("Could not find location for profile test-non-existing! Profiles: {program=program.yml, multiple-inputs=multiple_inputs.yml, dpb_size_failed=dpb_size_failed.yml, program-x265=program-x265.yml, archive=archive.yml, test-invalid=test_profile_invalid.yml, test-invalid-location=test_profile_invalid_location.yml, none=null}")
+            .hasMessageStartingWith("Could not find location for profile test-non-existing! Profiles: {")
     }
 
     @Test
@@ -63,6 +63,6 @@ class ProfileServiceTest {
     fun `profile value empty throw errrors`() {
         assertThatThrownBy { profileService.getProfile("none") }
             .isInstanceOf(RuntimeException::class.java)
-            .hasMessage("Could not find location for profile none! Profiles: {program=program.yml, multiple-inputs=multiple_inputs.yml, dpb_size_failed=dpb_size_failed.yml, program-x265=program-x265.yml, archive=archive.yml, test-invalid=test_profile_invalid.yml, test-invalid-location=test_profile_invalid_location.yml, none=null}")
+            .hasMessageStartingWith("Could not find location for profile none! Profiles: {")
     }
 }

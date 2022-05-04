@@ -27,7 +27,7 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
 
     private val log = KotlinLogging.logger { }
 
-    private val logLevelRegex = Regex(".*\\[(?<level>debug|info|warning|error)].*")
+    private val logLevelRegex = Regex(".*\\[(?<level>debug|info|warning|error|fatal)].*")
 
     fun getLoglevel(line: String) = logLevelRegex.matchEntire(line)?.groups?.get("level")?.value
     val progressRegex =
@@ -54,12 +54,8 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
             }
             progressChannel.close()
             outputs.flatMap { out ->
-                if (out.fileFilter != null) {
-                    File(outputFolder).listFiles(out.fileFilter)
-                        .map { mediaAnalyzer.analyze(it.path) }
-                } else {
-                    listOf(mediaAnalyzer.analyze(File(outputFolder).resolve(out.output).toString()))
-                }
+                out.postProcessor.process(File(outputFolder))
+                    .map { mediaAnalyzer.analyze(it.toString()) }
             }
         } catch (e: CancellationException) {
             log.info { "Job was cancelled" }
@@ -109,7 +105,7 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
                                 )
                             }
                         }
-                        "error" -> {
+                        "error", "fatal" -> {
                             log.warn { line }
                             errorLines.add(line)
                         }

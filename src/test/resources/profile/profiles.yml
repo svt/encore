@@ -3,6 +3,7 @@ multiple-inputs: multiple_inputs.yml
 dpb_size_failed: dpb_size_failed.yml
 program-x265: program-x265.yml
 archive: archive.yml
+audio-streams: audio-streams.yml
 test-invalid: test_profile_invalid.yml
 test-invalid-location: test_profile_invalid_location.yml
 none:

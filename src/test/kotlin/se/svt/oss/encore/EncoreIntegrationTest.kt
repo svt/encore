@@ -4,7 +4,6 @@
 
 package se.svt.oss.encore
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.awaitility.Awaitility.await
 import org.awaitility.Durations
 import org.junit.jupiter.api.Test
@@ -13,10 +12,10 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.model.Status
-import se.svt.oss.encore.model.callback.JobProgress
 import se.svt.oss.encore.model.input.AudioInput
 import se.svt.oss.encore.model.input.VideoInput
 import se.svt.oss.encore.model.queue.QueueItem
+import se.svt.oss.mediaanalyzer.file.ImageFile
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.VideoFile
 import java.io.File
@@ -36,6 +35,36 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
                     expectedFile(outputDir, testFileSurround, "SURROUND.mp4")
                 )
         )
+    }
+
+    @Test
+    fun multipleAudioStreamsOutput(@TempDir outputDir: File) {
+        val baseName = "multiple_audio"
+        val job = job(outputDir).copy(
+            baseName = baseName,
+            profile = "audio-streams",
+        )
+        val expectedOutPut = listOf(outputDir.resolve("$baseName.mp4").absolutePath)
+        val createdJob = successfulTest(job, expectedOutPut)
+
+        assertThat(createdJob.output)
+            .hasSize(1)
+        assertThat(createdJob.output[0])
+            .isInstanceOf(VideoFile::class.java)
+        val audioStreams = (createdJob.output[0] as VideoFile).audioStreams
+        assertThat(audioStreams).hasSize(2)
+        assertThat(audioStreams[0])
+            .hasFormat("AC-3")
+            .hasCodec("ac3")
+            .hasDurationCloseTo(10.0, 0.1)
+            .hasChannels(6)
+            .hasSamplingRate(48000)
+        assertThat(audioStreams[1])
+            .hasFormat("AAC")
+            .hasCodec("aac")
+            .hasDurationCloseTo(10.0, 0.1)
+            .hasChannels(2)
+            .hasSamplingRate(48000)
     }
 
     @Test
@@ -88,6 +117,9 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
             .allSatisfy {
                 assertThat(it).hasDurationCloseTo(6.0, 0.1)
             }
+        assertThat(createdJob.output.first { it.file.endsWith("6x10_160x90_thumbnail_map.jpg") } as? ImageFile)
+            .hasWidth(6 * 160)
+            .hasHeight(10 * 90)
     }
 
     @Test
@@ -125,10 +157,12 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
 
     @Test
     fun jobIsCancelled(@TempDir outputDir: File) {
-        var createdJob = encoreClient.createJob(job(outputDir))
-        await().pollInterval(200, TimeUnit.MILLISECONDS)
-            .atMost(Durations.ONE_MINUTE)
-            .until { mockServer.requestCount > 0 }
+        var createdJob = createAndAwaitJob(
+            job(outputDir),
+            pollInterval = Duration.ofMillis(200)
+        ) {
+            it.status == Status.IN_PROGRESS
+        }
 
         encoreClient.cancel(createdJob.id)
 
@@ -140,22 +174,6 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
 
         assertThat(createdJob)
             .hasStatus(Status.CANCELLED)
-
-        val requestCount = mockServer.requestCount
-        assertThat(requestCount).isGreaterThan(0)
-
-        val jobList = mutableListOf<JobProgress>()
-        repeat(requestCount) {
-            val request = mockServer.takeRequest()
-            val json = request.body.readUtf8()
-            val progress = objectMapper.readValue<JobProgress>(json)
-            jobList.add(progress)
-            assertThat(progress).hasJobId(createdJob.id).hasExternalId(createdJob.externalId)
-            assertThat(progress.progress).isGreaterThan(0)
-        }
-        assertThat(jobList.subList(0, jobList.size - 1)).allMatch { it.status == Status.IN_PROGRESS }
-        assertThat(jobList.last().progress).isLessThan(100)
-        assertThat(jobList.last()).hasStatus(Status.CANCELLED)
     }
 
     @Test
