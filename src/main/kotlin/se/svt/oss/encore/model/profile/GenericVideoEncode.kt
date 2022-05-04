@@ -13,6 +13,7 @@ data class GenericVideoEncode(
     override val params: LinkedHashMap<String, String>,
     override val filters: List<String> = emptyList(),
     override val audioEncode: AudioEncode?,
+    override val audioEncodes: List<AudioEncode> = emptyList(),
     override val suffix: String,
     override val format: String,
     override val codec: String,

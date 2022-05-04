@@ -30,7 +30,7 @@ class ThumbnailEncodeTest {
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
             .hasSeekable(false)
-            .hasAudio(null)
+            .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-frames:v", "2", "-vsync", "vfr", "-q:v", "5"),
@@ -52,7 +52,7 @@ class ThumbnailEncodeTest {
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
             .hasSeekable(false)
-            .hasAudio(null)
+            .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-frames:v", "1", "-vsync", "vfr", "-q:v", "5"),
@@ -124,7 +124,7 @@ class ThumbnailEncodeTest {
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
             .hasSeekable(false)
-            .hasAudio(null)
+            .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-frames:v", "2", "-vsync", "vfr", "-q:v", "5"),

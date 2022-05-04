@@ -31,7 +31,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
 
     @BeforeEach
     internal fun setUp() {
-        every { audioEncode.getOutput(any(), audioMixPresets)?.audio } returns audioStreamEncode
+        every { audioEncode.getOutput(any(), audioMixPresets)?.audioStreams } returns listOf(audioStreamEncode)
     }
 
     @Test
@@ -46,7 +46,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         )
         val output = encode.getOutput(defaultEncoreJob(), audioMixPresets)
         assertThat(output)
-            .hasAudio(audioStreamEncode)
+            .hasOnlyAudioStreams(audioStreamEncode)
             .hasSeekable(true)
         val videoStreamEncode = output!!.video
         assertThat(videoStreamEncode)

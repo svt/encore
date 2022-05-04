@@ -14,7 +14,9 @@ import se.svt.oss.encore.model.input.inputParams
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
 import se.svt.oss.encore.model.mediafile.channelCount
+import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
+import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.encore.model.profile.Profile
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.VideoFile
@@ -64,44 +66,50 @@ class CommandBuilder(
     }
 
     private fun audioFilters(outputs: List<Output>): List<String> {
-        val audioSplits = encoreJob.inputs.mapIndexedNotNull { index, input ->
+        val audioSplits = encoreJob.inputs.mapIndexedNotNull { inputIndex, input ->
             if (input !is AudioIn) return@mapIndexedNotNull null
-            val analyzed = input.analyzedAudio
-            val splits = outputs.filter { it.audio?.inputLabels?.contains(input.audioLabel) == true }
-                .map { output ->
-                    output.audio?.filter?.let {
-                        MapName.AUDIO.preFilterLabel(input.audioLabel, output.id)
+            val splits = outputs.flatMap { output ->
+                output.audioStreams.withIndex()
+                    .filter { (_, audioStreamEncode) -> audioStreamEncode.usesInput(input) }
+                    .map { (audioStreamIndex, audioStreamEncode) ->
+                        audioStreamEncode.filter?.let {
+                            MapName.AUDIO.preFilterLabel(input.audioLabel, "${output.id}-$audioStreamIndex")
+                        } ?: MapName.AUDIO.mapLabel("${output.id}-$audioStreamIndex")
                     }
-                        ?: MapName.AUDIO.mapLabel(output.id)
-                }
+            }
             if (splits.isEmpty()) {
                 log.debug { "No audio outputs for audio input ${input.audioLabel}" }
                 return@mapIndexedNotNull null
             }
             val split = "asplit=${splits.size}${splits.joinToString("")}"
+            val analyzed = input.analyzedAudio
             val globalAudioFilters = globalAudioFilters(input, analyzed)
-            val selector = input.audioStream?.let { "[$index:a:$it]" }
-                ?: if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) "[$index:a]" else "[$index:a:0]"
+            val selector = input.audioStream?.let { "[$inputIndex:a:$it]" }
+                ?: if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) "[$inputIndex:a]" else "[$inputIndex:a:0]"
             val filters = (globalAudioFilters + split).joinToString(",")
             "$selector$filters"
         }
-        val streamFilters = outputs.filter { it.audio?.filter != null }
-            .mapNotNull { output ->
-                output.audio?.let { audioStreamEncode ->
-                    val prelabels = audioStreamEncode.inputLabels.map {
-                        MapName.AUDIO.preFilterLabel(it, output.id)
-                    }.filterNot { audioStreamEncode.filter?.contains(it) == true }
-                    "${prelabels.joinToString("")}${audioStreamEncode.filter ?: ""}${MapName.AUDIO.mapLabel(output.id)}"
+        val streamFilters = outputs.flatMap { output ->
+            output.audioStreams.withIndex()
+                .filter { (_, audioStreamEncode) -> audioStreamEncode.filter != null }
+                .map { (index, audioStreamEncode) ->
+                    val filter = audioStreamEncode.filter!!
+                    val prelabels = audioStreamEncode.inputLabels
+                        .map { MapName.AUDIO.preFilterLabel(it, "${output.id}-$index") }
+                        .filterNot { filter.contains(it) }
+                    "${prelabels.joinToString("")}${filter}${MapName.AUDIO.mapLabel("${output.id}-$index")}"
                 }
-            }
+        }
         return audioSplits + streamFilters
     }
+
+    private fun AudioStreamEncode.usesInput(input: AudioIn) =
+        this.inputLabels.contains(input.audioLabel)
 
     private fun videoFilters(inputs: List<Input>, outputs: List<Output>): List<String> {
         val videoSplits = inputs.mapIndexedNotNull { index, input ->
             if (input !is VideoIn) return@mapIndexedNotNull null
-            val analyzed = input.analyzedVideo
-            val splits = outputs.filter { it.video?.inputLabels?.contains(input.videoLabel) == true }
+            val splits = outputs.filter { it.video.usesInput(input) }
                 .map { output ->
                     output.video?.filter?.let {
                         MapName.VIDEO.preFilterLabel(input.videoLabel, output.id)
@@ -113,6 +121,7 @@ class CommandBuilder(
                 return@mapIndexedNotNull null
             }
             val split = "split=${splits.size}${splits.joinToString("")}"
+            val analyzed = input.analyzedVideo
             val globalVideoFilters = globalVideoFilters(input, analyzed)
             val filters = (globalVideoFilters + split).joinToString(",")
             "[$index:v${input.videoStream?.let { ":$it" } ?: ""}]$filters"
@@ -128,6 +137,9 @@ class CommandBuilder(
             }
         return videoSplits + streamFilters
     }
+
+    private fun VideoStreamEncode?.usesInput(input: VideoIn) =
+        this?.inputLabels?.contains(input.videoLabel) == true
 
     private fun filterParam(filters: List<String>): List<String> {
         return listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
@@ -151,7 +163,7 @@ class CommandBuilder(
         val videoStream = videoFile.highestBitrateVideoStream
         if (videoStream.isInterlaced) {
             log.debug { "Video input ${input.videoLabel} is interlaced. Applying deinterlace filter." }
-            filters.add("yadif")
+            filters.add(profile.deinterlaceFilter)
         }
         val isAnamorphic = videoStream.sampleAspectRatio?.toFractionOrNull()
             ?.let { it != Fraction(1, 1) } == true
@@ -200,9 +212,10 @@ class CommandBuilder(
         val mapV: List<String> =
             output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams(output) }
                 ?: emptyList()
-        val mapA: List<String> =
-            output.audio?.let { listOf("-map", MapName.AUDIO.mapLabel(output.id)) + seekParams(output) }
-                ?: emptyList()
+
+        val mapA: List<String> = output.audioStreams.flatMapIndexed { index, _ ->
+            listOf("-map", MapName.AUDIO.mapLabel("${output.id}-$index")) + seekParams(output)
+        }
 
         val maps = mapV + mapA
         if (maps.isEmpty()) {
@@ -210,7 +223,12 @@ class CommandBuilder(
         }
 
         val videoParams = output.video?.params ?: listOf("-vn")
-        val audioParams = output.audio?.params ?: listOf("-an")
+        val audioParams = output.audioStreams.flatMapIndexed { index, audioStreamEncode ->
+            audioStreamEncode.params.map {
+                it.replace("{stream_index}", "$index")
+            }
+        }.ifEmpty { listOf("-an") }
+
         val metaDataParams = listOf("-metadata", "comment=Transcoded using Encore")
 
         return maps +
