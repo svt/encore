@@ -26,11 +26,4 @@ data class X265Encode(
         get() = "x265-params"
     override val codec: String
         get() = "libx265"
-
-    override fun passParams(pass: Int): Map<String, String> {
-        val modifiedCodecParams = (codecParams + mapOf("pass" to pass.toString(), "stats" to "log$suffix"))
-            .map { "${it.key}=${it.value}" }
-            .joinToString(":")
-        return mapOf(codecParamName to modifiedCodecParams)
-    }
 }
