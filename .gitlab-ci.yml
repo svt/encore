@@ -1,3 +1,4 @@
 include:
   - project: 'videocore/gitlab-templates'
     file: 'encore.yml'
+    ref: 'ffmpeg51'
