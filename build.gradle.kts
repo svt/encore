@@ -71,7 +71,7 @@ dependencyManagement {
     }
 }
 
-val redissonVersion = "3.17.0"
+val redissonVersion = "3.17.6"
 
 dependencies {
     implementation("se.svt.oss:media-analyzer:1.0.3")
