@@ -180,7 +180,7 @@ class CommandBuilder(
         }
 
         input.cropTo?.toFraction()?.let {
-            filters.add("crop=ih*${it.stringValue()}:ih")
+            filters.add("crop=min(iw\\,ih*${it.stringValue()}):min(ih\\,iw/(${it.stringValue()}))")
         }
         input.padTo?.toFraction()?.let {
             filters.add("pad=aspect=${it.stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2")

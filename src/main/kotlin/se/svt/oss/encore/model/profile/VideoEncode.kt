@@ -59,6 +59,7 @@ interface VideoEncode : OutputProducer {
         val videoFilters = mutableListOf<String>()
         if (width != null && height != null) {
             videoFilters.add("scale=$width:$height:force_original_aspect_ratio=decrease:force_divisible_by=2")
+            videoFilters.add("setsar=1/1")
         } else if (width != null || height != null) {
             videoFilters.add("scale=${width ?: -2}:${height ?: -2}")
         }
