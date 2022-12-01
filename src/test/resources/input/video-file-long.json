@@ -1,0 +1,94 @@
+{
+  "type": "VideoFile",
+  "file": "/input/test.mp4",
+  "fileSize": 2660527,
+  "format": "MPEG-4",
+  "overallBitrate": 2123749,
+  "duration": 2700,
+  "videoStreams": [
+    {
+      "format": "AVC",
+      "codec": "h264",
+      "profile": "High 4:2:2",
+      "level": "4",
+      "width": 1920,
+      "height": 1080,
+      "sampleAspectRatio": "1:1",
+      "displayAspectRatio": "16:9",
+      "pixelFormat": "yuv422p",
+      "frameRate": "25/1",
+      "duration": 2700.0,
+      "bitrate": 1947964,
+      "bitDepth": 8,
+      "numFrames": 90000,
+      "isInterlaced": false,
+      "transferCharacteristics": null
+    }
+  ],
+  "audioStreams": [
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 69591
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 69575
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    },
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 2700.0,
+      "channels": 1,
+      "samplingRate": 48000,
+      "bitrate": 1527
+    }
+  ]
+}

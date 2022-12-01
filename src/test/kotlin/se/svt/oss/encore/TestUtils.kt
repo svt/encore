@@ -31,6 +31,11 @@ val defaultVideoFile by lazy {
         .readValue<VideoFile>(ClassPathResource("/input/video-file.json").file.readText())
 }
 
+val longVideoFile by lazy {
+    ObjectMapper().findAndRegisterModules()
+        .readValue<VideoFile>(ClassPathResource("/input/video-file-long.json").file.readText())
+}
+
 val multipleAudioFile by lazy {
     ObjectMapper().findAndRegisterModules()
         .readValue<AudioFile>(ClassPathResource("/input/multiple-audio-file.json").file.readText())
