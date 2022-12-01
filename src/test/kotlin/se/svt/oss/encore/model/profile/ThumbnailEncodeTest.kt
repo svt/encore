@@ -9,6 +9,7 @@ import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.defaultVideoFile
+import se.svt.oss.encore.longVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.output.VideoStreamEncode
@@ -129,6 +130,37 @@ class ThumbnailEncodeTest {
                 VideoStreamEncode(
                     params = listOf("-frames:v", "2", "-vsync", "vfr", "-q:v", "5"),
                     filter = "select=eq(n\\,35)+eq(n\\,75),scale=1920:1080",
+                    twoPass = false,
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
+                )
+            )
+    }
+
+    @Test
+    fun `inputSeekTo and duration set`() {
+        val output = encode.getOutput(
+            job = defaultEncoreJob().copy(
+                seekTo = 10.0,
+                thumbnailTime = 1351.0,
+                duration = 600.0,
+                inputs = listOf(
+                    AudioVideoInput(
+                        uri = "/input/test.mp4",
+                        analyzed = longVideoFile,
+                        seekTo = 1190.0
+                    )
+                )
+            ),
+            audioMixPresets = emptyMap()
+        )
+        assertThat(output)
+            .hasOutput("test_thumb%02d.jpg")
+            .hasSeekable(false)
+            .hasNoAudioStreams()
+            .hasVideo(
+                VideoStreamEncode(
+                    params = listOf("-frames:v", "1", "-vsync", "vfr", "-q:v", "5"),
+                    filter = "select=eq(n\\,4025),scale=1920:1080",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )

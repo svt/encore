@@ -12,6 +12,7 @@ import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.model.input.AudioInput
+import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.input.DEFAULT_AUDIO_LABEL
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.VideoInput
@@ -58,6 +59,29 @@ internal class CommandBuilderTest {
 
         assertThat(firstPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -an first pass -f mp4 /dev/null")
         assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
+    }
+
+    @Test
+    fun `two pass encode input seek`() {
+        val inputs = listOf(
+            AudioVideoInput(
+                uri = "/input/test.mp4",
+                analyzed = defaultVideoFile,
+                seekTo = 47.11
+            )
+        )
+
+        encoreJob = encoreJob.copy(inputs = inputs)
+        commandBuilder = CommandBuilder(encoreJob, profile, encoreJob.outputFolder)
+
+        val buildCommands = commandBuilder.buildCommands(listOf(output(true)))
+        assertThat(buildCommands).hasSize(2)
+
+        val firstPass = buildCommands[0].joinToString(" ")
+        val secondPass = buildCommands[1].joinToString(" ")
+
+        assertThat(firstPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -ss 47.11 -i ${videoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -an first pass -f mp4 /dev/null")
+        assertThat(secondPass).isEqualTo("ffmpeg -hide_banner -loglevel +level -y -ss 47.11 -i ${videoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]amerge=inputs=8,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
     }
 
     @Test

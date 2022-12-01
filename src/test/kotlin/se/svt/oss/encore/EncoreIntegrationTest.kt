@@ -80,16 +80,19 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
                 VideoInput(
                     uri = testFileMultipleVideo.file.absolutePath,
                     videoStream = 1,
-                    probeInterlaced = false
+                    probeInterlaced = false,
+                    seekTo = 1.0
                 ),
                 AudioInput(
                     uri = testFileMultipleAudio.file.absolutePath,
-                    audioStream = 1
+                    audioStream = 1,
+                    seekTo = 1.0
                 ),
                 AudioInput(
                     uri = testFileSurround.file.absolutePath,
                     useFirstAudioStreams = 6,
-                    audioLabel = "alt"
+                    audioLabel = "alt",
+                    seekTo = 1.0
                 ),
             )
         )

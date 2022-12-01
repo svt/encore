@@ -8,7 +8,7 @@ import mu.KotlinLogging
 import se.svt.oss.encore.config.AudioMixPreset
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
-import se.svt.oss.encore.model.input.analyzedVideo
+import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
@@ -28,21 +28,25 @@ data class ThumbnailEncode(
     private val log = KotlinLogging.logger { }
 
     override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
-        val videoStream = job.inputs.analyzedVideo(inputLabel)?.highestBitrateVideoStream
+        val videoInput = job.inputs.videoInput(inputLabel)
+        val inputSeekTo = videoInput?.seekTo
+        val videoStream = videoInput?.analyzedVideo?.highestBitrateVideoStream
             ?: return logOrThrow("Can not produce thumbnail $suffix. No video input with label $inputLabel!")
 
         val frameRate = videoStream.frameRate.toFractionOrNull()?.toDouble()
-            ?: if (job.duration != null || job.seekTo != null || job.thumbnailTime != null) {
+            ?: if (job.duration != null || job.seekTo != null || job.thumbnailTime != null || inputSeekTo != null) {
                 return logOrThrow("Can not produce thumbnail $suffix! No framerate detected in video input $inputLabel.")
             } else 0.0
 
-        val numFrames = job.duration?.let { round(it * frameRate).toInt() } ?: videoStream.numFrames
+        val numFrames = job.duration?.let { round(it * frameRate).toInt() } ?: ((videoStream.numFrames) - (inputSeekTo?.let { round(it * frameRate).toInt() } ?: 0))
         val skipFrames = job.seekTo?.let { round(it * frameRate).toInt() } ?: 0
         val frames = job.thumbnailTime?.let {
-            listOf(round(it * frameRate).toInt())
+            listOf(round((it - (inputSeekTo ?: 0.0)) * frameRate).toInt())
         } ?: percentages.map {
             (it * numFrames) / 100 + skipFrames
         }
+
+        log.debug { "Thumbnail encode inputs: thumbnailTime= ${job.thumbnailTime}, framerate=$frameRate, duration= ${job.duration}, numFrames = $numFrames, skipFrames = $skipFrames. Resulting frames = $frames" }
 
         val filter = frames.joinToString(
             separator = "+",

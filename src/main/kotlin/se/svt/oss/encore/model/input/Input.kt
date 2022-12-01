@@ -47,6 +47,12 @@ sealed interface Input {
         nullable = true
     )
     var analyzed: MediaFile?
+
+    @get:Schema(
+        description = "Seek to given time in seconds before decoding input. Faster than output seek (seekTo in encoreJob) but accuracy may depend on type of input. For some inputs a combination of the two might be preferred",
+        nullable = true
+    )
+    val seekTo: Double?
 }
 
 sealed interface AudioIn : Input {
@@ -134,7 +140,8 @@ data class AudioInput(
     override val useFirstAudioStreams: Int? = null,
     override val audioFilters: List<String> = emptyList(),
     override var analyzed: MediaFile? = null,
-    override val audioStream: Int? = null
+    override val audioStream: Int? = null,
+    override val seekTo: Double? = null
 ) : AudioIn {
     override val analyzedAudio: MediaContainer
         @JsonIgnore
@@ -158,7 +165,8 @@ data class VideoInput(
     override val videoFilters: List<String> = emptyList(),
     override var analyzed: MediaFile? = null,
     override val videoStream: Int? = null,
-    override val probeInterlaced: Boolean = true
+    override val probeInterlaced: Boolean = true,
+    override val seekTo: Double? = null
 ) : VideoIn {
     override val analyzedVideo: VideoFile
         @JsonIgnore
@@ -186,7 +194,8 @@ data class AudioVideoInput(
     override var analyzed: MediaFile? = null,
     override val videoStream: Int? = null,
     override val audioStream: Int? = null,
-    override val probeInterlaced: Boolean = true
+    override val probeInterlaced: Boolean = true,
+    override val seekTo: Double? = null
 ) : VideoIn, AudioIn {
     override val analyzedVideo: VideoFile
         @JsonIgnore
@@ -208,6 +217,7 @@ fun List<Input>.inputParams(readDuration: Double?): List<String> =
     flatMap { input ->
         input.params.toParams() +
             (readDuration?.let { listOf("-t", "$it") } ?: emptyList()) +
+            (input.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()) +
             listOf("-i", input.uri)
     }
 
@@ -216,7 +226,7 @@ fun List<Input>.maxDuration(): Double? = maxOfOrNull {
         is AudioVideoInput -> it.duration
         is AudioInput -> it.duration
         is VideoInput -> it.duration
-    }
+    } - (it.seekTo ?: 0.0)
 }
 
 fun List<Input>.analyzedAudio(label: String): MediaContainer? {
@@ -229,12 +239,13 @@ fun List<Input>.analyzedAudio(label: String): MediaContainer? {
         ?.analyzedAudio
 }
 
-fun List<Input>.analyzedVideo(label: String): VideoFile? {
+fun List<Input>.videoInput(label: String): VideoIn? {
     val videoInputs = filterIsInstance<VideoIn>()
     require(videoInputs.distinctBy { it.videoLabel }.size == videoInputs.size) {
         "Inputs contains duplicate video labels!"
     }
     return videoInputs
         .find { it.videoLabel == label }
-        ?.analyzedVideo
 }
+
+fun List<Input>.analyzedVideo(label: String): VideoFile? = videoInput(label)?.analyzedVideo

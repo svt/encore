@@ -14,7 +14,7 @@ plugins {
 
     //openapi generation
     id("com.github.johnrengelman.processes") version "0.5.0"
-    id("org.springdoc.openapi-gradle-plugin") version "1.3.3"
+    id("org.springdoc.openapi-gradle-plugin") version "1.5.0"
 }
 
 
@@ -41,7 +41,9 @@ tasks.test {
 }
 
 openApi {
-    forkProperties.set("-Dspring.profiles.active=local")
+    customBootRun {
+        args.set(listOf("--spring.profiles.active=local"))
+    }
 }
 
 tasks.withType<KotlinCompile> {
@@ -121,7 +123,7 @@ dependencies {
 
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion = "7.4"
+    gradleVersion = "7.5.1"
 }
 
 val integrationTestsPreReq = setOf("mediainfo", "ffmpeg", "ffprobe").map {

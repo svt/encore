@@ -10,6 +10,7 @@ import se.svt.oss.encore.config.AudioMixPreset
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.analyzedVideo
+import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.stringValue
@@ -31,17 +32,23 @@ data class ThumbnailMapEncode(
     private val log = KotlinLogging.logger { }
 
     override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
+        val videoInput = job.inputs.videoInput(inputLabel)
+        val inputSeekTo = videoInput?.seekTo
+
         val videoStream = job.inputs.analyzedVideo(inputLabel)?.highestBitrateVideoStream
             ?: return logOrThrow("No input with label $inputLabel!")
+
         var numFrames = videoStream.numFrames
         val duration = job.duration
-        if (job.duration != null || job.seekTo != null) {
+
+        if (job.duration != null || job.seekTo != null || inputSeekTo != null) {
             val frameRate = videoStream.frameRate.toFractionOrNull()?.toDouble()
                 ?: return logOrThrow("Can not generate thumbnail map $suffix! No framerate detected in video input $inputLabel.")
             if (duration != null) {
                 numFrames = round(duration * frameRate).toInt()
             } else {
                 job.seekTo?.let { numFrames -= round(it * frameRate).toInt() }
+                inputSeekTo?.let { numFrames -= round(it * frameRate).toInt() }
             }
         }
 
