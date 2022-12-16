@@ -60,7 +60,6 @@ class EncoreJobHandlerTest {
 
     @Test
     fun `enqueue fails`() {
-
         every { queueService.enqueue(job) } throws Exception("error")
 
         encoreJobHandler.onAfterCreate(job)

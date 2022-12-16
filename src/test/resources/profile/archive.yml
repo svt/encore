@@ -11,5 +11,5 @@ encodes:
     format: mxf
     twoPass: false
     audioEncode:
-      type: AudioEncode
+      type: SimpleAudioEncode
       codec: pcm_s24le

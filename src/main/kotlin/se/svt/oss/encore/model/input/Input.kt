@@ -9,12 +9,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.swagger.v3.oas.annotations.media.Schema
 import se.svt.oss.encore.model.mediafile.toParams
+import se.svt.oss.encore.model.profile.ChannelLayout
 import se.svt.oss.mediaanalyzer.file.FractionString
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
 import javax.validation.constraints.Pattern
-import javax.validation.constraints.Positive
 import javax.validation.constraints.PositiveOrZero
 
 const val TYPE_AUDIO_VIDEO = "AudioVideo"
@@ -38,7 +38,11 @@ sealed interface Input {
     @get:Schema(description = "Input params required to properly decode input", example = """{ "ac": "2" }""")
     val params: LinkedHashMap<String, String>
 
-    @get:Schema(description = "Type of input", allowableValues = [TYPE_AUDIO_VIDEO, TYPE_VIDEO, TYPE_AUDIO], required = true)
+    @get:Schema(
+        description = "Type of input",
+        allowableValues = [TYPE_AUDIO_VIDEO, TYPE_VIDEO, TYPE_AUDIO],
+        required = true
+    )
     val type: String
 
     @get:Schema(
@@ -59,20 +63,22 @@ sealed interface AudioIn : Input {
 
     @get:Schema(
         description = "Label of the input to be matched with a profile output",
-        example = "dub", defaultValue = DEFAULT_AUDIO_LABEL
+        example = "dub",
+        defaultValue = DEFAULT_AUDIO_LABEL
     )
     val audioLabel: String
 
     @get:Schema(
-        description = "Use only the number audio input streams up to the given value",
-        example = "2", nullable = true
+        description = "Hint for channel layout when input has mono audio streams. If input has less channels than specified channel layout a default channel will be used.",
+        example = "5.1",
+        nullable = true
     )
-    @get:Positive
-    val useFirstAudioStreams: Int?
+    val channelLayout: ChannelLayout?
 
     @get:Schema(
         description = "List of FFmpeg filters to apply to all audio outputs",
-        example = "to-do", defaultValue = "[]"
+        example = "to-do",
+        defaultValue = "[]"
     )
     val audioFilters: List<String>
 
@@ -80,7 +86,8 @@ sealed interface AudioIn : Input {
 
     @get:Schema(
         description = "The index of the audio stream to be used as input",
-        example = "1", nullable = true
+        example = "1",
+        nullable = true
     )
     @get:PositiveOrZero
     val audioStream: Int?
@@ -89,28 +96,32 @@ sealed interface AudioIn : Input {
 sealed interface VideoIn : Input {
     @get:Schema(
         description = "Label of the input to be matched with a profile output",
-        example = "sign", defaultValue = DEFAULT_VIDEO_LABEL
+        example = "sign",
+        defaultValue = DEFAULT_VIDEO_LABEL
     )
     val videoLabel: String
 
     @get:Schema(
         description = "The Display Aspect Ratio to use if the input is anamorphic." +
             " Overrides DAR found from input metadata (for corrupt video metadata)",
-        example = "16:9", nullable = true
+        example = "16:9",
+        nullable = true
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val dar: FractionString?
 
     @get:Schema(
         description = "Crop input video to given aspect ratio",
-        example = "1:1", nullable = true
+        example = "1:1",
+        nullable = true
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val cropTo: FractionString?
 
     @get:Schema(
         description = "Pad input video to given aspect ratio",
-        example = "16:9", nullable = true
+        example = "16:9",
+        nullable = true
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val padTo: FractionString?
@@ -126,7 +137,8 @@ sealed interface VideoIn : Input {
 
     @get:Schema(
         description = "The index of the video stream to be used as input",
-        example = "1", nullable = true
+        example = "1",
+        nullable = true
     )
     @get:PositiveOrZero
     val videoStream: Int?
@@ -137,10 +149,10 @@ data class AudioInput(
     override val uri: String,
     override val audioLabel: String = DEFAULT_AUDIO_LABEL,
     override val params: LinkedHashMap<String, String> = linkedMapOf(),
-    override val useFirstAudioStreams: Int? = null,
     override val audioFilters: List<String> = emptyList(),
     override var analyzed: MediaFile? = null,
     override val audioStream: Int? = null,
+    override val channelLayout: ChannelLayout? = null,
     override val seekTo: Double? = null
 ) : AudioIn {
     override val analyzedAudio: MediaContainer
@@ -186,7 +198,6 @@ data class AudioVideoInput(
     override val audioLabel: String = DEFAULT_AUDIO_LABEL,
     override val params: LinkedHashMap<String, String> = linkedMapOf(),
     override val dar: FractionString? = null,
-    override val useFirstAudioStreams: Int? = null,
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,
     override val videoFilters: List<String> = emptyList(),
@@ -195,6 +206,7 @@ data class AudioVideoInput(
     override val videoStream: Int? = null,
     override val audioStream: Int? = null,
     override val probeInterlaced: Boolean = true,
+    override val channelLayout: ChannelLayout? = null,
     override val seekTo: Double? = null
 ) : VideoIn, AudioIn {
     override val analyzedVideo: VideoFile
@@ -229,15 +241,16 @@ fun List<Input>.maxDuration(): Double? = maxOfOrNull {
     } - (it.seekTo ?: 0.0)
 }
 
-fun List<Input>.analyzedAudio(label: String): MediaContainer? {
+fun List<Input>.audioInput(label: String): AudioIn? {
     val audioInputs = filterIsInstance<AudioIn>()
     require(audioInputs.distinctBy { it.audioLabel }.size == audioInputs.size) {
         "Inputs contains duplicate audio labels!"
     }
     return audioInputs
         .find { it.audioLabel == label }
-        ?.analyzedAudio
 }
+
+fun List<Input>.analyzedAudio(label: String): MediaContainer? = audioInput(label)?.analyzedAudio
 
 fun List<Input>.videoInput(label: String): VideoIn? {
     val videoInputs = filterIsInstance<VideoIn>()

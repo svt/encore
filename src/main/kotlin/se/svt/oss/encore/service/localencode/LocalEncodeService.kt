@@ -39,7 +39,6 @@ class LocalEncodeService(
         output: List<MediaFile>,
         encoreJob: EncoreJob
     ): List<MediaFile> {
-
         if (encoreProperties.localTemporaryEncode) {
             val destination = File(encoreJob.outputFolder)
             log.debug { "Moving files to correct outputFolder ${encoreJob.outputFolder}, from local temp $outputFolder" }

@@ -12,13 +12,13 @@ import java.time.Duration
 @ConstructorBinding
 data class EncoreProperties(
     val localTemporaryEncode: Boolean = false,
-    val audioMixPresets: Map<String, AudioMixPreset> = mapOf("default" to AudioMixPreset()),
     val concurrency: Int = 2,
     val pollInitialDelay: Duration = Duration.ofSeconds(10),
     val pollDelay: Duration = Duration.ofSeconds(5),
     val redisKeyPrefix: String = "encore",
     val security: Security = Security(),
-    val openApi: OpenApi = OpenApi()
+    val openApi: OpenApi = OpenApi(),
+    val encoding: EncodingProperties = EncodingProperties()
 ) {
     data class Security(
         val enabled: Boolean = false,

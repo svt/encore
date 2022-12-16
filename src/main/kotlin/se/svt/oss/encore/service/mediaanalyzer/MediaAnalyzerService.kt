@@ -24,7 +24,8 @@ class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
     fun analyzeInput(input: Input) {
         log.debug { "Analyzing input $input" }
         val probeInterlaced = input is VideoIn && input.probeInterlaced
-        val useFirstAudioStreams = (input as? AudioIn)?.useFirstAudioStreams
+        val useFirstAudioStreams = (input as? AudioIn)?.channelLayout?.channels?.size
+
         input.analyzed = mediaAnalyzer.analyze(input.uri, probeInterlaced).let {
             val selectedVideoStream = (input as? VideoIn)?.videoStream
             val selectedAudioStream = (input as? AudioIn)?.audioStream

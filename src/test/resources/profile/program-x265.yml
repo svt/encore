@@ -468,7 +468,7 @@ encodes:
     codec: ac3
     bitrate: 448k
     suffix: _SURROUND
-    channels: 6
+    channelLayout: '5.1'
 
   - type: ThumbnailMapEncode
 

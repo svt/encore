@@ -3,14 +3,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     idea
     jacoco
-    id("org.springframework.boot") version "2.6.6"
-    id("se.ascp.gradle.gradle-versions-filter") version "0.1.10"
-    kotlin("jvm") version "1.6.20"
-    kotlin("plugin.spring") version "1.6.20"
+    id("org.springframework.boot") version "2.7.6"
+    id("se.ascp.gradle.gradle-versions-filter") version "0.1.16"
+    kotlin("jvm") version "1.7.21"
+    kotlin("plugin.spring") version "1.7.21"
     id("com.github.fhermansson.assertj-generator") version "1.1.4"
-    id("org.jmailen.kotlinter") version "3.9.0"
-    id("io.spring.dependency-management") version "1.0.11.RELEASE"
-    id("pl.allegro.tech.build.axion-release") version "1.13.3"
+    id("org.jmailen.kotlinter") version "3.12.0"
+    id("io.spring.dependency-management") version "1.1.0"
+    id("pl.allegro.tech.build.axion-release") version "1.14.2"
 
     //openapi generation
     id("com.github.johnrengelman.processes") version "0.5.0"
@@ -33,7 +33,15 @@ assertjGenerator {
 }
 
 kotlinter {
-    disabledRules = arrayOf("import-ordering")
+    disabledRules = arrayOf(
+        "import-ordering",
+        "trailing-comma-on-declaration-site",
+        "trailing-comma-on-call-site"
+    )
+}
+
+tasks.lintKotlinTest {
+    source = (source - fileTree("src/test/generated-java")).asFileTree
 }
 
 tasks.test {
@@ -69,14 +77,14 @@ configurations {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2021.0.1")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
     }
 }
 
-val redissonVersion = "3.18.0"
+val redissonVersion = "3.18.1"
 
 dependencies {
-    implementation("se.svt.oss:media-analyzer:1.0.3")
+    implementation("se.svt.oss:media-analyzer:2.0.1")
     implementation(kotlin("reflect"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -89,12 +97,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
 
     implementation("org.redisson:redisson-spring-boot-starter:$redissonVersion")
-    implementation("org.redisson:redisson-spring-data-26:$redissonVersion") // match boot version
-    implementation("io.github.microutils:kotlin-logging:2.1.21")
+    implementation("org.redisson:redisson-spring-data-27:$redissonVersion") // match boot version
+    implementation("io.github.microutils:kotlin-logging:3.0.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.6.4")
 
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation("io.github.openfeign:feign-okhttp")
@@ -102,19 +110,19 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-aop")
 
     //openapi generation
-    implementation("org.springdoc:springdoc-openapi-ui:1.5.10")
-    implementation("org.springdoc:springdoc-openapi-kotlin:1.5.10")
-    implementation("org.springdoc:springdoc-openapi-data-rest:1.5.10")
-    implementation("org.springdoc:springdoc-openapi-hateoas:1.5.10")
+    implementation("org.springdoc:springdoc-openapi-ui:1.6.12")
+    implementation("org.springdoc:springdoc-openapi-kotlin:1.6.12")
+    implementation("org.springdoc:springdoc-openapi-data-rest:1.6.12")
+    implementation("org.springdoc:springdoc-openapi-hateoas:1.6.12")
 
     testImplementation("se.svt.oss:junit5-redis-extension:3.0.0")
     testImplementation("se.svt.oss:random-port-initializer:1.0.5")
-    testImplementation("org.awaitility:awaitility:4.1.1")
+    testImplementation("org.awaitility:awaitility")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.assertj:assertj-core:3.20.2") // Can be bumped with future kotlin 1.7 release, https://github.com/assertj/assertj-core/issues/2357
-    testImplementation("io.mockk:mockk:1.12.3")
-    testImplementation("com.squareup.okhttp3:mockwebserver:3.14.9")//shall match with okhttp version used
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("io.mockk:mockk:1.13.2")
+    testImplementation("com.github.tomakehurst:wiremock-jre8:2.35.0")
     testImplementation("com.ninja-squad:springmockk:3.1.1")
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")

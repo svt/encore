@@ -7,6 +7,7 @@ package se.svt.oss.encore.model.profile
 import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
+import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
@@ -24,7 +25,7 @@ class ThumbnailMapEncodeTest {
 
     @Test
     fun `correct output`() {
-        val output = encode.getOutput(defaultEncoreJob(), emptyMap())
+        val output = encode.getOutput(defaultEncoreJob(), EncodingProperties())
         assertThat(output)
             .hasSeekable(false)
             .hasNoAudioStreams()
@@ -41,7 +42,7 @@ class ThumbnailMapEncodeTest {
 
     @Test
     fun `correct output seekTo and duration`() {
-        val output = ThumbnailMapEncode(cols = 6, rows = 10).getOutput(defaultEncoreJob().copy(seekTo = 1.0, duration = 5.0), emptyMap())
+        val output = ThumbnailMapEncode(cols = 6, rows = 10).getOutput(defaultEncoreJob().copy(seekTo = 1.0, duration = 5.0), EncodingProperties())
         assertThat(output)
             .hasSeekable(false)
             .hasNoAudioStreams()
@@ -75,7 +76,7 @@ class ThumbnailMapEncodeTest {
                     )
                 ),
             ),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output).isNull()
     }
@@ -100,7 +101,7 @@ class ThumbnailMapEncodeTest {
                         )
                     ),
                 ),
-                audioMixPresets = emptyMap()
+                encodingProperties = EncodingProperties()
             )
         }.hasMessageContaining("Video input main did not contain enough frames to generate thumbnail map")
     }

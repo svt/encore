@@ -39,6 +39,7 @@ data class AudioStreamEncode(
     override val params: List<String>,
     override val filter: String? = null,
     override val inputLabels: List<String>,
+    val preserveLayout: Boolean = false
 ) : StreamEncode {
     override val twoPass: Boolean
         get() = false

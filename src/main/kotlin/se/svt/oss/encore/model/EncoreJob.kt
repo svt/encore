@@ -28,41 +28,50 @@ import javax.validation.constraints.Positive
 data class EncoreJob(
 
     @Schema(
-        description = "The Encore Internal EncoreJob Identity", example = "fb2baa17-8972-451b-bb1e-1bc773283476",
-        accessMode = Schema.AccessMode.READ_ONLY, hidden = false, defaultValue = "A random UUID"
+        description = "The Encore Internal EncoreJob Identity",
+        example = "fb2baa17-8972-451b-bb1e-1bc773283476",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        hidden = false,
+        defaultValue = "A random UUID"
     )
-    @Id val id: UUID = UUID.randomUUID(),
+    @Id
+    val id: UUID = UUID.randomUUID(),
 
     @Schema(
-        description = "External id - for external backreference", example = "any-string",
+        description = "External id - for external backreference",
+        example = "any-string",
         nullable = true
     )
     val externalId: String? = null,
 
     @Schema(
         description = "The name of the encoding profile to use",
-        example = "x264-animated", required = true
+        example = "x264-animated",
+        required = true
     )
     @NotBlank
     val profile: String,
 
     @Schema(
         description = "A directory path to where the output should be written",
-        example = "/an/output/path/dir", required = true
+        example = "/an/output/path/dir",
+        required = true
     )
     @NotBlank
     val outputFolder: String,
 
     @Schema(
         description = "Base filename of output files",
-        example = "any_file", required = true
+        example = "any_file",
+        required = true
     )
     @NotBlank
     val baseName: String,
 
     @Schema(
         description = "The Creation date for the EncoreJob",
-        example = "2021-04-22T03:00:48.759168+02:00", accessMode = Schema.AccessMode.READ_ONLY,
+        example = "2021-04-22T03:00:48.759168+02:00",
+        accessMode = Schema.AccessMode.READ_ONLY,
         defaultValue = "now()"
     )
     @Indexed
@@ -70,13 +79,16 @@ data class EncoreJob(
 
     @Schema(
         description = "An url to which the progress status callback should be directed",
-        example = "http://projectx/encorecallback", nullable = true
+        example = "http://projectx/encorecallback",
+        nullable = true
     )
     val progressCallbackUri: URI? = null,
 
     @Schema(
         description = "The queue priority of the EncoreJob",
-        defaultValue = "0", minimum = "0", maximum = "100"
+        defaultValue = "0",
+        minimum = "0",
+        maximum = "100"
     )
     @Min(0)
     @Max(100)
@@ -84,31 +96,41 @@ data class EncoreJob(
 
     @Schema(
         description = "The exception message, if the EncoreJob failed",
-        example = "input/output error", accessMode = Schema.AccessMode.READ_ONLY, nullable = true
+        example = "input/output error",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        nullable = true
     )
     var message: String? = null,
 
     @Schema(
         description = "The EncoreJob progress",
-        example = "57", accessMode = Schema.AccessMode.READ_ONLY, defaultValue = "0"
+        example = "57",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        defaultValue = "0"
     )
     var progress: Int = 0,
 
     @Schema(
         description = "The Encoding speed of the job (compared to it's play speed/input duration)",
-        example = "0.334", accessMode = Schema.AccessMode.READ_ONLY, nullable = true
+        example = "0.334",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        nullable = true
     )
     var speed: Double? = null,
 
     @Schema(
         description = "The time for when the EncoreJob was picked from the queue)",
-        example = "2021-04-19T07:20:43.819141+02:00", accessMode = Schema.AccessMode.READ_ONLY, nullable = true
+        example = "2021-04-19T07:20:43.819141+02:00",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        nullable = true
     )
     var startedDate: OffsetDateTime? = null,
 
     @Schema(
         description = "The time for when the EncoreJob was completed (fail or success)",
-        example = "2021-04-19T07:20:43.819141+02:00", accessMode = Schema.AccessMode.READ_ONLY, nullable = true
+        example = "2021-04-19T07:20:43.819141+02:00",
+        accessMode = Schema.AccessMode.READ_ONLY,
+        nullable = true
     )
     var completedDate: OffsetDateTime? = null,
 
@@ -119,7 +141,8 @@ data class EncoreJob(
     val debugOverlay: Boolean = false,
 
     @Schema(
-        description = "Key/Values to append to the MDC log context", defaultValue = "{}"
+        description = "Key/Values to append to the MDC log context",
+        defaultValue = "{}"
     )
     val logContext: Map<String, String> = emptyMap(),
 
@@ -131,7 +154,8 @@ data class EncoreJob(
 
     @Schema(
         description = "Time in seconds for when the thumbnail should be picked. Overrides profile configuration for thumbnails",
-        example = "1800.5", nullable = true
+        example = "1800.5",
+        nullable = true
     )
     @Positive
     val thumbnailTime: Double? = null,
@@ -150,7 +174,6 @@ data class EncoreJob(
         description = "The Job Status",
         accessMode = Schema.AccessMode.READ_ONLY
     )
-
     @Indexed
     var status = Status.NEW
         set(value) {

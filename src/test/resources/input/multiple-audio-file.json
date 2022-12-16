@@ -10,6 +10,7 @@
       "codec": "aac",
       "duration": 10.005,
       "channels": 2,
+      "channelLayout":"stereo",
       "samplingRate": 48000,
       "bitrate": 84538
     },
@@ -18,6 +19,7 @@
       "codec": "ac3",
       "duration": 10.01,
       "channels": 6,
+      "channelLayout":"5.1(side)",
       "samplingRate": 48000,
       "bitrate": 320000
     }

@@ -11,10 +11,10 @@
       "codec": "h264",
       "profile": "High 4:2:2",
       "level": "4",
-      "width": 1920,
-      "height": 1080,
+      "width": 1080,
+      "height": 1920,
       "sampleAspectRatio": "1:1",
-      "displayAspectRatio": "16:9",
+      "displayAspectRatio": "9:16",
       "pixelFormat": "yuv422p",
       "frameRate": "25/1",
       "duration": 10.0,
@@ -31,7 +31,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 69591
     },
@@ -40,7 +39,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 69575
     },
@@ -49,7 +47,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     },
@@ -58,7 +55,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     },
@@ -67,7 +63,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     },
@@ -76,7 +71,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     },
@@ -85,7 +79,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     },
@@ -94,7 +87,6 @@
       "codec": "aac",
       "duration": 10.0,
       "channels": 1,
-      "channelLayout":"mono",
       "samplingRate": 48000,
       "bitrate": 1527
     }

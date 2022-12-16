@@ -83,7 +83,7 @@ class EncoreService(
             val outputs = profile.encodes.mapNotNull {
                 it.getOutput(
                     encoreJob,
-                    encoreProperties.audioMixPresets
+                    encoreProperties.encoding
                 )
             }
 

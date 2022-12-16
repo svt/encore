@@ -29,8 +29,11 @@ class ProfileService(
     private val log = KotlinLogging.logger { }
 
     private val mapper =
-        if (profileLocation.filename?.let { File(it).extension.lowercase(Locale.getDefault()) in setOf("yml", "yaml") } == true)
-            yamlMapper() else objectMapper
+        if (profileLocation.filename?.let { File(it).extension.lowercase(Locale.getDefault()) in setOf("yml", "yaml") } == true) {
+            yamlMapper()
+        } else {
+            objectMapper
+        }
 
     @Retryable(
         include = [IOException::class],
