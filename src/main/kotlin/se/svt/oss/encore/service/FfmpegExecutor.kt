@@ -9,6 +9,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.trySendBlocking
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.maxDuration
 import se.svt.oss.encore.model.output.Output
@@ -23,7 +24,10 @@ import kotlin.math.min
 import kotlin.math.round
 
 @Service
-class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
+class FfmpegExecutor(
+    private val mediaAnalyzer: MediaAnalyzer,
+    private val encoreProperties: EncoreProperties
+) {
 
     private val log = KotlinLogging.logger { }
 
@@ -40,7 +44,8 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
         outputFolder: String,
         progressChannel: SendChannel<Int>
     ): List<MediaFile> {
-        val commands = CommandBuilder(encoreJob, profile, outputFolder).buildCommands(outputs)
+        val commands =
+            CommandBuilder(encoreJob, profile, outputFolder, encoreProperties.encoding).buildCommands(outputs)
         log.info { "Start encoding ${encoreJob.baseName}..." }
         val workDir = Files.createTempDirectory("encore_").toFile()
         val duration = encoreJob.duration ?: encoreJob.inputs.maxDuration()
@@ -105,10 +110,12 @@ class FfmpegExecutor(private val mediaAnalyzer: MediaAnalyzer) {
                                 )
                             }
                         }
+
                         "error", "fatal" -> {
                             log.warn { line }
                             errorLines.add(line)
                         }
+
                         else -> log.debug { line }
                     }
                 }

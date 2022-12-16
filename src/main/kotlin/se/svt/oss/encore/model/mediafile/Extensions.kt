@@ -5,6 +5,8 @@
 package se.svt.oss.encore.model.mediafile
 
 import mu.KotlinLogging
+import se.svt.oss.encore.model.input.AudioIn
+import se.svt.oss.encore.model.profile.ChannelLayout
 import se.svt.oss.mediaanalyzer.file.AudioFile
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.VideoFile
@@ -19,23 +21,45 @@ fun MediaContainer.audioLayout() = when {
     else -> AudioLayout.INVALID
 }
 
-fun MediaContainer.channelCount() = if (audioLayout() == AudioLayout.MULTI_TRACK)
+fun MediaContainer.channelCount() = if (audioLayout() == AudioLayout.MULTI_TRACK) {
     audioStreams.first().channels
-else
-    audioStreams.sumOf { it.channels }
+} else {
+    audioStreams.size
+}
+
+fun AudioIn.channelLayout(defaultChannelLayouts: Map<Int, ChannelLayout>): ChannelLayout {
+    return when (analyzedAudio.audioLayout()) {
+        AudioLayout.NONE, AudioLayout.INVALID -> null
+        AudioLayout.MONO_STREAMS -> if (analyzedAudio.channelCount() == channelLayout?.channels?.size) {
+            channelLayout
+        } else {
+            defaultChannelLayouts[analyzedAudio.channelCount()]
+                ?: ChannelLayout.defaultChannelLayout(analyzedAudio.channelCount())
+        }
+
+        AudioLayout.MULTI_TRACK -> analyzedAudio.audioStreams.first().channelLayout
+            ?.let { ChannelLayout.getByNameOrNull(it) }
+            ?: defaultChannelLayouts[analyzedAudio.channelCount()]
+            ?: ChannelLayout.defaultChannelLayout(analyzedAudio.channelCount())
+    } ?: throw RuntimeException("Could not determine channel layout for audio input '$audioLabel'!")
+}
 
 fun VideoFile.trimAudio(keep: Int?): VideoFile {
     return if (keep != null && keep < audioStreams.size) {
         log.debug { "Using first $keep audio streams of ${audioStreams.size} of ${this.file}" }
         copy(audioStreams = audioStreams.take(keep))
-    } else this
+    } else {
+        this
+    }
 }
 
 fun AudioFile.trimAudio(keep: Int?): AudioFile {
     return if (keep != null && keep < audioStreams.size) {
         log.debug { "Using first $keep audio streams of ${audioStreams.size} of ${this.file}" }
         copy(audioStreams = audioStreams.take(keep))
-    } else this
+    } else {
+        this
+    }
 }
 
 fun VideoFile.selectVideoStream(index: Int?): VideoFile {

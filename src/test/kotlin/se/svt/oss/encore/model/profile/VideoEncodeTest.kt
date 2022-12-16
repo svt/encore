@@ -9,9 +9,11 @@ import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
-import se.svt.oss.encore.config.AudioMixPreset
+import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
+import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.output.AudioStreamEncode
+import se.svt.oss.encore.portraitVideoFile
 
 abstract class VideoEncodeTest<T : VideoEncode> {
 
@@ -24,14 +26,39 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         audioEncode: AudioEncode?
     ): T
 
-    private val audioMixPresets = mapOf("test" to AudioMixPreset())
+    private val encodingProperties = EncodingProperties()
     private val audioEncode = mockk<AudioEncode>()
     private val audioStreamEncode = mockk<AudioStreamEncode>()
     private val defaultParams = linkedMapOf("a" to "b")
 
     @BeforeEach
     internal fun setUp() {
-        every { audioEncode.getOutput(any(), audioMixPresets)?.audioStreams } returns listOf(audioStreamEncode)
+        every { audioEncode.getOutput(any(), encodingProperties)?.audioStreams } returns listOf(audioStreamEncode)
+    }
+
+    @Test
+    fun `scale portrait input within portrait box`() {
+        val encode = createEncode(
+            width = 1920,
+            height = 1080,
+            twoPass = false,
+            params = defaultParams,
+            filters = emptyList(),
+            audioEncode = audioEncode
+        )
+        val output = encode.getOutput(
+            defaultEncoreJob().copy(
+                inputs = listOf(
+                    AudioVideoInput(
+                        uri = "/test.mp4",
+                        analyzed = portraitVideoFile
+                    )
+                )
+            ),
+            encodingProperties
+        )
+
+        assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
     }
 
     @Test
@@ -44,7 +71,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             filters = listOf("afilter"),
             audioEncode = audioEncode
         )
-        val output = encode.getOutput(defaultEncoreJob(), audioMixPresets)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output)
             .hasOnlyAudioStreams(audioStreamEncode)
             .hasSeekable(true)
@@ -68,7 +95,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             filters = listOf("afilter"),
             audioEncode = audioEncode
         )
-        val output = encode.getOutput(defaultEncoreJob(), audioMixPresets)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output).isNotNull
         val videoStreamEncode = output!!.video
         assertThat(videoStreamEncode)

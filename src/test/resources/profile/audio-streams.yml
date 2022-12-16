@@ -13,8 +13,8 @@ encodes:
       - type: AudioEncode
         codec: ac3
         bitrate: 448k
-        channels: 6
+        channelLayout: '5.1'
         optional: true
       - type: AudioEncode
         bitrate: 128k
-        channels: 2
+        channelLayout: 'stereo'

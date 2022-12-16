@@ -6,7 +6,7 @@ package se.svt.oss.encore.model.profile
 
 import mu.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
-import se.svt.oss.encore.config.AudioMixPreset
+import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.analyzedVideo
@@ -31,10 +31,9 @@ data class ThumbnailMapEncode(
 
     private val log = KotlinLogging.logger { }
 
-    override fun getOutput(job: EncoreJob, audioMixPresets: Map<String, AudioMixPreset>): Output? {
+    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val videoInput = job.inputs.videoInput(inputLabel)
         val inputSeekTo = videoInput?.seekTo
-
         val videoStream = job.inputs.analyzedVideo(inputLabel)?.highestBitrateVideoStream
             ?: return logOrThrow("No input with label $inputLabel!")
 

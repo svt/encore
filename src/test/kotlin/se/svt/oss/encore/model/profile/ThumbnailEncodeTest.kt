@@ -7,6 +7,7 @@ package se.svt.oss.encore.model.profile
 import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
+import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.longVideoFile
@@ -26,7 +27,7 @@ class ThumbnailEncodeTest {
     fun `use percentages for filter`() {
         val output = encode.getOutput(
             job = defaultEncoreJob(),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -48,7 +49,7 @@ class ThumbnailEncodeTest {
             job = defaultEncoreJob().copy(
                 thumbnailTime = 5.0,
             ),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -84,7 +85,7 @@ class ThumbnailEncodeTest {
                         )
                     ),
                 ),
-                audioMixPresets = emptyMap()
+                encodingProperties = EncodingProperties()
             )
         }.hasMessageContaining("No framerate detected")
     }
@@ -108,7 +109,7 @@ class ThumbnailEncodeTest {
                     )
                 ),
             ),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output).isNull()
     }
@@ -120,7 +121,7 @@ class ThumbnailEncodeTest {
                 seekTo = 1.0,
                 duration = 4.0
             ),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -151,7 +152,7 @@ class ThumbnailEncodeTest {
                     )
                 )
             ),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -171,7 +172,7 @@ class ThumbnailEncodeTest {
     fun `unmapped input optional returns null`() {
         val output = encode.copy(inputLabel = "other", optional = true).getOutput(
             job = defaultEncoreJob(),
-            audioMixPresets = emptyMap()
+            encodingProperties = EncodingProperties()
         )
         assertThat(output).isNull()
     }
@@ -181,7 +182,7 @@ class ThumbnailEncodeTest {
         assertThatThrownBy {
             encode.copy(inputLabel = "other", optional = false).getOutput(
                 job = defaultEncoreJob(),
-                audioMixPresets = emptyMap()
+                encodingProperties = EncodingProperties()
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No video input with label other!")

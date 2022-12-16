@@ -6,10 +6,10 @@ package se.svt.oss.encore
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.ok
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import org.awaitility.Awaitility.await
 import org.awaitility.Durations
 import org.junit.jupiter.api.AfterEach
@@ -30,6 +30,7 @@ import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
+import se.svt.oss.encore.model.profile.ChannelLayout
 import java.io.File
 import java.net.URI
 import java.time.Duration
@@ -65,24 +66,21 @@ class EncoreIntegrationTestBase() {
     @Value("classpath:input/multiple_audio.mp4")
     lateinit var testFileMultipleAudio: Resource
 
-    lateinit var mockServer: MockWebServer
+    lateinit var wireMockServer: WireMockServer
 
     @BeforeEach
     fun setUp() {
-        mockServer = MockWebServer()
-        mockServer.setDispatcher(
-            object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse {
-                    return MockResponse()
-                }
-            }
+        wireMockServer = WireMockServer()
+        wireMockServer.start()
+        wireMockServer.stubFor(
+            post(anyUrl())
+                .willReturn(ok())
         )
-        mockServer.start()
     }
 
     @AfterEach
     fun tearDown() {
-        mockServer.shutdown()
+        wireMockServer.stop()
     }
 
     fun successfulTest(
@@ -96,20 +94,9 @@ class EncoreIntegrationTestBase() {
 
         assertThat(createdJob).hasStatus(Status.SUCCESSFUL)
 
-        val requestCount = mockServer.requestCount
-        assertThat(requestCount).isGreaterThan(0)
-
-        val jobList = mutableListOf<JobProgress>()
-        repeat(requestCount) {
-            val request = mockServer.takeRequest()
-            val json = request.body.readUtf8()
-            val progress = objectMapper.readValue<JobProgress>(json)
-            jobList.add(progress)
-            assertThat(progress).hasJobId(createdJob.id).hasExternalId(createdJob.externalId)
-            assertThat(progress.progress).isBetween(0, 100)
-        }
-        assertThat(jobList.subList(0, jobList.size - 1)).allMatch { it.status == Status.IN_PROGRESS }
-        assertThat(jobList.last()).hasProgress(100).hasStatus(Status.SUCCESSFUL)
+        val progressCalls = wireMockServer.allServeEvents.map { objectMapper.readValue<JobProgress>(it.request.bodyAsString) }
+        assertThat(progressCalls.first())
+            .hasStatus(Status.SUCCESSFUL)
 
         val output = createdJob.output.map { it.file }
         assertThat(output).containsExactlyInAnyOrder(*expectedOutputFiles.toTypedArray())
@@ -160,13 +147,13 @@ class EncoreIntegrationTestBase() {
             baseName = file.file.nameWithoutExtension,
             profile = "program",
             outputFolder = outputDir.absolutePath,
-            progressCallbackUri = URI.create("http://localhost:${mockServer.port}/callbacks/111"),
+            progressCallbackUri = URI.create("http://localhost:${wireMockServer.port()}/callbacks/111"),
             debugOverlay = true,
             priority = priority,
             inputs = listOf(
                 AudioVideoInput(
                     uri = file.file.absolutePath,
-                    useFirstAudioStreams = 6
+                    channelLayout = ChannelLayout.CH_LAYOUT_5POINT1,
                 )
             ),
             logContext = mapOf("FlowId" to UUID.randomUUID().toString())

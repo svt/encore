@@ -7,27 +7,35 @@ package se.svt.oss.encore.model.mediafile
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
-import se.svt.oss.encore.multipleAudioFile
+import se.svt.oss.encore.Assertions.assertThatThrownBy
 import se.svt.oss.encore.defaultVideoFile
+import se.svt.oss.encore.model.input.AudioInput
+import se.svt.oss.encore.model.profile.ChannelLayout
+import se.svt.oss.encore.multipleAudioFile
 import se.svt.oss.encore.multipleVideoFile
+import se.svt.oss.mediaanalyzer.file.MediaFile
 
 internal class MediaFileExtensionsTest {
+    private val noAudio = defaultVideoFile.copy(audioStreams = emptyList())
+
+    private val invalidAudio = defaultVideoFile.copy(
+        audioStreams = defaultVideoFile.audioStreams.mapIndexed { index, audioStream ->
+            if (index == 0) audioStream else audioStream.copy(channels = 2)
+        }
+    )
+
+    private val defaultChannelLayouts = mapOf(3 to ChannelLayout.CH_LAYOUT_3POINT0)
+
     @Test
     @DisplayName("Video file without audio streams has AudioLayout NONE")
     fun testAudioLayoutNone() {
-        val videoFile = defaultVideoFile.copy(audioStreams = emptyList())
-        assertThat(videoFile.audioLayout()).isEqualTo(AudioLayout.NONE)
+        assertThat(noAudio.audioLayout()).isEqualTo(AudioLayout.NONE)
     }
 
     @Test
     @DisplayName("When first audio stream has multiple channels, audiolayout is MULTI_TRACK")
     fun testAudioLayoutMultiTrack() {
-        val videoFile = defaultVideoFile.copy(
-            audioStreams = listOf(
-                defaultVideoFile.audioStreams.first().copy(channels = 2)
-            )
-        )
-        assertThat(videoFile.audioLayout()).isEqualTo(AudioLayout.MULTI_TRACK)
+        assertThat(multipleAudioFile.audioLayout()).isEqualTo(AudioLayout.MULTI_TRACK)
     }
 
     @Test
@@ -47,13 +55,7 @@ internal class MediaFileExtensionsTest {
     @Test
     @DisplayName("Audio layout is invalid if first stream has one channel and the rest has two channels or more")
     fun testAudioLayoutInvalid() {
-        val videoFile =
-            defaultVideoFile.copy(
-                audioStreams = defaultVideoFile.audioStreams.mapIndexed { index, audioStream ->
-                    if (index == 0) audioStream else audioStream.copy(channels = 2)
-                }
-            )
-        assertThat(videoFile.audioLayout()).isEqualTo(AudioLayout.INVALID)
+        assertThat(invalidAudio.audioLayout()).isEqualTo(AudioLayout.INVALID)
     }
 
     @Test
@@ -73,8 +75,7 @@ internal class MediaFileExtensionsTest {
     @Test
     @DisplayName("Channel count for no streams is 0")
     fun testChannelCountNoSteams() {
-        val videoFile = defaultVideoFile.copy(audioStreams = emptyList())
-        assertThat(videoFile.channelCount()).isEqualTo(0)
+        assertThat(noAudio.channelCount()).isEqualTo(0)
     }
 
     @Test
@@ -140,4 +141,81 @@ internal class MediaFileExtensionsTest {
         val video = multipleAudioFile.selectAudioStream(null)
         assertThat(video).isSameAs(multipleAudioFile)
     }
+
+    @Test
+    @DisplayName("Channel layout throws when no audio")
+    fun channelLayoutNoAudio() {
+        assertThatThrownBy { audioInput(noAudio).channelLayout(defaultChannelLayouts) }
+            .hasMessage("Could not determine channel layout for audio input 'main'!")
+    }
+
+    @Test
+    @DisplayName("Channel layout throws when invalid audio")
+    fun channelLayoutInvalidAudio() {
+        assertThatThrownBy { audioInput(invalidAudio).channelLayout(defaultChannelLayouts) }
+            .hasMessage("Could not determine channel layout for audio input 'main'!")
+    }
+
+    @Test
+    @DisplayName("Channel layout is set on input and channel count correct")
+    fun channelLayoutMonoStreamsSetByParam() {
+        val input = audioInput(defaultVideoFile.copy(audioStreams = defaultVideoFile.audioStreams.take(3)))
+            .copy(channelLayout = ChannelLayout.CH_LAYOUT_3POINT0_BACK)
+        assertThat(input.channelLayout(defaultChannelLayouts)).isEqualTo(ChannelLayout.CH_LAYOUT_3POINT0_BACK)
+    }
+
+    @Test
+    @DisplayName("Channel layout is set on input and channel count incorrect use ffmpeg default")
+    fun channelLayoutMonoStreamsSetByParamIncorrect() {
+        val input = audioInput(defaultVideoFile.copy(audioStreams = defaultVideoFile.audioStreams.take(2)))
+            .copy(channelLayout = ChannelLayout.CH_LAYOUT_3POINT0)
+        assertThat(input.channelLayout(defaultChannelLayouts)).isEqualTo(ChannelLayout.CH_LAYOUT_STEREO)
+    }
+
+    @Test
+    @DisplayName("Channel layout is set on input and channel count incorrect use default by config")
+    fun channelLayoutMonoStreamsSetByParamIncorrectUseConfig() {
+        val input = audioInput(defaultVideoFile.copy(audioStreams = defaultVideoFile.audioStreams.take(3)))
+            .copy(channelLayout = ChannelLayout.CH_LAYOUT_5POINT1)
+        assertThat(input.channelLayout(defaultChannelLayouts)).isEqualTo(ChannelLayout.CH_LAYOUT_3POINT0)
+    }
+
+    @Test
+    @DisplayName("Channel layout is present in analyzed")
+    fun channelLayoutMultiTrack() {
+        val audioInput = audioInput(multipleAudioFile.copy(audioStreams = multipleAudioFile.audioStreams.drop(1)))
+        assertThat(audioInput.channelLayout(defaultChannelLayouts))
+            .isEqualTo(ChannelLayout.CH_LAYOUT_5POINT1_SIDE)
+    }
+
+    @Test
+    @DisplayName("Channel layout is not present in analyzed - uses default from config")
+    fun channelLayoutMultiTrackNotPresentInAnalyzedUseConfig() {
+        val audioFile = multipleAudioFile.copy(
+            audioStreams = multipleAudioFile.audioStreams.take(1).map {
+                it.copy(channelLayout = null, channels = 3)
+            }
+        )
+
+        assertThat(audioInput(audioFile).channelLayout(defaultChannelLayouts))
+            .isEqualTo(ChannelLayout.CH_LAYOUT_3POINT0)
+    }
+
+    @Test
+    @DisplayName("Channel layout is not present in analyzed - uses default from ffmpeg")
+    fun channelLayoutMultiTrackNotPresentInAnalyzedUseDefault() {
+        val audioFile = multipleAudioFile.copy(
+            audioStreams = multipleAudioFile.audioStreams.take(1).map {
+                it.copy(channelLayout = null, channels = 3)
+            }
+        )
+
+        assertThat(audioInput(audioFile).channelLayout(emptyMap()))
+            .isEqualTo(ChannelLayout.CH_LAYOUT_2POINT1)
+    }
+
+    private fun audioInput(analyzed: MediaFile) = AudioInput(
+        uri = "/test.mp",
+        analyzed = analyzed
+    )
 }

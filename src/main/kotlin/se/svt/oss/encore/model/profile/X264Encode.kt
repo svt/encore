@@ -16,8 +16,8 @@ data class X264Encode(
     @JsonProperty("x264-params")
     override val codecParams: LinkedHashMap<String, String> = linkedMapOf(),
     override val filters: List<String> = emptyList(),
-    override val audioEncode: AudioEncode? = null,
-    override val audioEncodes: List<AudioEncode> = emptyList(),
+    override val audioEncode: AudioEncoder? = null,
+    override val audioEncodes: List<AudioEncoder> = emptyList(),
     override val suffix: String,
     override val format: String = "mp4",
     override val inputLabel: String = DEFAULT_VIDEO_LABEL

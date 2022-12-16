@@ -6,6 +6,7 @@ package se.svt.oss.encore.process
 
 import mu.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
+import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.AudioIn
 import se.svt.oss.encore.model.input.Input
@@ -13,7 +14,7 @@ import se.svt.oss.encore.model.input.VideoIn
 import se.svt.oss.encore.model.input.inputParams
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
-import se.svt.oss.encore.model.mediafile.channelCount
+import se.svt.oss.encore.model.mediafile.channelLayout
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
@@ -30,7 +31,8 @@ private val defaultAspectRatio = Fraction(16, 9)
 class CommandBuilder(
     private val encoreJob: EncoreJob,
     private val profile: Profile,
-    private val outputFolder: String
+    private val outputFolder: String,
+    private val encodingProperties: EncodingProperties
 ) {
     private val log = KotlinLogging.logger { }
 
@@ -70,7 +72,7 @@ class CommandBuilder(
             if (input !is AudioIn) return@mapIndexedNotNull null
             val splits = outputs.flatMap { output ->
                 output.audioStreams.withIndex()
-                    .filter { (_, audioStreamEncode) -> audioStreamEncode.usesInput(input) }
+                    .filter { (_, audioStreamEncode) -> audioStreamEncode.usesInput(input) && !audioStreamEncode.preserveLayout }
                     .map { (audioStreamIndex, audioStreamEncode) ->
                         audioStreamEncode.filter?.let {
                             MapName.AUDIO.preFilterLabel(input.audioLabel, "${output.id}-$audioStreamIndex")
@@ -84,8 +86,7 @@ class CommandBuilder(
             val split = "asplit=${splits.size}${splits.joinToString("")}"
             val analyzed = input.analyzedAudio
             val globalAudioFilters = globalAudioFilters(input, analyzed)
-            val selector = input.audioStream?.let { "[$inputIndex:a:$it]" }
-                ?: if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) "[$inputIndex:a]" else "[$inputIndex:a:0]"
+            val selector = audioSelector(input, inputIndex)
             val filters = (globalAudioFilters + split).joinToString(",")
             "$selector$filters"
         }
@@ -101,6 +102,17 @@ class CommandBuilder(
                 }
         }
         return audioSplits + streamFilters
+    }
+
+    private fun audioSelector(input: AudioIn, index: Int): String {
+        if (input.audioStream != null) {
+            return "[$index:a:${input.audioStream}]"
+        }
+        val analyzedAudio = input.analyzedAudio
+        if (analyzedAudio.audioLayout() == AudioLayout.MULTI_TRACK) {
+            return "[$index:a:0]"
+        }
+        return "[$index:a]"
     }
 
     private fun AudioStreamEncode.usesInput(input: AudioIn) =
@@ -142,7 +154,11 @@ class CommandBuilder(
         this?.inputLabels?.contains(input.videoLabel) == true
 
     private fun filterParam(filters: List<String>): List<String> {
-        return listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
+        return if (filters.isEmpty()) {
+            emptyList()
+        } else {
+            listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
+        }
     }
 
     private fun inputParams(inputs: List<Input>): List<String> {
@@ -190,7 +206,9 @@ class CommandBuilder(
 
     private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> {
         return if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
-            listOf("amerge=inputs=${analyzed.channelCount()}")
+            val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
+            val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
+            listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
         } else {
             emptyList()
         } + input.audioFilters
@@ -213,8 +231,19 @@ class CommandBuilder(
             output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams(output) }
                 ?: emptyList()
 
-        val mapA: List<String> = output.audioStreams.flatMapIndexed { index, _ ->
-            listOf("-map", MapName.AUDIO.mapLabel("${output.id}-$index")) + seekParams(output)
+        val preserveAudioLayout = output.audioStreams.any { it.preserveLayout }
+        if (output.audioStreams.size > 1 && preserveAudioLayout) {
+            throw RuntimeException("Error in profile! Preserve audio layout in combination with multiple audiostreams not supported.")
+        }
+
+        val mapA: List<String> = output.audioStreams.flatMapIndexed { index, audioStream ->
+            val mapLabel = if (preserveAudioLayout) {
+                val inputIndex = encoreJob.inputs.indexOfFirst { it is AudioIn && audioStream.usesInput(it) }
+                "$inputIndex:a"
+            } else {
+                MapName.AUDIO.mapLabel("${output.id}-$index")
+            }
+            listOf("-map", mapLabel) + seekParams(output)
         }
 
         val maps = mapV + mapA
@@ -238,11 +267,17 @@ class CommandBuilder(
             File(outputFolder).resolve(output.output).toString()
     }
 
-    private fun seekParams(output: Output): List<String> = if (!output.seekable) emptyList() else
+    private fun seekParams(output: Output): List<String> = if (!output.seekable) {
+        emptyList()
+    } else {
         encoreJob.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()
+    }
 
-    private fun durationParams(output: Output): List<String> = if (!output.seekable) emptyList() else
+    private fun durationParams(output: Output): List<String> = if (!output.seekable) {
+        emptyList()
+    } else {
         encoreJob.duration?.let { listOf("-t", "$it") } ?: emptyList()
+    }
 
     private enum class MapName {
         VIDEO,

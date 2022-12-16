@@ -216,7 +216,7 @@ encodes:
     bitrate: 448k
     suffix: _SURROUND
     optional: true
-    channels: 6
+    channelLayout: '5.1'
 
   - type: ThumbnailMapEncode
 
