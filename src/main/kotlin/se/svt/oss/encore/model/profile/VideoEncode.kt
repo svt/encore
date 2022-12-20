@@ -7,11 +7,11 @@ package se.svt.oss.encore.model.profile
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
-import se.svt.oss.encore.model.input.analyzedVideo
+import se.svt.oss.encore.model.input.VideoIn
+import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
-import se.svt.oss.mediaanalyzer.file.VideoStream
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
 
 interface VideoEncode : OutputProducer {
@@ -30,7 +30,7 @@ interface VideoEncode : OutputProducer {
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val audioEncodesToUse = audioEncodes.ifEmpty { listOfNotNull(audioEncode) }
         val audio = audioEncodesToUse.flatMap { it.getOutput(job, encodingProperties)?.audioStreams.orEmpty() }
-        val videoInput = job.inputs.analyzedVideo(inputLabel)?.highestBitrateVideoStream
+        val videoInput = job.inputs.videoInput(inputLabel)
             ?: throw RuntimeException("No valid video input with label $inputLabel!")
         return Output(
             id = "$suffix.$format",
@@ -68,16 +68,17 @@ interface VideoEncode : OutputProducer {
     private fun videoFilter(
         debugOverlay: Boolean,
         encodingProperties: EncodingProperties,
-        videoInput: VideoStream
+        videoInput: VideoIn
     ): String? {
         val videoFilters = mutableListOf<String>()
         var scaleToWidth = width
         var scaleToHeight = height
-        val inputDar = videoInput.displayAspectRatio?.toFractionOrNull()
-        val inputIsPortrait = inputDar != null && inputDar < Fraction.ONE
+        val videoStream = videoInput.analyzedVideo.highestBitrateVideoStream
+        val outputDar = (videoInput.padTo ?: videoInput.cropTo ?: videoStream.displayAspectRatio)?.toFractionOrNull()
+        val outputIsPortrait = outputDar != null && outputDar < Fraction.ONE
         val isScalingWithinLandscape =
             scaleToWidth != null && scaleToHeight != null && Fraction(scaleToWidth, scaleToHeight) > Fraction.ONE
-        if (encodingProperties.flipWidthHeightIfPortrait && inputIsPortrait && isScalingWithinLandscape) {
+        if (encodingProperties.flipWidthHeightIfPortrait && outputIsPortrait && isScalingWithinLandscape) {
             scaleToWidth = height
             scaleToHeight = width
         }
