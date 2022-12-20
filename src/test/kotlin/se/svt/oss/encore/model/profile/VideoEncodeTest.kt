@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
+import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.portraitVideoFile
@@ -52,6 +53,32 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                     AudioVideoInput(
                         uri = "/test.mp4",
                         analyzed = portraitVideoFile
+                    )
+                )
+            ),
+            encodingProperties
+        )
+
+        assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
+    }
+
+    @Test
+    fun `scale portrait output within portrait box`() {
+        val encode = createEncode(
+            width = 1920,
+            height = 1080,
+            twoPass = false,
+            params = defaultParams,
+            filters = emptyList(),
+            audioEncode = audioEncode
+        )
+        val output = encode.getOutput(
+            defaultEncoreJob().copy(
+                inputs = listOf(
+                    AudioVideoInput(
+                        uri = "/test.mp4",
+                        analyzed = defaultVideoFile,
+                        cropTo = "9:16"
                     )
                 )
             ),
