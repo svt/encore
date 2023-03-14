@@ -229,7 +229,7 @@ encodes:
       maxrate: 486077
       bufsize: 648102
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: baseline
@@ -266,7 +266,7 @@ encodes:
       maxrate: 4700k
       bufsize: 6200k
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: high
@@ -307,7 +307,7 @@ encodes:
       maxrate: 3104k
       bufsize: 4138k
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: main
@@ -348,7 +348,7 @@ encodes:
       maxrate: 1968k
       bufsize: 2524k
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       level: 3.1
@@ -391,7 +391,7 @@ encodes:
       maxrate: 1209182
       bufsize: 1612242
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: main
@@ -434,7 +434,7 @@ encodes:
       maxrate: 486077
       bufsize: 648102
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: baseline

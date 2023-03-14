@@ -8,12 +8,11 @@ import mu.KotlinLogging
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
+import se.svt.oss.encore.model.input.VideoIn
 import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
-import se.svt.oss.mediaanalyzer.file.toFractionOrNull
-import kotlin.math.round
 
 data class ThumbnailEncode(
     val percentages: List<Int> = listOf(25, 50, 75),
@@ -21,62 +20,74 @@ data class ThumbnailEncode(
     val thumbnailHeight: Int = 1080,
     val quality: Int = 5,
     val suffix: String = "_thumb",
+    val suffixZeroPad: Int = 2,
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
-    val optional: Boolean = false
+    val optional: Boolean = false,
+    val intervalSeconds: Double? = null
 ) : OutputProducer {
 
     private val log = KotlinLogging.logger { }
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val videoInput = job.inputs.videoInput(inputLabel)
-        val inputSeekTo = videoInput?.seekTo
-        val videoStream = videoInput?.analyzedVideo?.highestBitrateVideoStream
             ?: return logOrThrow("Can not produce thumbnail $suffix. No video input with label $inputLabel!")
-
-        val frameRate = videoStream.frameRate.toFractionOrNull()?.toDouble()
-            ?: if (job.duration != null || job.seekTo != null || job.thumbnailTime != null || inputSeekTo != null) {
-                return logOrThrow("Can not produce thumbnail $suffix! No framerate detected in video input $inputLabel.")
-            } else {
-                0.0
-            }
-
-        val numFrames = job.duration?.let { round(it * frameRate).toInt() } ?: ((videoStream.numFrames) - (inputSeekTo?.let { round(it * frameRate).toInt() } ?: 0))
-        val skipFrames = job.seekTo?.let { round(it * frameRate).toInt() } ?: 0
-        val frames = job.thumbnailTime?.let {
-            listOf(round((it - (inputSeekTo ?: 0.0)) * frameRate).toInt())
-        } ?: percentages.map {
-            (it * numFrames) / 100 + skipFrames
+        val thumbnailTime = job.thumbnailTime?.let { time ->
+            videoInput.seekTo?.let { time - it } ?: time
+        }
+        val select = when {
+            thumbnailTime != null -> selectTimes(listOf(thumbnailTime))
+            intervalSeconds != null -> selectInterval(intervalSeconds, job.seekTo)
+            outputDuration(videoInput, job) <= 0 -> return logOrThrow("Can not produce thumbnail $suffix. Could not detect duration.")
+            percentages.isNotEmpty() -> selectTimes(percentagesToTimes(videoInput, job))
+            else -> return logOrThrow("Can not produce thumbnail $suffix. No times selected.")
         }
 
-        log.debug { "Thumbnail encode inputs: thumbnailTime= ${job.thumbnailTime}, framerate=$frameRate, duration= ${job.duration}, numFrames = $numFrames, skipFrames = $skipFrames. Resulting frames = $frames" }
-
-        val filter = frames.joinToString(
-            separator = "+",
-            prefix = "select=",
-            postfix = ",scale=$thumbnailWidth:$thumbnailHeight"
-        ) { "eq(n\\,$it)" }
-
-        val fileRegex = Regex("${job.baseName}$suffix\\d{2}\\.jpg")
+        val filter = "$select,scale=w=$thumbnailWidth:h=$thumbnailHeight:out_range=jpeg"
         val params = linkedMapOf(
-            "frames:v" to "${frames.size}",
-            "vsync" to "vfr",
+            "fps_mode" to "vfr",
             "q:v" to "$quality"
         )
 
+        val fileRegex = Regex("${job.baseName}$suffix\\d{$suffixZeroPad}\\.jpg")
+
         return Output(
-            id = "${suffix}02d.jpg",
+            id = "${suffix}0${suffixZeroPad}d.jpg",
             video = VideoStreamEncode(
                 params = params.toParams(),
                 filter = filter,
                 inputLabels = listOf(inputLabel)
             ),
-            output = "${job.baseName}$suffix%02d.jpg",
+            output = "${job.baseName}$suffix%0${suffixZeroPad}d.jpg",
             postProcessor = { outputFolder ->
                 outputFolder.listFiles().orEmpty().filter { it.name.matches(fileRegex) }
-            },
-            seekable = false
+            }
         )
     }
+
+    private fun selectInterval(interval: Double, outputSeek: Double?): String {
+        val select = outputSeek
+            ?.let { "gte(t\\,$it)*(isnan(prev_selected_t)+gt(floor((t-$it)/$interval)\\,floor((prev_selected_t-$it)/$interval)))" }
+            ?: "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+        return "select=$select"
+    }
+
+    private fun outputDuration(videoIn: VideoIn, job: EncoreJob): Double {
+        val videoStream = videoIn.analyzedVideo.highestBitrateVideoStream
+        var inputDuration = videoStream.duration
+        videoIn.seekTo?.let { inputDuration -= it }
+        job.seekTo?.let { inputDuration -= it }
+        return job.duration ?: inputDuration
+    }
+
+    private fun percentagesToTimes(videoIn: VideoIn, job: EncoreJob): List<Double> {
+        val outputDuration = outputDuration(videoIn, job)
+        return percentages
+            .map { it * outputDuration / 100 }
+            .map { t -> job.seekTo?.let { t + it } ?: t }
+    }
+
+    private fun selectTimes(times: List<Double>) =
+        "select=${times.joinToString("+") { "lt(prev_pts*TB\\,$it)*gte(pts*TB\\,$it)" }}"
 
     private fun logOrThrow(message: String): Output? {
         if (optional) {

@@ -11,12 +11,11 @@ import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.input.analyzedVideo
 import se.svt.oss.encore.model.input.videoInput
+import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.stringValue
-import se.svt.oss.mediaanalyzer.file.toFractionOrNull
 import kotlin.io.path.createTempDirectory
-import kotlin.math.round
 
 data class ThumbnailMapEncode(
     val tileWidth: Int = 160,
@@ -37,48 +36,49 @@ data class ThumbnailMapEncode(
         val videoStream = job.inputs.analyzedVideo(inputLabel)?.highestBitrateVideoStream
             ?: return logOrThrow("No input with label $inputLabel!")
 
-        var numFrames = videoStream.numFrames
-        val duration = job.duration
+        var inputDuration = videoStream.duration
+        inputSeekTo?.let { inputDuration -= it }
+        job.seekTo?.let { inputDuration -= it }
+        val outputDuration = job.duration ?: inputDuration
 
-        if (job.duration != null || job.seekTo != null || inputSeekTo != null) {
-            val frameRate = videoStream.frameRate.toFractionOrNull()?.toDouble()
-                ?: return logOrThrow("Can not generate thumbnail map $suffix! No framerate detected in video input $inputLabel.")
-            if (duration != null) {
-                numFrames = round(duration * frameRate).toInt()
-            } else {
-                job.seekTo?.let { numFrames -= round(it * frameRate).toInt() }
-                inputSeekTo?.let { numFrames -= round(it * frameRate).toInt() }
-            }
+        if (outputDuration <= 0) {
+            return logOrThrow("Cannot create thumbnail map $suffix! Could not detect duration.")
         }
 
-        if (numFrames < cols * rows) {
-            val message =
-                "Video input $inputLabel did not contain enough frames to generate thumbnail map $suffix: $numFrames < $cols cols * $rows rows"
-            return logOrThrow(message)
-        }
+        val interval = outputDuration / (cols * rows)
+        val select = job.seekTo
+            ?.let { "gte(t\\,$it)*(isnan(prev_selected_t)+gt(floor((t-$it)/$interval)\\,floor((prev_selected_t-$it)/$interval)))" }
+            ?: "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+
         val tempFolder = createTempDirectory(suffix).toFile()
         tempFolder.deleteOnExit()
-        val pad =
-            "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2" // pad to aspect ratio
-        val nthFrame = numFrames / (cols * rows)
-        var select = "not(mod(n\\,$nthFrame))"
-        job.seekTo?.let { select += "*gte(t\\,$it)" }
+
+        val pad = "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2"
+
+        val scale = if (format == "jpg") {
+            "-1:$tileHeight:out_range=jpeg"
+        } else {
+            "-1:$tileHeight"
+        }
+        val params = linkedMapOf(
+            "q:v" to "5",
+            "fps_mode" to "vfr"
+        )
         return Output(
             id = "$suffix.$format",
             video = VideoStreamEncode(
-                params = listOf("-q:v", "5"),
-                filter = "select=$select,pad=$pad,scale=-1:$tileHeight",
+                params = params.toParams(),
+                filter = "select=$select,pad=$pad,scale=$scale",
                 inputLabels = listOf(inputLabel)
             ),
-            output = tempFolder.resolve("${job.baseName}$suffix%03d.$format").toString(),
-            seekable = false,
+            output = tempFolder.resolve("${job.baseName}$suffix%04d.$format").toString(),
             postProcessor = { outputFolder ->
                 try {
                     val targetFile = outputFolder.resolve("${job.baseName}$suffix.$format")
                     val process = ProcessBuilder(
                         "ffmpeg",
                         "-i",
-                        "${job.baseName}$suffix%03d.$format",
+                        "${job.baseName}$suffix%04d.$format",
                         "-vf",
                         "tile=${cols}x$rows",
                         "-frames:v",

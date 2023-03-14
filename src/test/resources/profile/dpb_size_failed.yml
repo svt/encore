@@ -12,7 +12,7 @@ encodes:
       maxrate: 2100k
       bufsize: 4800k
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       level: 4.1

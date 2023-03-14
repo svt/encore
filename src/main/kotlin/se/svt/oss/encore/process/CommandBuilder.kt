@@ -219,16 +219,16 @@ class CommandBuilder(
             return emptyList()
         }
         return listOf("-map", MapName.VIDEO.mapLabel(output.id)) +
-            seekParams(output) +
+            seekParams() +
             "-an" +
-            durationParams(output) +
+            durationParams() +
             output.video.firstPassParams +
             listOf("-f", output.format, "/dev/null")
     }
 
     private fun secondPassParams(output: Output): List<String> {
         val mapV: List<String> =
-            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams(output) }
+            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams() }
                 ?: emptyList()
 
         val preserveAudioLayout = output.audioStreams.any { it.preserveLayout }
@@ -243,7 +243,7 @@ class CommandBuilder(
             } else {
                 MapName.AUDIO.mapLabel("${output.id}-$index")
             }
-            listOf("-map", mapLabel) + seekParams(output)
+            listOf("-map", mapLabel) + seekParams()
         }
 
         val maps = mapV + mapA
@@ -261,23 +261,17 @@ class CommandBuilder(
         val metaDataParams = listOf("-metadata", "comment=Transcoded using Encore")
 
         return maps +
-            durationParams(output) +
+            durationParams() +
             videoParams + audioParams +
             metaDataParams +
             File(outputFolder).resolve(output.output).toString()
     }
 
-    private fun seekParams(output: Output): List<String> = if (!output.seekable) {
-        emptyList()
-    } else {
+    private fun seekParams(): List<String> =
         encoreJob.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()
-    }
 
-    private fun durationParams(output: Output): List<String> = if (!output.seekable) {
-        emptyList()
-    } else {
+    private fun durationParams(): List<String> =
         encoreJob.duration?.let { listOf("-t", "$it") } ?: emptyList()
-    }
 
     private enum class MapName {
         VIDEO,
