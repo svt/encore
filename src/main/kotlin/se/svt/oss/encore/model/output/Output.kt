@@ -13,7 +13,6 @@ data class Output(
     val format: String = "mp4",
     val postProcessor: PostProcessor = PostProcessor { outputFolder -> listOf(outputFolder.resolve(output)) },
     val id: String,
-    val seekable: Boolean = true
 )
 
 fun interface PostProcessor {

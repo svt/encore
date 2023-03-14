@@ -9,8 +9,6 @@ import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
-import se.svt.oss.encore.defaultVideoFile
-import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.encore.model.output.VideoStreamEncode
 
@@ -27,13 +25,12 @@ class ThumbnailMapEncodeTest {
     fun `correct output`() {
         val output = encode.getOutput(defaultEncoreJob(), EncodingProperties())
         assertThat(output)
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasId("_12x20_160x90_thumbnail_map.jpg")
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-q:v", "5"),
-                    filter = "select=not(mod(n\\,1)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
+                    params = listOf("-q:v", "5", "-fps_mode", "vfr"),
+                    filter = "select=isnan(prev_selected_t)+gt(floor(t/0.041666666666666664)\\,floor(prev_selected_t/0.041666666666666664)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -42,15 +39,19 @@ class ThumbnailMapEncodeTest {
 
     @Test
     fun `correct output seekTo and duration`() {
-        val output = ThumbnailMapEncode(cols = 6, rows = 10).getOutput(defaultEncoreJob().copy(seekTo = 1.0, duration = 5.0), EncodingProperties())
+        val output = ThumbnailMapEncode(cols = 6, rows = 10)
+            .getOutput(
+                defaultEncoreJob()
+                    .copy(seekTo = 1.0, duration = 5.0),
+                EncodingProperties()
+            )
         assertThat(output)
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasId("_6x10_160x90_thumbnail_map.jpg")
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-q:v", "5"),
-                    filter = "select=not(mod(n\\,2))*gte(t\\,1.0),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
+                    params = listOf("-q:v", "5", "-fps_mode", "vfr"),
+                    filter = "select=gte(t\\,1.0)*(isnan(prev_selected_t)+gt(floor((t-1.0)/0.08333333333333333)\\,floor((prev_selected_t-1.0)/0.08333333333333333))),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -58,51 +59,22 @@ class ThumbnailMapEncodeTest {
     }
 
     @Test
-    fun `invalid number of frames optional returns null`() {
-        val defaultEncoreJob = defaultEncoreJob()
-        val output = encode.getOutput(
-            job = defaultEncoreJob.copy(
-                thumbnailTime = 1.0,
-                inputs = listOf(
-                    AudioVideoInput(
-                        uri = "/input/test.mp4",
-                        analyzed = defaultVideoFile.copy(
-                            videoStreams = defaultVideoFile.videoStreams.map {
-                                it.copy(
-                                    numFrames = 15
-                                )
-                            }
-                        )
-                    )
-                ),
-            ),
+    fun `unmapped input optional returns null`() {
+        val output = encode.copy(inputLabel = "other", optional = true).getOutput(
+            job = defaultEncoreJob(),
             encodingProperties = EncodingProperties()
         )
         assertThat(output).isNull()
     }
 
     @Test
-    fun `invalid number of frames not optional throws`() {
-        val defaultEncoreJob = defaultEncoreJob()
+    fun `unmapped input not optional throws`() {
         assertThatThrownBy {
-            encode.copy(optional = false).getOutput(
-                job = defaultEncoreJob.copy(
-                    thumbnailTime = 1.0,
-                    inputs = listOf(
-                        AudioVideoInput(
-                            uri = "/input/test.mp4",
-                            analyzed = defaultVideoFile.copy(
-                                videoStreams = defaultVideoFile.videoStreams.map {
-                                    it.copy(
-                                        numFrames = 15
-                                    )
-                                }
-                            )
-                        )
-                    ),
-                ),
+            encode.copy(inputLabel = "other", optional = false).getOutput(
+                job = defaultEncoreJob(),
                 encodingProperties = EncodingProperties()
             )
-        }.hasMessageContaining("Video input main did not contain enough frames to generate thumbnail map")
+        }.isInstanceOf(RuntimeException::class.java)
+            .hasMessageContaining("No input with label other!")
     }
 }

@@ -101,7 +101,6 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output)
             .hasOnlyAudioStreams(audioStreamEncode)
-            .hasSeekable(true)
         val videoStreamEncode = output!!.video
         assertThat(videoStreamEncode)
             .isNotNull

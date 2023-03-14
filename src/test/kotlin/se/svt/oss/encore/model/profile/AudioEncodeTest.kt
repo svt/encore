@@ -55,7 +55,6 @@ class AudioEncodeTest {
         )
         assertThat(output)
             .hasOutput("test_aac_stereo.mp4")
-            .hasSeekable(true)
             .hasVideo(null)
             .hasId("_aac_stereo.mp4")
             .hasOnlyAudioStreams(

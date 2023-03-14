@@ -9,7 +9,6 @@ import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.defaultEncoreJob
-import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.longVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
@@ -31,12 +30,11 @@ class ThumbnailEncodeTest {
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-frames:v", "2", "-vsync", "vfr", "-q:v", "5"),
-                    filter = "select=eq(n\\,25)+eq(n\\,125),scale=1920:1080",
+                    params = listOf("-fps_mode", "vfr", "-q:v", "5"),
+                    filter = "select=lt(prev_pts*TB\\,1.0)*gte(pts*TB\\,1.0)+lt(prev_pts*TB\\,5.0)*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -53,12 +51,11 @@ class ThumbnailEncodeTest {
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-frames:v", "1", "-vsync", "vfr", "-q:v", "5"),
-                    filter = "select=eq(n\\,125),scale=1920:1080",
+                    params = listOf("-fps_mode", "vfr", "-q:v", "5"),
+                    filter = "select=lt(prev_pts*TB\\,5.0)*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -66,52 +63,27 @@ class ThumbnailEncodeTest {
     }
 
     @Test
-    fun `thumbnail time invalid framerate not optional throws`() {
-        val defaultEncoreJob = defaultEncoreJob()
-        assertThatThrownBy {
-            encode.getOutput(
-                job = defaultEncoreJob.copy(
-                    thumbnailTime = 1.0,
-                    inputs = listOf(
-                        AudioVideoInput(
-                            uri = "/input/test.mp4",
-                            analyzed = defaultVideoFile.copy(
-                                videoStreams = defaultVideoFile.videoStreams.map {
-                                    it.copy(
-                                        frameRate = "0/0"
-                                    )
-                                }
-                            )
-                        )
-                    ),
-                ),
-                encodingProperties = EncodingProperties()
-            )
-        }.hasMessageContaining("No framerate detected")
-    }
-
-    @Test
-    fun `thumbnail time invalid framerate optional returns null`() {
-        val defaultEncoreJob = defaultEncoreJob()
-        val output = encode.copy(optional = true).getOutput(
-            job = defaultEncoreJob.copy(
-                thumbnailTime = 1.0,
-                inputs = listOf(
-                    AudioVideoInput(
-                        uri = "/input/test.mp4",
-                        analyzed = defaultVideoFile.copy(
-                            videoStreams = defaultVideoFile.videoStreams.map {
-                                it.copy(
-                                    frameRate = "0/0"
-                                )
-                            }
-                        )
-                    )
-                ),
-            ),
+    fun `use interval`() {
+        val selectorEncode = encode.copy(
+            intervalSeconds = 250.0,
+            suffixZeroPad = 4
+        )
+        val output = selectorEncode.getOutput(
+            job = defaultEncoreJob(),
             encodingProperties = EncodingProperties()
         )
-        assertThat(output).isNull()
+
+        assertThat(output)
+            .hasOutput("test_thumb%04d.jpg")
+            .hasNoAudioStreams()
+            .hasVideo(
+                VideoStreamEncode(
+                    params = listOf("-fps_mode", "vfr", "-q:v", "5"),
+                    filter = "select=isnan(prev_selected_t)+gt(floor(t/250.0)\\,floor(prev_selected_t/250.0)),scale=w=1920:h=1080:out_range=jpeg",
+                    twoPass = false,
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
+                )
+            )
     }
 
     @Test
@@ -125,12 +97,11 @@ class ThumbnailEncodeTest {
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-frames:v", "2", "-vsync", "vfr", "-q:v", "5"),
-                    filter = "select=eq(n\\,35)+eq(n\\,75),scale=1920:1080",
+                    params = listOf("-fps_mode", "vfr", "-q:v", "5"),
+                    filter = "select=lt(prev_pts*TB\\,1.4)*gte(pts*TB\\,1.4)+lt(prev_pts*TB\\,3.0)*gte(pts*TB\\,3.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -156,12 +127,11 @@ class ThumbnailEncodeTest {
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
-            .hasSeekable(false)
             .hasNoAudioStreams()
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-frames:v", "1", "-vsync", "vfr", "-q:v", "5"),
-                    filter = "select=eq(n\\,4025),scale=1920:1080",
+                    params = listOf("-fps_mode", "vfr", "-q:v", "5"),
+                    filter = "select=lt(prev_pts*TB\\,161.0)*gte(pts*TB\\,161.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )

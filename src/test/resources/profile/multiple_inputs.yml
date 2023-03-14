@@ -10,7 +10,7 @@ encodes:
       maxrate: 4700k
       bufsize: 6200k
       r: 25
-      vsync: 1
+      fps_mode: cfr
       pix_fmt: yuv420p
       force_key_frames: expr:not(mod(n,96))
       profile:v: high
