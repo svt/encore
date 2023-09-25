@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: encore
+  banner:
+    location: classpath:asciilogo.txt
+  main:
+    web-application-type: none
+  cloud:
+    config:
+      import-check:
+        enabled: false
+logging:
+  config: classpath:logback-json.xml

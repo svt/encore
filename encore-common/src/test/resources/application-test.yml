@@ -1,0 +1,56 @@
+spring:
+  data:
+    redis:
+      port: ${embedded-redis.port}
+  main:
+    allow-bean-definition-overriding: true
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: ADMIN
+
+logging:
+  level:
+    se.svt: debug
+
+server:
+  port: ${random-port.server}
+
+service:
+  name: encore-test
+
+encore-settings:
+  concurrency: 3
+  local-temporary-encode: false
+  poll-initial-delay: 1s
+  poll-delaly: 1s
+  shared-work-dir: ${java.io.tmpdir}/encore-shared
+  encoding:
+    default-channel-layouts:
+      3: "3.0"
+    audio-mix-presets:
+      default:
+        default-pan:
+          "[5.1]": c0 = c0 | c1 = c1 | c2 = c2 | c3 = c3 | c4 = c4 | c5 = c5
+          stereo: c0 = c0 + 0.707*c2 + 0.707*c4 | c1 = c1 + 0.707*c2 + 0.707*c5
+        pan-mapping:
+          "[5.1]":
+            stereo: c0=1.0*c0+0.707*c2+0.707*c4|c1=1.0*c1+0.707*c2+0.707*c5
+      de:
+        fallback-to-auto: false
+        pan-mapping:
+          "[5.1]":
+            stereo: c0<0.25*c0+1.5*c2+0.25*c4|c1<0.25*c1+1.5*c2+0.25*c5
+          "[5.1(side)]":
+            stereo: c0<0.25*c0+1.5*c2+0.25*c4|c1<0.25*c1+1.5*c2+0.25*c5
+
+profile:
+  location: classpath:profile/profiles.yml
+
+feign:
+  client:
+    config:
+      default:
+        logger-level: basic

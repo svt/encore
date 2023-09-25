@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: encore
+  banner:
+    location: classpath:asciilogo.txt
+  cloud:
+    config:
+      import-check:
+        enabled: false
+logging:
+  config: classpath:logback-json.xml
+
+springdoc:
+  paths-to-exclude: /profile/encoreJobs,/profile
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha
+    disable-swagger-default-url: true
+server:
+  forward-headers-strategy: framework

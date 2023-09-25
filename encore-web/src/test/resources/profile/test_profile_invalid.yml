@@ -1,0 +1,58 @@
+name: animerat
+description: Animated profile, optimized for animated content
+scaling: lanczos
+encodes:
+  - type: X264Encode
+    suffixBroken: _x264_1400
+    twoPass: true
+    width: -2
+    height: 1080
+    params:
+      b:v: 1400k
+      maxrate: 2100k
+      bufsize: 4800k
+      r: 25
+      fps_mode: cfr
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      level: 4.1
+      profile:v: high
+    x264-params:
+      deblock: 1,1
+      aq-mode: 1
+      aq-strength: 0.6
+      b-adapt: 2
+      bframes: 8
+      b-bias: 0
+      b-pyramid: 2
+      chroma-qp-offset: -2
+      direct: auto
+      rc-lookahead: 70
+      keyint: 192
+      keyint_min: 96
+      me: umh
+      merange: 40
+      cabac: 1
+      partitions: all
+      psy-rd: 0.4
+      ref: 4
+      scenecut: 40
+      subme: 10
+      trellis: 2
+      weightp: 2
+    audioEncode:
+      type: AudioEncode
+      codec: aac
+      channels: 2
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: ThumbnailEncode
+
+  - type: ThumbnailMapEncode
+
+  - type: AudioEncode
+    codec: aac
+    channels: 2
+    bitrate: 128k
+    suffix: _STEREO

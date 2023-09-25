@@ -5,12 +5,12 @@ jacocoTestCoverageVerification {
             includes = ['se.svt.oss.encore.*']
             excludes = [
                     '*.invoke()',
-                    '*.Security.getEnabled()',
+                    '*.EncoreProperties*.get*()',
                     '*.DefaultConstructorMarker*',
-                    '*.EncoreApplicationKt.*',
+                    '*ApplicationKt.main*',
                     '*.static {...}',
-                    '*.model.*.*.get*',
-                    '*.service.localencode.LocalEncodeService.moveFile*'
+                    '*.model.*.get*',
+                    '*.service.localencode.LocalEncodeService.moveFile*',
             ]
             limit {
                 counter = 'LINE'
@@ -21,8 +21,6 @@ jacocoTestCoverageVerification {
         failOnViolation = true
     }
 }
-jacoco {
-    toolVersion = '0.8.7'
-}
+
 jacocoTestCoverageVerification.dependsOn jacocoTestReport
 check.dependsOn jacocoTestCoverageVerification

@@ -1,0 +1,27 @@
+spring:
+  data:
+    redis:
+     port: ${embedded-redis.port}
+  main:
+    allow-bean-definition-overriding: true
+
+logging:
+  level:
+    se.svt: debug
+
+service:
+  name: encore-test
+
+encore-settings:
+  concurrency: 3
+  local-temporary-encode: true
+  poll-initial-delay: 1s
+  poll-delay: 1s
+  encoding:
+    audio-mix-presets:
+      default:
+        fallback-to-auto: true
+      de:
+        fallback-to-auto: false
+profile:
+  location: classpath:profile/profiles.yml
