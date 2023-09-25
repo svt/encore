@@ -1,0 +1,15 @@
+name: archive
+description: Archive format
+encodes:
+  - type: VideoEncode
+    codec: dnxhd
+    height: 1080
+    params:
+      b:v: 185M
+      pix_fmt: yuv422p10le
+    suffix: _DNxHD_185x
+    format: mxf
+    twoPass: false
+    audioEncode:
+      type: SimpleAudioEncode
+      codec: pcm_s24le
