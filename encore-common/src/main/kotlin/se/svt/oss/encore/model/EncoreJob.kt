@@ -20,6 +20,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Positive
+import se.svt.oss.encore.model.profile.Profile
 
 @Validated
 @RedisHash("encore-jobs", timeToLive = (60 * 60 * 24 * 7).toLong()) // 1 week ttl
@@ -46,10 +47,12 @@ data class EncoreJob(
     @Schema(
         description = "The name of the encoding profile to use",
         example = "x264-animated",
-        required = true
+        nullable = true
     )
-    @NotBlank
-    val profile: String,
+    val profile: String? = null,
+
+    @Schema(description = "Inline transcoding profile. If set, the profile field will be ignored", nullable = true)
+    val inlineProfile: Profile? = null,
 
     @Schema(
         description = "A directory path to where the output should be written",
@@ -168,7 +171,8 @@ data class EncoreJob(
     val thumbnailTime: Double? = null,
 
     @NotEmpty
-    val inputs: List<Input> = emptyList()
+    val inputs: List<Input> = emptyList(),
+
 ) {
 
     @Schema(
@@ -199,6 +203,6 @@ data class EncoreJob(
             "id" to id.toString(),
             "file" to baseName,
             "externalId" to (externalId ?: ""),
-            "profile" to profile
+            "profile" to (profile ?: inlineProfile?.name ?: "")
         ) + logContext
 }

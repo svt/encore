@@ -10,7 +10,7 @@ import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.output.Output
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = AudioEncode::class, name = "AudioEncode"),
     JsonSubTypes.Type(value = SimpleAudioEncode::class, name = "SimpleAudioEncode"),
@@ -22,4 +22,6 @@ import se.svt.oss.encore.model.output.Output
 )
 interface OutputProducer {
     fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output?
+
+    val type: String
 }

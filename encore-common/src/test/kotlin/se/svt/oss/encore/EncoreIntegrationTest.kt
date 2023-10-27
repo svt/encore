@@ -4,6 +4,7 @@
 
 package se.svt.oss.encore
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import org.awaitility.Awaitility.await
 import org.awaitility.Durations
 import org.junit.jupiter.api.Test
@@ -15,6 +16,7 @@ import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.input.AudioInput
 import se.svt.oss.encore.model.input.VideoInput
 import se.svt.oss.encore.model.profile.ChannelLayout
+import se.svt.oss.encore.model.profile.Profile
 import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.mediaanalyzer.file.ImageFile
 import se.svt.oss.mediaanalyzer.file.MediaContainer
@@ -159,6 +161,25 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
 
         encoreClient.cancel(highPriorityJob.id)
         awaitJob(highPriorityJob.id) { it.status.isCompleted }
+    }
+
+    @Test
+    fun jobWithInlineProfileRunsSuccessfully(@TempDir outputDir: File) {
+        val inlineProfile: Profile = EncoreIntegrationTest::class.java.getResourceAsStream("/profile/program.yml").use {
+            YAMLMapper().findAndRegisterModules().readValue(it, Profile::class.java)
+        }
+
+        val job = job(outputDir = outputDir, file = testFileSurround)
+            .copy(profile = null, inlineProfile = inlineProfile)
+
+        successfulTest(
+            job,
+            defaultExpectedOutputFiles(outputDir, testFileSurround) +
+                listOf(
+                    expectedFile(outputDir, testFileSurround, "STEREO_DE.mp4"),
+                    expectedFile(outputDir, testFileSurround, "SURROUND.mp4")
+                )
+        )
     }
 
     @Test

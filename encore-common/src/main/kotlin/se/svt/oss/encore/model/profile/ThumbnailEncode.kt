@@ -14,6 +14,8 @@ import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 
+private val log = KotlinLogging.logger { }
+
 data class ThumbnailEncode(
     val percentages: List<Int> = listOf(25, 50, 75),
     val thumbnailWidth: Int = -2,
@@ -26,7 +28,8 @@ data class ThumbnailEncode(
     val intervalSeconds: Double? = null
 ) : OutputProducer {
 
-    private val log = KotlinLogging.logger { }
+    override val type: String
+        get() = this.javaClass.simpleName
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         if (job.segmentLength != null) {

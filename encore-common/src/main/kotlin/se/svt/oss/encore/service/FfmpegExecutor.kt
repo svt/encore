@@ -42,7 +42,9 @@ class FfmpegExecutor(
         outputFolder: String,
         progressChannel: SendChannel<Int>?
     ): List<MediaFile> {
-        val profile = profileService.getProfile(encoreJob.profile)
+        val profile = encoreJob.inlineProfile
+            ?: encoreJob.profile?.let { profileService.getProfile(it) }
+            ?: throw java.lang.RuntimeException("Job must have either profile or inlineProfile set")
         val outputs = profile.encodes.mapNotNull {
             it.getOutput(
                 encoreJob,
@@ -51,7 +53,7 @@ class FfmpegExecutor(
         }
 
         check(outputs.distinctBy { it.id }.size == outputs.size) {
-            "Profile ${encoreJob.profile} contains duplicate suffixes: ${outputs.map { it.id }}!"
+            "Profile ${profile.name} contains duplicate suffixes: ${outputs.map { it.id }}!"
         }
         val commands =
             CommandBuilder(encoreJob, profile, outputFolder, encoreProperties.encoding).buildCommands(outputs)

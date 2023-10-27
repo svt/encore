@@ -17,6 +17,8 @@ import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.stringValue
 import kotlin.io.path.createTempDirectory
 
+private val log = KotlinLogging.logger { }
+
 data class ThumbnailMapEncode(
     val tileWidth: Int = 160,
     val tileHeight: Int = 90,
@@ -28,7 +30,8 @@ data class ThumbnailMapEncode(
     val inputLabel: String = DEFAULT_VIDEO_LABEL
 ) : OutputProducer {
 
-    private val log = KotlinLogging.logger { }
+    override val type: String
+        get() = this.javaClass.simpleName
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         if (job.segmentLength != null) {

@@ -18,4 +18,7 @@ data class GenericVideoEncode(
     override val format: String,
     override val codec: String,
     override val inputLabel: String = DEFAULT_VIDEO_LABEL
-) : VideoEncode
+) : VideoEncode {
+    override val type: String
+        get() = this.javaClass.simpleName
+}
