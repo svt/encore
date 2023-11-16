@@ -14,18 +14,18 @@ import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
 
-interface VideoEncode : OutputProducer {
-    val width: Int?
-    val height: Int?
-    val twoPass: Boolean
-    val params: Map<String, String>
-    val filters: List<String>?
-    val audioEncode: AudioEncoder?
-    val audioEncodes: List<AudioEncoder>
-    val suffix: String
-    val format: String
-    val codec: String
-    val inputLabel: String
+abstract class VideoEncode : OutputProducer {
+    abstract val width: Int?
+    abstract val height: Int?
+    abstract val twoPass: Boolean
+    abstract val params: Map<String, String>
+    abstract val filters: List<String>?
+    abstract val audioEncode: AudioEncoder?
+    abstract val audioEncodes: List<AudioEncoder>
+    abstract val suffix: String
+    abstract val format: String
+    abstract val codec: String
+    abstract val inputLabel: String
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val audioEncodesToUse = audioEncodes.ifEmpty { listOfNotNull(audioEncode) }
@@ -62,7 +62,7 @@ interface VideoEncode : OutputProducer {
         }
     }
 
-    fun passParams(pass: Int): Map<String, String> =
+    open fun passParams(pass: Int): Map<String, String> =
         mapOf("pass" to pass.toString(), "passlogfile" to "log$suffix")
 
     private fun videoFilter(

@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.model.profile
 
-abstract class X26XEncode : VideoEncode {
+abstract class X26XEncode : VideoEncode() {
 
     abstract val ffmpegParams: LinkedHashMap<String, String>
 
