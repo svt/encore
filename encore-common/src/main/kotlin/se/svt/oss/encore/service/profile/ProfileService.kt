@@ -11,9 +11,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import mu.KotlinLogging
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.Resource
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.expression.common.TemplateParserContext
+import org.springframework.expression.spel.SpelParserConfiguration
+import org.springframework.expression.spel.standard.SpelExpressionParser
+import org.springframework.expression.spel.support.SimpleEvaluationContext
 import org.springframework.stereotype.Service
+import se.svt.oss.encore.config.ProfileProperties
+import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.profile.AudioEncode
 import se.svt.oss.encore.model.profile.GenericVideoEncode
 import se.svt.oss.encore.model.profile.OutputProducer
@@ -38,35 +43,65 @@ import java.util.Locale
     ThumbnailEncode::class,
     ThumbnailMapEncode::class
 )
+@EnableConfigurationProperties(ProfileProperties::class)
 class ProfileService(
-    @Value("\${profile.location}")
-    private val profileLocation: Resource,
+    private val properties: ProfileProperties,
     objectMapper: ObjectMapper
 ) {
     private val log = KotlinLogging.logger { }
 
+    private val spelExpressionParser = SpelExpressionParser(
+        SpelParserConfiguration(
+            null,
+            null,
+            false,
+            false,
+            Int.MAX_VALUE,
+            100_000
+        )
+    )
+
+    private val spelEvaluationContext = SimpleEvaluationContext
+        .forReadOnlyDataBinding()
+        .build()
+
+    private val spelParserContext = TemplateParserContext(
+        properties.spelExpressionPrefix,
+        properties.spelExpressionSuffix
+    )
+
     private val mapper =
-        if (profileLocation.filename?.let { File(it).extension.lowercase(Locale.getDefault()) in setOf("yml", "yaml") } == true) {
+        if (properties.location.filename?.let {
+            File(it).extension.lowercase(Locale.getDefault()) in setOf(
+                    "yml",
+                    "yaml"
+                )
+        } == true
+        ) {
             yamlMapper()
         } else {
             objectMapper
         }
 
-    fun getProfile(name: String): Profile = try {
-        log.debug { "Get profile $name. Reading profiles from $profileLocation" }
-        val profiles = mapper.readValue<Map<String, String>>(profileLocation.inputStream)
+    fun getProfile(job: EncoreJob): Profile = try {
+        log.debug { "Get profile ${job.profile}. Reading profiles from ${properties.location}" }
+        val profiles = mapper.readValue<Map<String, String>>(properties.location.inputStream)
 
-        profiles[name]
-            ?.let { readProfile(it) }
-            ?: throw RuntimeException("Could not find location for profile $name! Profiles: $profiles")
+        profiles[job.profile]
+            ?.let { readProfile(it, job) }
+            ?: throw RuntimeException("Could not find location for profile ${job.profile}! Profiles: $profiles")
     } catch (e: JsonProcessingException) {
-        throw RuntimeException("Error parsing profile $name: ${e.message}", e)
+        throw RuntimeException("Error parsing profile ${job.profile}: ${e.message}", e)
     }
 
-    private fun readProfile(path: String): Profile {
-        val profile = profileLocation.createRelative(path)
+    private fun readProfile(path: String, job: EncoreJob): Profile {
+        val profile = properties.location.createRelative(path)
         log.debug { "Reading $profile" }
-        return mapper.readValue(profile.inputStream)
+        val profileContent = profile.inputStream.bufferedReader().use { it.readText() }
+        val resolvedProfileContent = spelExpressionParser
+            .parseExpression(profileContent, spelParserContext)
+            .getValue(spelEvaluationContext, job) as String
+        return mapper.readValue(resolvedProfileContent)
     }
 
     private fun yamlMapper() =

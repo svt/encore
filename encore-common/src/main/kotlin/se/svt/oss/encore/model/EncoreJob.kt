@@ -7,6 +7,11 @@ package se.svt.oss.encore.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.Positive
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 import org.springframework.data.redis.core.index.Indexed
@@ -15,11 +20,6 @@ import se.svt.oss.encore.model.input.Input
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.time.OffsetDateTime
 import java.util.UUID
-import jakarta.validation.constraints.Max
-import jakarta.validation.constraints.Min
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.Positive
 
 @Validated
 @RedisHash("encore-jobs", timeToLive = (60 * 60 * 24 * 7).toLong()) // 1 week ttl
@@ -50,6 +50,12 @@ data class EncoreJob(
     )
     @NotBlank
     val profile: String,
+
+    @Schema(
+        description = "Properties for evaluation of spring spel expressions in profile",
+        defaultValue = "{}"
+    )
+    val profileParams: Map<String, Any?> = emptyMap(),
 
     @Schema(
         description = "A directory path to where the output should be written",
