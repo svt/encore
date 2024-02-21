@@ -42,7 +42,7 @@ class FfmpegExecutor(
         outputFolder: String,
         progressChannel: SendChannel<Int>?
     ): List<MediaFile> {
-        val profile = profileService.getProfile(encoreJob.profile)
+        val profile = profileService.getProfile(encoreJob)
         val outputs = profile.encodes.mapNotNull {
             it.getOutput(
                 encoreJob,
