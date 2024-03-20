@@ -30,13 +30,12 @@ import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.profile.ChannelLayout
-import se.svt.oss.junit5.redis.EmbeddedRedisExtension
 import java.io.File
 import java.time.Duration
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ExtendWith(EmbeddedRedisExtension::class)
+@ExtendWith(RedisExtension::class)
 @DirtiesContext
 @Import(TestConfig::class)
 class EncoreIntegrationTestBase {

@@ -18,14 +18,13 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
-import se.svt.oss.junit5.redis.EmbeddedRedisExtension
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["encore-settings.security.enabled=true"]
 )
 @ActiveProfiles("test")
-@ExtendWith(EmbeddedRedisExtension::class)
+@ExtendWith(RedisExtension::class)
 class EncoreEndpointAccessIntegrationTest {
 
     @Autowired

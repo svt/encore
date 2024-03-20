@@ -11,14 +11,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import se.svt.oss.encore.Assertions.assertThat
+import se.svt.oss.encore.RedisExtension
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
-import se.svt.oss.junit5.redis.EmbeddedRedisExtension
 import java.time.OffsetDateTime
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ExtendWith(EmbeddedRedisExtension::class)
+@ExtendWith(RedisExtension::class)
 @ActiveProfiles("test")
 class EncoreJobRepositoryTest {
 

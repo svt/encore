@@ -13,7 +13,7 @@ import org.springframework.validation.Validator
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import se.svt.oss.encore.model.EncoreJob
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class RepositoryConfiguration constructor(@Qualifier("defaultValidator") private val validator: Validator) : RepositoryRestConfigurer {
     override fun configureRepositoryRestConfiguration(config: RepositoryRestConfiguration, cors: CorsRegistry?) {
         config.exposeIdsFor(EncoreJob::class.java)

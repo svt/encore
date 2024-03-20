@@ -13,7 +13,7 @@ import org.springframework.web.reactive.function.client.support.WebClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
 import se.svt.oss.encore.service.callback.CallbackClient
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class ClientConfiguration {
 
     @Bean

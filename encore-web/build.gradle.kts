@@ -10,6 +10,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
+    testImplementation(testFixtures(project(":encore-common")))
     testImplementation("com.ninja-squad:springmockk:4.0.2")
-    testImplementation("se.svt.oss:junit5-redis-extension:3.0.0")
 }

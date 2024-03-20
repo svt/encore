@@ -80,6 +80,7 @@ data class ThumbnailMapEncode(
                     val targetFile = outputFolder.resolve("${job.baseName}$suffix.$format")
                     val process = ProcessBuilder(
                         "ffmpeg",
+                        "-y",
                         "-i",
                         "${job.baseName}$suffix%04d.$format",
                         "-vf",
@@ -100,7 +101,8 @@ data class ThumbnailMapEncode(
                     logOrThrow("Error creating thumbnail map! ${e.message}")
                     emptyList()
                 }
-            }
+            },
+            isImage = true
         )
     }
 

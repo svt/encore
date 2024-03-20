@@ -1,7 +1,4 @@
 spring:
-  data:
-    redis:
-     port: ${embedded-redis.port}
   main:
     allow-bean-definition-overriding: true
 

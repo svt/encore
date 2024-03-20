@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.maxDuration
+import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.process.CommandBuilder
 import se.svt.oss.encore.service.profile.ProfileService
 import se.svt.oss.mediaanalyzer.MediaAnalyzer
@@ -69,7 +70,7 @@ class FfmpegExecutor(
             progressChannel?.close()
             outputs.flatMap { out ->
                 out.postProcessor.process(File(outputFolder))
-                    .map { mediaAnalyzer.analyze(it.toString()) }
+                    .map { mediaAnalyzer.analyze(it.toString(), disableImageSequenceDetection = out.isImage) }
             }
         } catch (e: CancellationException) {
             log.info { "Job was cancelled" }
@@ -167,7 +168,8 @@ class FfmpegExecutor(
         }
     }
 
-    fun joinSegments(segmentList: File, targetFile: File): MediaFile {
+    fun joinSegments(encoreJob: EncoreJob, segmentList: File, targetFile: File): MediaFile {
+        val joinParams = profileService.getProfile(encoreJob).joinSegmentParams.toParams()
         val command = listOf(
             "ffmpeg",
             "-hide_banner",
@@ -185,8 +187,9 @@ class FfmpegExecutor(
             "-ignore_unknown",
             "-c",
             "copy",
-            "$targetFile"
-        )
+            "-metadata",
+            "comment=Transcoded using Encore",
+        ) + joinParams + "$targetFile"
         runFfmpeg(command, segmentList.parentFile, null) {}
         return mediaAnalyzer.analyze(targetFile.absolutePath)
     }

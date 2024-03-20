@@ -36,7 +36,7 @@ sealed interface Input {
     val uri: String
 
     @get:Schema(description = "Input params required to properly decode input", example = """{ "ac": "2" }""")
-    val params: LinkedHashMap<String, String>
+    val params: LinkedHashMap<String, String?>
 
     @get:Schema(
         description = "Type of input",
@@ -152,7 +152,7 @@ sealed interface VideoIn : Input {
 data class AudioInput(
     override val uri: String,
     override val audioLabel: String = DEFAULT_AUDIO_LABEL,
-    override val params: LinkedHashMap<String, String> = linkedMapOf(),
+    override val params: LinkedHashMap<String, String?> = linkedMapOf(),
     override val audioFilters: List<String> = emptyList(),
     override var analyzed: MediaFile? = null,
     override val audioStream: Int? = null,
@@ -177,7 +177,7 @@ data class AudioInput(
 data class VideoInput(
     override val uri: String,
     override val videoLabel: String = DEFAULT_VIDEO_LABEL,
-    override val params: LinkedHashMap<String, String> = linkedMapOf(),
+    override val params: LinkedHashMap<String, String?> = linkedMapOf(),
     override val dar: FractionString? = null,
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,
@@ -206,7 +206,7 @@ data class AudioVideoInput(
     override val uri: String,
     override val videoLabel: String = DEFAULT_VIDEO_LABEL,
     override val audioLabel: String = DEFAULT_AUDIO_LABEL,
-    override val params: LinkedHashMap<String, String> = linkedMapOf(),
+    override val params: LinkedHashMap<String, String?> = linkedMapOf(),
     override val dar: FractionString? = null,
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import se.svt.oss.mediaanalyzer.MediaAnalyzer
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class MediaAnalyzerConfiguration {
 
     @Bean

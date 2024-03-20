@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import se.svt.oss.encore.config.EncoreProperties
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class SchedulingConfiguration {
 
     @Bean

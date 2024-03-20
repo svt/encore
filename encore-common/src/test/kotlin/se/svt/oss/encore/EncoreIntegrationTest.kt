@@ -8,6 +8,7 @@ import org.awaitility.Awaitility.await
 import org.awaitility.Durations
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.springframework.core.io.ClassPathResource
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import se.svt.oss.encore.Assertions.assertThat
@@ -133,6 +134,32 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
         successfulTest(
             job(outputDir = outputDir, file = testFileStereo),
             defaultExpectedOutputFiles(outputDir, testFileStereo)
+        )
+    }
+
+    @Test
+    fun jobWithInputParamsForRawVideo(@TempDir outputDir: File) {
+        val inputFile = ClassPathResource("input/testyuv.yuv")
+        val encoreJob = job(outputDir = outputDir, file = inputFile)
+
+        successfulTest(
+            encoreJob.copy(
+                profile = "archive",
+                profileParams = linkedMapOf("suffix" to "_raw", "height" to 1080),
+                inputs = listOf(
+                    VideoInput(
+                        uri = inputFile.file.absolutePath,
+                        params = linkedMapOf(
+                            "f" to "rawvideo",
+                            "video_size" to "640x360",
+                            "framerate" to "25",
+                            "pixel_format" to "yuv420p",
+                        )
+                    )
+                )
+            ),
+
+            listOf(outputDir.resolve("testyuv_raw.mxf").absolutePath)
         )
     }
 

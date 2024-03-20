@@ -1,10 +1,11 @@
 plugins {
     id("encore.kotlin-conventions")
+    `java-test-fixtures`
 }
 
 dependencies {
 
-    api("se.svt.oss:media-analyzer:2.0.3")
+    api("se.svt.oss:media-analyzer:2.0.4")
     implementation(kotlin("reflect"))
 
     compileOnly("org.springdoc:springdoc-openapi-starter-webmvc-api:2.2.0")
@@ -16,28 +17,14 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.7.3")
 
     testImplementation(project(":encore-web"))
-    testImplementation("se.svt.oss:junit5-redis-extension:3.0.0")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.awaitility:awaitility")
     testImplementation("com.github.tomakehurst:wiremock-jre8-standalone:2.35.0")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.boot:spring-boot-starter-data-rest")
-}
-
-
-val integrationTestsPreReq = setOf("mediainfo", "ffmpeg", "ffprobe").map {
-
-    tasks.create("Verify $it is in path, required for integration tests", Exec::class.java) {
-        isIgnoreExitValue = true
-        executable = it
-
-        if (!it.equals("mediainfo")) {
-            args("-hide_banner")
-        }
-    }
-}
-
-tasks.test {
-    dependsOn(integrationTestsPreReq)
+    testFixturesImplementation(platform("org.springframework.boot:spring-boot-dependencies:3.1.3"))
+    testFixturesImplementation("com.redis:testcontainers-redis:2.2.0")
+    testFixturesImplementation("io.github.microutils:kotlin-logging:3.0.5")
+    testFixturesImplementation("org.junit.jupiter:junit-jupiter-api")
 }
 
