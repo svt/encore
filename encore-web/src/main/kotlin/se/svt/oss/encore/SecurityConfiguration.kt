@@ -25,7 +25,7 @@ private const val ROLE_USER = "USER"
 private const val ROLE_ADMIN = "ADMIN"
 private const val ROLE_ANON = "ANON"
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 @ConditionalOnProperty(prefix = "encore-settings.security", name = ["enabled"])
 class SecurityConfiguration(private val encoreProperties: EncoreProperties) {

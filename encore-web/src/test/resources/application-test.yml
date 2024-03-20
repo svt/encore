@@ -1,7 +1,4 @@
 spring:
-  data:
-    redis:
-      port: ${embedded-redis.port}
   main:
     allow-bean-definition-overriding: true
 management:
@@ -20,7 +17,7 @@ encore-settings:
   concurrency: 3
   local-temporary-encode: false
   poll-initial-delay: 1s
-  poll-delaly: 1s
+  poll-delay: 1s
   security:
     user-password: '{bcrypt}$2a$10$5UQDlMEE6PDHNtr.pY/Jh.06Dq0BTkFtQyYNQint/R0KhC4muu4PO' # 'upw' encypted with spring boot cli
     admin-password: '{bcrypt}$2a$10$Yp8gtLGnpyFtlyOrL6/ajOO/hPXOCKMf4IpCW41ptMUzAUpJmmGOC' # 'apw' encypted with spring boot cli

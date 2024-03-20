@@ -139,7 +139,7 @@ class EncoreService(
                     val targetName = encoreJob.baseName + it
                     log.info { "Joining segments for $targetName" }
                     val targetFile = outputFolder.resolve(targetName)
-                    ffmpegExecutor.joinSegments(outWorkDir.resolve("$it.txt"), targetFile)
+                    ffmpegExecutor.joinSegments(encoreJob, outWorkDir.resolve("$it.txt"), targetFile)
                 }
                 outputFiles
             }

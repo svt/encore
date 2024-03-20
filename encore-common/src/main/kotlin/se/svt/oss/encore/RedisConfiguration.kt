@@ -29,7 +29,7 @@ import se.svt.oss.mediaanalyzer.file.ImageFile
 import se.svt.oss.mediaanalyzer.file.SubtitleFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @RegisterReflectionForBinding(
     EncoreJob::class,
     AudioVideoInput::class,

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import se.svt.oss.encore.config.EncoreProperties
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class OpenAPIConfiguration {
 
     @Bean

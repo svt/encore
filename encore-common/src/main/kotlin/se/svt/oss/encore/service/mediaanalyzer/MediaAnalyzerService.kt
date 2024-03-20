@@ -51,7 +51,11 @@ class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
         val probeInterlaced = input is VideoIn && input.probeInterlaced
         val useFirstAudioStreams = (input as? AudioIn)?.channelLayout?.channels?.size
 
-        input.analyzed = mediaAnalyzer.analyze(input.uri, probeInterlaced).let {
+        input.analyzed = mediaAnalyzer.analyze(
+            file = input.uri,
+            probeInterlaced = probeInterlaced,
+            ffprobeInputParams = input.params
+        ).let {
             val selectedVideoStream = (input as? VideoIn)?.videoStream
             val selectedAudioStream = (input as? AudioIn)?.audioStream
             when (it) {

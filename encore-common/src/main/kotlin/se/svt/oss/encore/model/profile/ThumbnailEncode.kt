@@ -63,7 +63,8 @@ data class ThumbnailEncode(
             output = "${job.baseName}$suffix%0${suffixZeroPad}d.jpg",
             postProcessor = { outputFolder ->
                 outputFolder.listFiles().orEmpty().filter { it.name.matches(fileRegex) }
-            }
+            },
+            isImage = true
         )
     }
 

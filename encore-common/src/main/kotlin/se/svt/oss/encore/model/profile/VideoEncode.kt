@@ -65,7 +65,7 @@ interface VideoEncode : OutputProducer {
     fun passParams(pass: Int): Map<String, String> =
         mapOf("pass" to pass.toString(), "passlogfile" to "log$suffix")
 
-    private fun videoFilter(
+    fun videoFilter(
         debugOverlay: Boolean,
         encodingProperties: EncodingProperties,
         videoInput: VideoIn
@@ -75,7 +75,8 @@ interface VideoEncode : OutputProducer {
         var scaleToHeight = height
         val videoStream = videoInput.analyzedVideo.highestBitrateVideoStream
         val outputDar = (videoInput.padTo ?: videoInput.cropTo ?: videoStream.displayAspectRatio)?.toFractionOrNull()
-        val outputIsPortrait = outputDar != null && outputDar < Fraction.ONE
+            ?: Fraction(videoStream.width, videoStream.height)
+        val outputIsPortrait = outputDar < Fraction.ONE
         val isScalingWithinLandscape =
             scaleToWidth != null && scaleToHeight != null && Fraction(scaleToWidth, scaleToHeight) > Fraction.ONE
         if (encodingProperties.flipWidthHeightIfPortrait && outputIsPortrait && isScalingWithinLandscape) {
