@@ -208,6 +208,8 @@ encodes:
   - type: AudioEncode
     bitrate: 128k
     suffix: _STEREO_DE
+    dialogueEnhancement:
+      enabled: true
     audioMixPreset: de
     optional: true
 
@@ -215,6 +217,16 @@ encodes:
     codec: ac3
     bitrate: 448k
     suffix: _SURROUND
+    optional: true
+    channelLayout: '5.1'
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: _SURROUND_DE
+    dialogueEnhancement:
+      enabled: true
+    audioMixPreset: de
     optional: true
     channelLayout: '5.1'
 
