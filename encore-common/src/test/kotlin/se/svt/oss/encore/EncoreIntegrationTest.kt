@@ -34,7 +34,8 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
             defaultExpectedOutputFiles(outputDir, testFileSurround) +
                 listOf(
                     expectedFile(outputDir, testFileSurround, "STEREO_DE.mp4"),
-                    expectedFile(outputDir, testFileSurround, "SURROUND.mp4")
+                    expectedFile(outputDir, testFileSurround, "SURROUND.mp4"),
+                    expectedFile(outputDir, testFileSurround, "SURROUND_DE.mp4"),
                 )
         )
     }
@@ -133,7 +134,8 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
     fun jobIsSuccessfulStereo(@TempDir outputDir: File) {
         successfulTest(
             job(outputDir = outputDir, file = testFileStereo),
-            defaultExpectedOutputFiles(outputDir, testFileStereo)
+            defaultExpectedOutputFiles(outputDir, testFileStereo) +
+                listOf(expectedFile(outputDir, testFileStereo, "STEREO_DE.mp4"))
         )
     }
 

@@ -25,6 +25,7 @@ data class AudioEncode(
     val params: LinkedHashMap<String, String> = linkedMapOf(),
     val filters: List<String> = emptyList(),
     val audioMixPreset: String = "default",
+    val dialogueEnhancement: DialogueEnhancement = DialogueEnhancement(),
     override val optional: Boolean = false,
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
@@ -44,7 +45,19 @@ data class AudioEncode(
         val preset = encodingProperties.audioMixPresets[audioMixPreset]
             ?: throw RuntimeException("Audio mix preset '$audioMixPreset' not found!")
         val inputChannels = analyzed.channelCount()
-        val inputChannelLayout = audioIn.channelLayout(encodingProperties.defaultChannelLayouts)
+        var inputChannelLayout = audioIn.channelLayout(encodingProperties.defaultChannelLayouts)
+        if (dialogueEnhancement.enabled && !dialogueEnhancePossible(inputChannelLayout)) {
+            return logOrThrow("Can not generate $outputName! Dialogue enhancement not possible for source channel layout ${inputChannelLayout.layoutName}")
+        }
+
+        val dialogueEnhanceFilters = mutableListOf<String>()
+        if (shouldDialogueEnhanceStereo(inputChannelLayout)) {
+            inputChannelLayout = ChannelLayout.CH_LAYOUT_3POINT0
+            dialogueEnhanceFilters.add(dialogueEnhancement.dialogueEnhanceStereo.filterString)
+        }
+        if (dialogueEnhancement.enabled) {
+            dialogueEnhanceFilters.add(dialogueEnhance(inputChannelLayout))
+        }
 
         val mixFilters = mutableListOf<String>()
 
@@ -77,14 +90,64 @@ data class AudioEncode(
                 AudioStreamEncode(
                     params = outParams.toParams(),
                     inputLabels = listOf(inputLabel),
-                    filter = (mixFilters + filters).joinToString(",").ifEmpty { null }
+                    filter = (dialogueEnhanceFilters + mixFilters + filters).joinToString(",").ifEmpty { null }
                 )
             ),
             output = outputName,
         )
     }
 
+    private fun shouldDialogueEnhanceStereo(inputChannelLayout: ChannelLayout): Boolean =
+        dialogueEnhancement.enabled &&
+            dialogueEnhancement.dialogueEnhanceStereo.enabled &&
+            inputChannelLayout == ChannelLayout.CH_LAYOUT_STEREO
+
+    private fun dialogueEnhancePossible(inputChannelLayout: ChannelLayout): Boolean =
+        inputChannelLayout.channels.size > 1 &&
+            (inputChannelLayout.channels.contains(ChannelId.FC) || shouldDialogueEnhanceStereo(inputChannelLayout))
+
+    private fun dialogueEnhance(inputChannelLayout: ChannelLayout): String {
+        val layoutName = inputChannelLayout.layoutName
+        val channels = inputChannelLayout.channels
+        val channelSplit =
+            "channelsplit=channel_layout=$layoutName${channels.joinToString(separator = "") { "[CH-$suffix-$it]" }}"
+        val centerSplit = "[CH-$suffix-FC]asplit=2[SC-$suffix][CH-$suffix-FC-OUT]"
+        val bgChannels = channels - ChannelId.FC
+        val bgMerge =
+            "${bgChannels.joinToString(separator = "") { "[CH-$suffix-$it]" }}amerge=inputs=${bgChannels.size}[BG-$suffix]"
+        val compress =
+            "[BG-$suffix][SC-$suffix]${dialogueEnhancement.sidechainCompress.filterString}[COMPR-$suffix]"
+        val mixMerge = "[COMPR-$suffix][CH-$suffix-FC-OUT]amerge"
+        return listOf(channelSplit, centerSplit, bgMerge, compress, mixMerge).joinToString(";")
+    }
+
     private fun isApplicable(channelCount: Int): Boolean {
         return channelCount > 0 && (channelLayout == ChannelLayout.CH_LAYOUT_STEREO || channelLayout.channels.size in 1..channelCount)
+    }
+
+    data class DialogueEnhancement(
+        val enabled: Boolean = false,
+        val sidechainCompress: SidechainCompress = SidechainCompress(),
+        val dialogueEnhanceStereo: DialogueEnhanceStereo = DialogueEnhanceStereo()
+    ) {
+        data class DialogueEnhanceStereo(
+            val enabled: Boolean = true,
+            val original: Int = 1,
+            val enhance: Int = 1,
+            val voice: Int = 2
+        ) {
+            val filterString: String
+                get() = "dialoguenhance=original=$original:enhance=$enhance:voice=$voice"
+        }
+
+        data class SidechainCompress(
+            val ratio: Int = 8,
+            val threshold: Double = 0.012,
+            val release: Double = 1000.0,
+            val attack: Double = 100.0
+        ) {
+            val filterString: String
+                get() = "sidechaincompress=threshold=$threshold:ratio=$ratio:release=$release:attack=$attack"
+        }
     }
 }
