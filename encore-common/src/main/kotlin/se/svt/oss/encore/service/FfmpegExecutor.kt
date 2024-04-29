@@ -14,11 +14,11 @@ import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.maxDuration
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.process.CommandBuilder
+import se.svt.oss.encore.process.createTempDir
 import se.svt.oss.encore.service.profile.ProfileService
 import se.svt.oss.mediaanalyzer.MediaAnalyzer
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.io.File
-import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.math.round
@@ -57,7 +57,7 @@ class FfmpegExecutor(
         val commands =
             CommandBuilder(encoreJob, profile, outputFolder, encoreProperties.encoding).buildCommands(outputs)
         log.info { "Start encoding ${encoreJob.baseName}..." }
-        val workDir = Files.createTempDirectory("encore_").toFile()
+        val workDir = createTempDir("encore_").toFile()
         val duration = encoreJob.duration ?: encoreJob.inputs.maxDuration()
         return try {
             File(outputFolder).mkdirs()

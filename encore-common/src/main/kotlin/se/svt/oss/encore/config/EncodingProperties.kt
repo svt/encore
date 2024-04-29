@@ -12,5 +12,7 @@ data class EncodingProperties(
     val audioMixPresets: Map<String, AudioMixPreset> = mapOf("default" to AudioMixPreset()),
     @NestedConfigurationProperty
     val defaultChannelLayouts: Map<Int, ChannelLayout> = emptyMap(),
-    val flipWidthHeightIfPortrait: Boolean = true
+    val flipWidthHeightIfPortrait: Boolean = true,
+    val exitOnError: Boolean = true,
+    val globalParams: LinkedHashMap<String, Any?> = linkedMapOf(),
 )

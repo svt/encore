@@ -6,12 +6,13 @@ package se.svt.oss.encore.service.localencode
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import se.svt.oss.encore.config.EncoreProperties
+import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.process.createTempDir
 import se.svt.oss.mediaanalyzer.file.AudioFile
 import se.svt.oss.mediaanalyzer.file.ImageFile
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
-import se.svt.oss.encore.config.EncoreProperties
-import se.svt.oss.encore.model.EncoreJob
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,7 +29,7 @@ class LocalEncodeService(
         encoreJob: EncoreJob
     ): String {
         return if (encoreProperties.localTemporaryEncode) {
-            Files.createTempDirectory("job_${encoreJob.id}").toString()
+            createTempDir("job_${encoreJob.id}").toString()
         } else {
             encoreJob.outputFolder
         }
@@ -58,12 +59,7 @@ class LocalEncodeService(
     }
 
     private fun moveTempLocalFiles(destination: File, tempDirectory: String) {
-        val filesBeforeMove = File(tempDirectory).listFiles()
-        filesBeforeMove?.forEach { moveFile(it, destination) }
-        val fileCountAfterMove = destination.list()?.size
-        if (fileCountAfterMove != filesBeforeMove?.count()) {
-            throw RuntimeException("File count after moving files from temp to output folder differs.")
-        }
+        File(tempDirectory).listFiles()?.forEach { moveFile(it, destination) }
     }
 
     private fun moveFile(file: File, destination: File) {
