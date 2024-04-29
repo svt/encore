@@ -83,4 +83,5 @@ fun AudioFile.selectAudioStream(index: Int?): AudioFile {
 fun Map<String, Any?>.toParams(): List<String> =
     flatMap { entry ->
         listOfNotNull("-${entry.key}", entry.value?.let { "$it" })
+            .filterNot { it.isEmpty() }
     }

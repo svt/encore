@@ -15,6 +15,7 @@ import se.svt.oss.encore.model.input.inputParams
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
 import se.svt.oss.encore.model.mediafile.channelLayout
+import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
@@ -165,13 +166,15 @@ class CommandBuilder(
         val readDuration = encoreJob.duration?.let {
             it + (encoreJob.seekTo ?: 0.0)
         }
-        return listOf(
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "+level",
-            "-y"
-        ) + inputs.inputParams(readDuration)
+        return buildList {
+            add("ffmpeg")
+            if (encodingProperties.exitOnError) {
+                add("-xerror")
+            }
+            addAll(encodingProperties.globalParams.toParams())
+            addAll(listOf("-hide_banner", "-loglevel", "+level", "-y"))
+            addAll(inputs.inputParams(readDuration))
+        }
     }
 
     private fun globalVideoFilters(input: VideoIn, videoFile: VideoFile): List<String> {

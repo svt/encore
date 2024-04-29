@@ -14,8 +14,8 @@ import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
+import se.svt.oss.encore.process.createTempDir
 import se.svt.oss.mediaanalyzer.file.stringValue
-import kotlin.io.path.createTempDirectory
 
 data class ThumbnailMapEncode(
     val tileWidth: Int = 160,
@@ -53,7 +53,7 @@ data class ThumbnailMapEncode(
             ?.let { "gte(t\\,$it)*(isnan(prev_selected_t)+gt(floor((t-$it)/$interval)\\,floor((prev_selected_t-$it)/$interval)))" }
             ?: "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
 
-        val tempFolder = createTempDirectory(suffix).toFile()
+        val tempFolder = createTempDir(suffix).toFile()
         tempFolder.deleteOnExit()
 
         val pad = "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2"
