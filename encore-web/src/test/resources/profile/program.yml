@@ -219,7 +219,9 @@ encodes:
     channelLayout: '5.1'
 
   - type: ThumbnailMapEncode
+    decodeOutput: 0
 
   - type: ThumbnailEncode
+    decodeOutput: 0
 
 

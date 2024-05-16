@@ -13,7 +13,8 @@ data class Output(
     val format: String = "mp4",
     val postProcessor: PostProcessor = PostProcessor { outputFolder -> listOf(outputFolder.resolve(output)) },
     val id: String,
-    val isImage: Boolean = false
+    val isImage: Boolean = false,
+    val decodeOutputStream: String? = null
 )
 
 fun interface PostProcessor {
@@ -39,7 +40,7 @@ data class AudioStreamEncode(
     override val params: List<String>,
     override val filter: String? = null,
     override val inputLabels: List<String>,
-    val preserveLayout: Boolean = false
+    val preserveLayout: Boolean = false,
 ) : StreamEncode {
     override val twoPass: Boolean
         get() = false

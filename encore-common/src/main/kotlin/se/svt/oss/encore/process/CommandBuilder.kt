@@ -62,11 +62,22 @@ class CommandBuilder(
     }
 
     private fun secondPassCommand(outputs: List<Output>): List<String> {
-        val videoFilters = videoFilters(encoreJob.inputs, outputs)
-        val audioFilters = audioFilters(outputs)
-        val outputParams = outputs.flatMap(this::secondPassParams)
-        return inputParams(encoreJob.inputs) + filterParam(videoFilters + audioFilters) + outputParams
+        val (loopbackOutputs, mainOutputs) = outputs.partition { it.decodeOutputStream != null }
+        val videoFilters = videoFilters(encoreJob.inputs, mainOutputs)
+        val audioFilters = audioFilters(mainOutputs)
+        val outputParams = mainOutputs.flatMap(this::secondPassParams)
+        return inputParams(encoreJob.inputs) + filterParam(videoFilters + audioFilters) + outputParams + loopbackParams(loopbackOutputs)
     }
+
+    private fun loopbackParams(outputs: List<Output>): List<String> =
+        outputs.flatMapIndexed { index: Int, output: Output ->
+            listOf(
+                "-dec",
+                output.decodeOutputStream ?: throw RuntimeException("No decodeOutputStream in $output!"),
+                "-filter_complex",
+                "[dec:$index]${output.video?.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}"
+            ) + secondPassParams(output)
+        }
 
     private fun audioFilters(outputs: List<Output>): List<String> {
         val audioSplits = encoreJob.inputs.mapIndexedNotNull { inputIndex, input ->
@@ -230,8 +241,10 @@ class CommandBuilder(
     }
 
     private fun secondPassParams(output: Output): List<String> {
+        val seekParams = output.decodeOutputStream?.let { emptyList() } ?: seekParams()
+        val durationParams = output.decodeOutputStream?.let { emptyList() } ?: durationParams()
         val mapV: List<String> =
-            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams() }
+            output.video?.let { listOf("-map", MapName.VIDEO.mapLabel(output.id)) + seekParams }
                 ?: emptyList()
 
         val preserveAudioLayout = output.audioStreams.any { it.preserveLayout }
@@ -246,7 +259,7 @@ class CommandBuilder(
             } else {
                 MapName.AUDIO.mapLabel("${output.id}-$index")
             }
-            listOf("-map", mapLabel) + seekParams()
+            listOf("-map", mapLabel) + seekParams
         }
 
         val maps = mapV + mapA
@@ -264,7 +277,7 @@ class CommandBuilder(
         val metaDataParams = listOf("-metadata", "comment=Transcoded using Encore")
 
         return maps +
-            durationParams() +
+            durationParams +
             videoParams + audioParams +
             metaDataParams +
             File(outputFolder).resolve(output.output).toString()

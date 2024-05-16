@@ -48,8 +48,10 @@ encodes:
       suffix: STEREO
 
   - type: ThumbnailEncode
+    decodeOutput: 0
 
   - type: ThumbnailMapEncode
+    decodeOutput: 0
 
   - type: AudioEncode
     codec: aac

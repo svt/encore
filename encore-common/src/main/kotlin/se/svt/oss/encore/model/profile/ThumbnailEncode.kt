@@ -23,7 +23,8 @@ data class ThumbnailEncode(
     val suffixZeroPad: Int = 2,
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
     val optional: Boolean = false,
-    val intervalSeconds: Double? = null
+    val intervalSeconds: Double? = null,
+    val decodeOutput: Int? = null
 ) : OutputProducer {
 
     private val log = KotlinLogging.logger { }
@@ -58,20 +59,23 @@ data class ThumbnailEncode(
             video = VideoStreamEncode(
                 params = params.toParams(),
                 filter = filter,
-                inputLabels = listOf(inputLabel)
+                inputLabels = listOf(inputLabel),
             ),
             output = "${job.baseName}$suffix%0${suffixZeroPad}d.jpg",
             postProcessor = { outputFolder ->
                 outputFolder.listFiles().orEmpty().filter { it.name.matches(fileRegex) }
             },
-            isImage = true
+            isImage = true,
+            decodeOutputStream = decodeOutput?.let { "$it:v:0" }
         )
     }
 
     private fun selectInterval(interval: Double, outputSeek: Double?): String {
-        val select = outputSeek
-            ?.let { "gte(t\\,$it)*(isnan(prev_selected_t)+gt(floor((t-$it)/$interval)\\,floor((prev_selected_t-$it)/$interval)))" }
-            ?: "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+        val select = if (outputSeek != null && decodeOutput == null) {
+            "gte(t\\,$outputSeek)*(isnan(prev_selected_t)+gt(floor((t-$outputSeek)/$interval)\\,floor((prev_selected_t-$outputSeek)/$interval)))"
+        } else {
+            "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+        }
         return "select=$select"
     }
 
@@ -87,7 +91,14 @@ data class ThumbnailEncode(
         val outputDuration = outputDuration(videoIn, job)
         return percentages
             .map { it * outputDuration / 100 }
-            .map { t -> job.seekTo?.let { t + it } ?: t }
+            .map { t ->
+                val outputSeek = job.seekTo
+                if (outputSeek != null && decodeOutput == null) {
+                    t + outputSeek
+                } else {
+                    t
+                }
+            }
     }
 
     private fun selectTimes(times: List<Double>) =

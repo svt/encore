@@ -29,8 +29,8 @@ class ThumbnailMapEncodeTest {
             .hasId("_12x20_160x90_thumbnail_map.jpg")
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-q:v", "5", "-fps_mode", "vfr"),
-                    filter = "select=isnan(prev_selected_t)+gt(floor(t/0.041666666666666664)\\,floor(prev_selected_t/0.041666666666666664)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90:out_range=jpeg",
+                    params = listOf("-fps_mode", "vfr"),
+                    filter = "select=isnan(prev_selected_t)+gt(floor(t/0.041666666666666664)\\,floor(prev_selected_t/0.041666666666666664)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
@@ -50,8 +50,8 @@ class ThumbnailMapEncodeTest {
             .hasId("_6x10_160x90_thumbnail_map.jpg")
             .hasVideo(
                 VideoStreamEncode(
-                    params = listOf("-q:v", "5", "-fps_mode", "vfr"),
-                    filter = "select=gte(t\\,1.0)*(isnan(prev_selected_t)+gt(floor((t-1.0)/0.08333333333333333)\\,floor((prev_selected_t-1.0)/0.08333333333333333))),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90:out_range=jpeg",
+                    params = listOf("-fps_mode", "vfr"),
+                    filter = "select=gte(t\\,1.0)*(isnan(prev_selected_t)+gt(floor((t-1.0)/0.08333333333333333)\\,floor((prev_selected_t-1.0)/0.08333333333333333))),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
                     twoPass = false,
                     inputLabels = listOf(DEFAULT_VIDEO_LABEL)
                 )
