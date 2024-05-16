@@ -67,7 +67,9 @@ encodes:
   - type: ThumbnailMapEncode
     cols: 6
     rows: 10
+    decodeOutput: 0
 
   - type: ThumbnailEncode
+    decodeOutput: 0
 
 

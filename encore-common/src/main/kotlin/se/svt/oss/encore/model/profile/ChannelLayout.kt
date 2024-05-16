@@ -51,6 +51,7 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     CH_LAYOUT_5POINT1_SIDE("5.1(side)", listOf(FL, FR, FC, LFE, SL, SR)),
     CH_LAYOUT_6POINT0("6.0", listOf(FL, FR, FC, BC, SL, SR)),
     CH_LAYOUT_6POINT0_FRONT("6.0(front)", listOf(FL, FR, FLC, FRC, SL, SR)),
+    CH_LAYOUT_3POINT1POINT2("3.1.2", listOf(FL, FR, FC, LFE, TFL, TFR)),
     CH_LAYOUT_HEXAGONAL("hexagonal", listOf(FL, FR, FC, BL, BR, BC)),
     CH_LAYOUT_6POINT1("6.1", listOf(FL, FR, FC, LFE, BC, SL, SR)),
     CH_LAYOUT_6POINT1_BACK("6.1(back)", listOf(FL, FR, FC, LFE, BL, BR, BC)),
@@ -60,9 +61,16 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     CH_LAYOUT_7POINT1("7.1", listOf(FL, FR, FC, LFE, BL, BR, SL, SR)),
     CH_LAYOUT_7POINT1_WIDE("7.1(wide)", listOf(FL, FR, FC, LFE, BL, BR, FLC, FRC)),
     CH_LAYOUT_7POINT1_WIDE_SIDE("7.1(wide-side)", listOf(FL, FR, FC, LFE, FLC, FRC, SL, SR)),
-    CH_LAYOUT_OCTAGONAL("octagonal)", listOf(FL, FR, FC, BL, BR, BC, SL, SR)),
+    CH_LAYOUT_5POINT1POINT2("5.1.2", listOf(FL, FR, FC, LFE, BL, BR, TFL, TFR)),
+    CH_LAYOUT_OCTAGONAL("octagonal", listOf(FL, FR, FC, BL, BR, BC, SL, SR)),
+    CH_LAYOUT_CUBE("cube", listOf(FL, FR, BL, BR, TFL, TFR, TBL, TBR)),
+    CH_LAYOUT_5POINT1POINT4("5.1.4", listOf(FL, FR, FC, LFE, BL, BR, TFL, TFR, TBL, TBR)),
+    CH_LAYOUT_7POINT1POINT2("7.1.2", listOf(FL, FR, FC, LFE, BL, BR, SL, SR, TFL, TFR)),
+    CH_LAYOUT_7POINT1POINT4("7.1.4", listOf(FL, FR, FC, LFE, BL, BR, SL, SR, TFL, TFR, TBL, TBR)),
+    CH_LAYOUT_7POINT2POINT3("7.2.3", listOf(FL, FR, FC, LFE, BL, BR, SL, SR, TFL, TFR, TBC, LFE2)),
+    CH_LAYOUT_9POINT1POINT4("9.1.4", listOf(FL, FR, FC, LFE, BL, BR, FLC, FRC, SL, SR, TFL, TFR, TBL, TBR)),
     CH_LAYOUT_HEXADECAGONAL(
-        "hexadecagonal)",
+        "hexadecagonal",
         listOf(
             FL, FR, FC, BL, BR, BC, SL, SR, TFL, TFC, TFR, TBL, TBC, TBR, WL, WR
         )
@@ -99,7 +107,7 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     );
 
     companion object {
-        fun defaultChannelLayout(numChannels: Int) = values().firstOrNull { it.channels.size == numChannels }
-        fun getByNameOrNull(layoutName: String) = values().firstOrNull { it.layoutName == layoutName }
+        fun defaultChannelLayout(numChannels: Int) = entries.firstOrNull { it.channels.size == numChannels }
+        fun getByNameOrNull(layoutName: String) = entries.firstOrNull { it.layoutName == layoutName }
     }
 }

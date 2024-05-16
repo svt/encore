@@ -22,10 +22,12 @@ data class ThumbnailMapEncode(
     val tileHeight: Int = 90,
     val cols: Int = 12,
     val rows: Int = 20,
+    val quality: Int = 5,
     val optional: Boolean = true,
     val suffix: String = "_${cols}x${rows}_${tileWidth}x${tileHeight}_thumbnail_map",
     val format: String = "jpg",
-    val inputLabel: String = DEFAULT_VIDEO_LABEL
+    val inputLabel: String = DEFAULT_VIDEO_LABEL,
+    val decodeOutput: Int? = null
 ) : OutputProducer {
 
     private val log = KotlinLogging.logger { }
@@ -40,8 +42,9 @@ data class ThumbnailMapEncode(
             ?: return logOrThrow("No input with label $inputLabel!")
 
         var inputDuration = videoStream.duration
+        val outputSeek = job.seekTo
         inputSeekTo?.let { inputDuration -= it }
-        job.seekTo?.let { inputDuration -= it }
+        outputSeek?.let { inputDuration -= it }
         val outputDuration = job.duration ?: inputDuration
 
         if (outputDuration <= 0) {
@@ -49,22 +52,20 @@ data class ThumbnailMapEncode(
         }
 
         val interval = outputDuration / (cols * rows)
-        val select = job.seekTo
-            ?.let { "gte(t\\,$it)*(isnan(prev_selected_t)+gt(floor((t-$it)/$interval)\\,floor((prev_selected_t-$it)/$interval)))" }
-            ?: "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+        val select = if (outputSeek != null && decodeOutput == null) {
+            "gte(t\\,$outputSeek)*(isnan(prev_selected_t)+gt(floor((t-$outputSeek)/$interval)\\,floor((prev_selected_t-$outputSeek)/$interval)))"
+        } else {
+            "isnan(prev_selected_t)+gt(floor(t/$interval)\\,floor(prev_selected_t/$interval))"
+        }
 
         val tempFolder = createTempDir(suffix).toFile()
         tempFolder.deleteOnExit()
 
         val pad = "aspect=${Fraction(tileWidth, tileHeight).stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2"
 
-        val scale = if (format == "jpg") {
-            "-1:$tileHeight:out_range=jpeg"
-        } else {
-            "-1:$tileHeight"
-        }
+        val scale = "-1:$tileHeight"
+
         val params = linkedMapOf(
-            "q:v" to "5",
             "fps_mode" to "vfr"
         )
         return Output(
@@ -72,9 +73,9 @@ data class ThumbnailMapEncode(
             video = VideoStreamEncode(
                 params = params.toParams(),
                 filter = "select=$select,pad=$pad,scale=$scale",
-                inputLabels = listOf(inputLabel)
+                inputLabels = listOf(inputLabel),
             ),
-            output = tempFolder.resolve("${job.baseName}$suffix%04d.$format").toString(),
+            output = tempFolder.resolve("${job.baseName}$suffix%04d.png").toString(),
             postProcessor = { outputFolder ->
                 try {
                     val targetFile = outputFolder.resolve("${job.baseName}$suffix.$format")
@@ -82,11 +83,13 @@ data class ThumbnailMapEncode(
                         "ffmpeg",
                         "-y",
                         "-i",
-                        "${job.baseName}$suffix%04d.$format",
+                        "${job.baseName}$suffix%04d.png",
                         "-vf",
                         "tile=${cols}x$rows",
                         "-frames:v",
                         "1",
+                        "-q:v",
+                        "$quality",
                         "$targetFile"
                     )
                         .directory(tempFolder)
@@ -102,7 +105,8 @@ data class ThumbnailMapEncode(
                     emptyList()
                 }
             },
-            isImage = true
+            isImage = true,
+            decodeOutputStream = decodeOutput?.let { "$it:v:0" }
         )
     }
 
