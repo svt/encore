@@ -139,18 +139,23 @@ class EncoreIntegrationTestBase(val wireMockRuntimeInfo: WireMockRuntimeInfo) {
             logContext = mapOf("FlowId" to UUID.randomUUID().toString()),
         )
 
-    fun defaultExpectedOutputFiles(outputDir: File, testFile: Resource): List<String> = listOf(
-        expectedFile(outputDir, testFile, "x264_3100.mp4"),
-        expectedFile(outputDir, testFile, "x264_2069.mp4"),
-        expectedFile(outputDir, testFile, "x264_1312.mp4"),
-        expectedFile(outputDir, testFile, "x264_806.mp4"),
-        expectedFile(outputDir, testFile, "x264_324.mp4"),
-        expectedFile(outputDir, testFile, "STEREO.mp4"),
-        expectedFile(outputDir, testFile, "thumb01.jpg"),
-        expectedFile(outputDir, testFile, "thumb02.jpg"),
-        expectedFile(outputDir, testFile, "thumb03.jpg"),
-        expectedFile(outputDir, testFile, "12x20_160x90_thumbnail_map.jpg"),
-    )
+    fun defaultExpectedOutputFileSuffixes() =
+        listOf(
+            "x264_3100.mp4",
+            "x264_2069.mp4",
+            "x264_1312.mp4",
+            "x264_806.mp4",
+            "x264_324.mp4",
+            "STEREO.mp4",
+            "thumb01.jpg",
+            "thumb02.jpg",
+            "thumb03.jpg",
+            "12x20_160x90_thumbnail_map.jpg",
+        )
+
+    fun defaultExpectedOutputFiles(outputDir: File, testFile: Resource): List<String> = defaultExpectedOutputFileSuffixes().map {
+        expectedFile(outputDir, testFile, it)
+    }
 
     fun expectedFile(outputDir: File, baseName: String, suffix: String) =
         "${outputDir.absolutePath}/${baseName}_$suffix"
