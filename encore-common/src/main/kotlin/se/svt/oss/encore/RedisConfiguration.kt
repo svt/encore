@@ -43,7 +43,10 @@ import se.svt.oss.mediaanalyzer.file.VideoFile
     SegmentProgressEvent::class,
     QueueItem::class
 )
-@EnableRedisRepositories(enableKeyspaceEvents = RedisKeyValueAdapter.EnableKeyspaceEvents.ON_STARTUP)
+@EnableRedisRepositories(
+    enableKeyspaceEvents = RedisKeyValueAdapter.EnableKeyspaceEvents.ON_STARTUP,
+    keyspaceNotificationsConfigParameter = "#{\${redis.keyspace.disable-config-notifications:false} ? '' : 'Ex'}"
+)
 class RedisConfiguration {
 
     @Bean
