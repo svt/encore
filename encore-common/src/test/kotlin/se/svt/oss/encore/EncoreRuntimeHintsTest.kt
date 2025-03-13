@@ -19,13 +19,13 @@ class EncoreRuntimeHintsTest {
         val hints = RuntimeHints()
         EncoreRuntimeHints().registerHints(hints, javaClass.classLoader)
         assertThat(
-            RuntimeHintsPredicates.reflection().onConstructor(EncoreProperties::class.constructors.first().javaConstructor!!)
+            RuntimeHintsPredicates.reflection().onConstructor(EncoreProperties::class.constructors.first().javaConstructor!!),
         ).accepts(hints)
         assertThat(
-            RuntimeHintsPredicates.reflection().onConstructor(EncodingProperties::class.constructors.first().javaConstructor!!)
+            RuntimeHintsPredicates.reflection().onConstructor(EncodingProperties::class.constructors.first().javaConstructor!!),
         ).accepts(hints)
         assertThat(
-            RuntimeHintsPredicates.reflection().onConstructor(AudioMixPreset::class.constructors.first().javaConstructor!!)
+            RuntimeHintsPredicates.reflection().onConstructor(AudioMixPreset::class.constructors.first().javaConstructor!!),
         ).accepts(hints)
     }
 }

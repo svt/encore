@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -16,6 +16,8 @@ import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.service.EncoreService
 import se.svt.oss.encore.service.queue.QueueService
 
+private val log = KotlinLogging.logger { }
+
 @EnableConfigurationProperties(EncoreProperties::class)
 @ImportRuntimeHints(EncoreRuntimeHints::class)
 @SpringBootApplication
@@ -23,9 +25,8 @@ class EncoreWorkerApplication(
     private val queueService: QueueService,
     private val encoreService: EncoreService,
     private val applicationContext: ApplicationContext,
-    private val encoreProperties: EncoreProperties
+    private val encoreProperties: EncoreProperties,
 ) : CommandLineRunner {
-    private val log = KotlinLogging.logger { }
 
     override fun run(vararg args: String?) {
         try {

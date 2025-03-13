@@ -10,5 +10,5 @@ data class Profile(
     val encodes: List<OutputProducer>,
     val scaling: String? = "bicubic",
     val deinterlaceFilter: String = "yadif",
-    val joinSegmentParams: LinkedHashMap<String, Any?> = linkedMapOf()
+    val joinSegmentParams: LinkedHashMap<String, Any?> = linkedMapOf(),
 )

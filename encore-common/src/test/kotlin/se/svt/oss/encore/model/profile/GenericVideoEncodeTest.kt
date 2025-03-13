@@ -11,7 +11,7 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         twoPass: Boolean,
         params: LinkedHashMap<String, String>,
         filters: List<String>,
-        audioEncode: AudioEncode?
+        audioEncode: AudioEncode?,
     ) = GenericVideoEncode(
         width = width,
         height = height,
@@ -21,6 +21,6 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         audioEncode = audioEncode,
         suffix = "-generic",
         codec = "acodec",
-        format = "mp4"
+        format = "mp4",
     )
 }

@@ -49,7 +49,7 @@ class SecurityConfiguration(private val encoreProperties: EncoreProperties) {
     fun filterChain(http: HttpSecurity, webEndPointProperties: WebEndpointProperties): SecurityFilterChain {
         http {
             headers { httpStrictTransportSecurity { } }
-            authorizeRequests {
+            authorizeHttpRequests {
                 authorize(EndpointRequest.to(HealthEndpoint::class.java), permitAll)
                 authorize(HttpMethod.GET, "/**", hasRole(ROLE_USER))
                 authorize(HttpMethod.PUT, "/**", hasRole(ROLE_ADMIN))

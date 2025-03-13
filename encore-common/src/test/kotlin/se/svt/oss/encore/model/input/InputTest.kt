@@ -19,18 +19,18 @@ internal class InputTest {
             uri = "/input1.mp4",
             params = linkedMapOf("a" to "b"),
             videoLabel = "extra",
-            analyzed = extraVideoFile
+            analyzed = extraVideoFile,
         ),
         AudioVideoInput(
             uri = "http://input2",
-            analyzed = defaultVideoFile
+            analyzed = defaultVideoFile,
         ),
         AudioInput(
             uri = "/input3.mxf",
             params = linkedMapOf("c" to "d"),
             audioLabel = "other",
-            analyzed = multipleAudioFile
-        )
+            analyzed = multipleAudioFile,
+        ),
     )
 
     @Test
@@ -41,8 +41,8 @@ internal class InputTest {
                 listOf(
                     "-a", "b", "-t", "60.5", "-i", "/input1.mp4",
                     "-t", "60.5", "-i", "http://input2",
-                    "-c", "d", "-t", "60.5", "-i", "/input3.mxf"
-                )
+                    "-c", "d", "-t", "60.5", "-i", "/input3.mxf",
+                ),
             )
     }
 
@@ -54,8 +54,8 @@ internal class InputTest {
                 listOf(
                     "-a", "b", "-i", "/input1.mp4",
                     "-i", "http://input2",
-                    "-c", "d", "-i", "/input3.mxf"
-                )
+                    "-c", "d", "-i", "/input3.mxf",
+                ),
             )
     }
 
@@ -67,20 +67,20 @@ internal class InputTest {
                 params = linkedMapOf("a" to "b"),
                 videoLabel = "extra",
                 analyzed = extraVideoFile,
-                seekTo = 47.11
+                seekTo = 47.11,
             ),
             AudioVideoInput(
                 uri = "http://input2",
                 analyzed = defaultVideoFile,
-                seekTo = 47.11
+                seekTo = 47.11,
             ),
             AudioInput(
                 uri = "/input3.mxf",
                 params = linkedMapOf("c" to "d"),
                 audioLabel = "other",
                 analyzed = multipleAudioFile,
-                seekTo = 47.11
-            )
+                seekTo = 47.11,
+            ),
         ).inputParams(60.5)
 
         assertThat(params)
@@ -88,8 +88,8 @@ internal class InputTest {
                 listOf(
                     "-a", "b", "-t", "60.5", "-ss", "47.11", "-i", "/input1.mp4",
                     "-t", "60.5", "-ss", "47.11", "-i", "http://input2",
-                    "-c", "d", "-t", "60.5", "-ss", "47.11", "-i", "/input3.mxf"
-                )
+                    "-c", "d", "-t", "60.5", "-ss", "47.11", "-i", "/input3.mxf",
+                ),
             )
     }
 

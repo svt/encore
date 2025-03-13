@@ -36,7 +36,7 @@ class EncoreJobRepositoryTest {
         val callbackUrls = findByStatus.map { it.progressCallbackUri }
         assertThat(callbackUrls).containsExactlyInAnyOrder(
             "http://transcoder2",
-            "http://transcoder3"
+            "http://transcoder3",
         )
         repository.deleteAll()
     }
@@ -49,7 +49,7 @@ class EncoreJobRepositoryTest {
             outputFolder = "/shares/test",
             createdDate = OffsetDateTime.now(),
             progressCallbackUri = url,
-            baseName = "test"
+            baseName = "test",
         )
         encoreJob.status = status
         encoreJob.startedDate = OffsetDateTime.now()

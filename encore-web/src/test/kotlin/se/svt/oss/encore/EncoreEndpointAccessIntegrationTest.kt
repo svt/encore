@@ -15,13 +15,14 @@ import org.springframework.boot.test.context.assertj.AssertableApplicationContex
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.json.JsonCompareMode
 import org.springframework.test.web.reactive.server.WebTestClient
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["encore-settings.security.enabled=true"]
+    properties = ["encore-settings.security.enabled=true"],
 )
 @ActiveProfiles("test")
 @ExtendWith(RedisExtension::class)
@@ -136,7 +137,7 @@ class EncoreEndpointAccessIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectBody()
-                .json("""{status: "UP", groups:["liveness","readiness"]}""", true)
+                .json("""{status: "UP", groups:["liveness","readiness"]}""", JsonCompareMode.STRICT)
         }
 
         @Test
@@ -146,7 +147,7 @@ class EncoreEndpointAccessIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectBody()
-                .json("""{status: "UP"}""", true)
+                .json("""{status: "UP"}""", JsonCompareMode.STRICT)
         }
 
         @Test

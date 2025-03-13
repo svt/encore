@@ -12,14 +12,14 @@ import se.svt.oss.encore.model.profile.ChannelLayout
 class StringToChannelLayoutConverter : Converter<String, ChannelLayout> {
     override fun convert(source: String): ChannelLayout =
         ChannelLayout.getByNameOrNull(source)
-            ?: throw IllegalArgumentException("$source is not a valid channel layout. Valid values: ${ChannelLayout.values().map { it.layoutName }}")
+            ?: throw IllegalArgumentException("$source is not a valid channel layout. Valid values: ${ChannelLayout.entries.map { it.layoutName }}")
 }
 
 @ReadingConverter
 class ByteArrayToChannelLayoutConverter : Converter<ByteArray, ChannelLayout> {
     override fun convert(source: ByteArray): ChannelLayout =
         ChannelLayout.getByNameOrNull(String(source))
-            ?: throw IllegalArgumentException("${String(source)} is not a valid channel layout. Valid values: ${ChannelLayout.values().map { it.layoutName }}")
+            ?: throw IllegalArgumentException("${String(source)} is not a valid channel layout. Valid values: ${ChannelLayout.entries.map { it.layoutName }}")
 }
 
 @WritingConverter

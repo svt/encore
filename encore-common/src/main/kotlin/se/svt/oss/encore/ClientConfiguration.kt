@@ -21,7 +21,7 @@ class ClientConfiguration {
         val webClient = WebClient.builder()
             .defaultHeader(HttpHeaders.USER_AGENT, userAgent)
             .build()
-        return HttpServiceProxyFactory.builder(WebClientAdapter.forClient(webClient))
+        return HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient))
             .build()
             .createClient(CallbackClient::class.java)
     }

@@ -4,8 +4,8 @@
 
 package se.svt.oss.encore.handlers
 
-import mu.KotlinLogging
-import mu.withLoggingContext
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import org.springframework.data.rest.core.annotation.HandleAfterCreate
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler
 import org.springframework.stereotype.Component
@@ -14,13 +14,14 @@ import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.repository.EncoreJobRepository
 import se.svt.oss.encore.service.queue.QueueService
 
+private val log = KotlinLogging.logger { }
+
 @Component
 @RepositoryEventHandler
 class EncoreJobHandler(
     private val queueService: QueueService,
-    private val repository: EncoreJobRepository
+    private val repository: EncoreJobRepository,
 ) {
-    private val log = KotlinLogging.logger { }
 
     @HandleAfterCreate
     fun onAfterCreate(encoreJob: EncoreJob) {

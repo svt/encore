@@ -4,13 +4,16 @@
 
 package se.svt.oss.encore
 
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo
+import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.test.context.ActiveProfiles
 import java.io.File
 
 @ActiveProfiles("test-local")
-class LocalEncodeIntegrationTest : EncoreIntegrationTestBase() {
+@WireMockTest
+class LocalEncodeIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIntegrationTestBase(wireMockRuntimeInfo) {
 
     @Test
     fun jobIsSuccessfulAndNoAudioPresets(@TempDir outputDir: File) {
@@ -20,9 +23,9 @@ class LocalEncodeIntegrationTest : EncoreIntegrationTestBase() {
                 expectedFile(
                     outputDir,
                     testFileSurround,
-                    "SURROUND.mp4"
-                )
-            )
+                    "SURROUND.mp4",
+                ),
+            ),
         )
     }
 }

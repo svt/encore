@@ -39,8 +39,8 @@ data class SimpleAudioEncode(
                 AudioStreamEncode(
                     params = outParams.toParams(),
                     inputLabels = listOf(inputLabel),
-                    preserveLayout = true
-                )
+                    preserveLayout = true,
+                ),
             ),
             output = outputName,
         )

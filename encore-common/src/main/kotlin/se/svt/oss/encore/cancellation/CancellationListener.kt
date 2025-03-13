@@ -4,21 +4,25 @@
 
 package se.svt.oss.encore.cancellation
 
-import java.util.UUID
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Job
-import mu.KotlinLogging
-import org.redisson.api.listener.MessageListener
+import org.springframework.data.redis.connection.Message
+import org.springframework.data.redis.connection.MessageListener
 import se.svt.oss.encore.model.CancelEvent
+import java.util.UUID
+
+private val log = KotlinLogging.logger {}
 
 class CancellationListener(
+    private val objectMapper: ObjectMapper,
     private val encoreJobId: UUID,
-    private val coroutineJob: Job
-) : MessageListener<CancelEvent> {
+    private val coroutineJob: Job,
+) : MessageListener {
 
-    private val log = KotlinLogging.logger {}
-
-    override fun onMessage(channel: CharSequence?, msg: CancelEvent?) {
-        val jobId = msg?.jobId
+    override fun onMessage(message: Message, pattern: ByteArray?) {
+        val jobId = objectMapper.readValue<CancelEvent>(message.body).jobId
         if (jobId == encoreJobId) {
             log.info { "Received cancel event for job $jobId" }
             coroutineJob.cancel()

@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.service.localencode
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
@@ -18,27 +18,25 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
+private val log = KotlinLogging.logger {}
+
 @Service
 class LocalEncodeService(
-    private val encoreProperties: EncoreProperties
+    private val encoreProperties: EncoreProperties,
 ) {
 
-    private val log = KotlinLogging.logger {}
-
     fun outputFolder(
-        encoreJob: EncoreJob
-    ): String {
-        return if (encoreProperties.localTemporaryEncode) {
-            createTempDir("job_${encoreJob.id}").toString()
-        } else {
-            encoreJob.outputFolder
-        }
+        encoreJob: EncoreJob,
+    ): String = if (encoreProperties.localTemporaryEncode) {
+        createTempDir("job_${encoreJob.id}").toString()
+    } else {
+        encoreJob.outputFolder
     }
 
     fun localEncodedFilesToCorrectDir(
         outputFolder: String,
         output: List<MediaFile>,
-        encoreJob: EncoreJob
+        encoreJob: EncoreJob,
     ): List<MediaFile> {
         if (encoreProperties.localTemporaryEncode) {
             val destination = File(encoreJob.outputFolder)
@@ -76,14 +74,12 @@ class LocalEncodeService(
         Files.move(file.toPath(), destination.resolve(file.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
 
-    private fun resolveMovedOutputFiles(output: List<MediaFile>, encoreJob: EncoreJob): List<MediaFile> {
-        return output.map { file ->
-            when (file) {
-                is VideoFile -> file.copy(file = resolvePath(file, encoreJob))
-                is AudioFile -> file.copy(file = resolvePath(file, encoreJob))
-                is ImageFile -> file.copy(file = resolvePath(file, encoreJob))
-                else -> throw Exception("Invalid conversion")
-            }
+    private fun resolveMovedOutputFiles(output: List<MediaFile>, encoreJob: EncoreJob): List<MediaFile> = output.map { file ->
+        when (file) {
+            is VideoFile -> file.copy(file = resolvePath(file, encoreJob))
+            is AudioFile -> file.copy(file = resolvePath(file, encoreJob))
+            is ImageFile -> file.copy(file = resolvePath(file, encoreJob))
+            else -> throw Exception("Invalid conversion")
         }
     }
 

@@ -16,7 +16,7 @@ class SchedulingConfiguration {
     fun scheduler(encoreProperties: EncoreProperties): ThreadPoolTaskScheduler {
         val taskScheduler = ThreadPoolTaskScheduler()
         taskScheduler.poolSize = encoreProperties.concurrency
-        taskScheduler.threadNamePrefix = "scheduling-"
+        taskScheduler.setThreadNamePrefix("scheduling-")
         taskScheduler.setAwaitTerminationSeconds(6)
         return taskScheduler
     }

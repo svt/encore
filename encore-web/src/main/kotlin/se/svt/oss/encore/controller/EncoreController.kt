@@ -4,9 +4,9 @@
 
 package se.svt.oss.encore.controller
 
+import io.github.oshai.kotlinlogging.withLoggingContext
 import io.swagger.v3.oas.annotations.Operation
-import mu.withLoggingContext
-import org.redisson.api.RedissonClient
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import se.svt.oss.encore.model.CancelEvent
+import se.svt.oss.encore.model.RedisEvent
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.repository.EncoreJobRepository
 import se.svt.oss.encore.service.queue.QueueService
@@ -25,8 +26,8 @@ import java.util.UUID
 @RestController
 class EncoreController(
     private val repository: EncoreJobRepository,
-    private val redissonClient: RedissonClient,
-    private val queueService: QueueService
+    private val redisTemplate: RedisTemplate<String, RedisEvent>,
+    private val queueService: QueueService,
 ) {
 
     @Operation(summary = "Get Queues", description = "Returns a list of queues (QueueItems)", tags = ["queue"])
@@ -67,6 +68,6 @@ class EncoreController(
         }
 
     private fun sendCancelEvent(jobId: UUID) {
-        redissonClient.getTopic("cancel").publish(CancelEvent(jobId))
+        redisTemplate.convertAndSend("cancel", CancelEvent(jobId))
     }
 }

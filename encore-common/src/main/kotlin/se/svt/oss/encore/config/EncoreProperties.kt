@@ -57,16 +57,20 @@ data class EncoreProperties(
      */
     val sharedWorkDir: File? = null,
     /**
-     * timeout for segemnted encode before failing
+     * timeout for segmented encode before failing
      */
     val segmentedEncodeTimeout: Duration = Duration.ofMinutes(120),
+    /***
+     * enable migration of queues from redis LIST to ZSET
+     */
+    val queueMigrationScriptEnabled: Boolean = true,
     @NestedConfigurationProperty
-    val encoding: EncodingProperties = EncodingProperties()
+    val encoding: EncodingProperties = EncodingProperties(),
 ) {
     data class Security(
         val enabled: Boolean = false,
         val userPassword: String = "",
-        val adminPassword: String = ""
+        val adminPassword: String = "",
     )
 
     data class OpenApi(
@@ -74,6 +78,6 @@ data class EncoreProperties(
         val description: String = "Endpoints for Encore",
         val contactName: String = "",
         val contactUrl: String = "",
-        val contactEmail: String = ""
+        val contactEmail: String = "",
     )
 }

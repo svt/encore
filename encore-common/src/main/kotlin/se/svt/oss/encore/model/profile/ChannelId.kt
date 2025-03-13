@@ -34,5 +34,5 @@ enum class ChannelId {
     TSR,
     BFC,
     BFL,
-    BFR
+    BFR,
 }

@@ -14,7 +14,7 @@ import se.svt.oss.encore.config.EncoreProperties
 
 @EnableConfigurationProperties(EncoreProperties::class)
 @SpringBootApplication(
-    exclude = [SecurityAutoConfiguration::class, ManagementWebSecurityAutoConfiguration::class]
+    exclude = [SecurityAutoConfiguration::class, ManagementWebSecurityAutoConfiguration::class],
 )
 @ImportRuntimeHints(EncoreRuntimeHints::class, EncoreWebRuntimeHints::class)
 class EncoreApplication

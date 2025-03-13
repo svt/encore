@@ -8,5 +8,5 @@ enum class AudioLayout {
     NONE,
     INVALID,
     MONO_STREAMS,
-    MULTI_TRACK
+    MULTI_TRACK,
 }

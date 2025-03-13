@@ -13,6 +13,7 @@ import se.svt.oss.encore.config.EncoreProperties
 
 class EncoreRuntimeHints : RuntimeHintsRegistrar {
     override fun registerHints(hints: RuntimeHints, classLoader: ClassLoader?) {
+        hints.resources().registerPattern("migrate_queue_script.lua")
         hints.reflection()
             .registerType(
                 EncoreProperties::class.java,
@@ -20,11 +21,11 @@ class EncoreRuntimeHints : RuntimeHintsRegistrar {
             )
             .registerType(
                 EncodingProperties::class.java,
-                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS
+                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
             )
             .registerType(
                 AudioMixPreset::class.java,
-                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS
+                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
             )
     }
 }

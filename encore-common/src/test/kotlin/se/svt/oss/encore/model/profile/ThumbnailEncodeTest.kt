@@ -19,14 +19,14 @@ class ThumbnailEncodeTest {
     private val encode = ThumbnailEncode(
         percentages = listOf(10, 50),
         thumbnailWidth = 1920,
-        thumbnailHeight = 1080
+        thumbnailHeight = 1080,
     )
 
     @Test
     fun `use percentages for filter`() {
         val output = encode.getOutput(
             job = defaultEncoreJob(),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -34,10 +34,10 @@ class ThumbnailEncodeTest {
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-fps_mode", "vfr", "-q:v", "5"),
-                    filter = "select=lt(prev_pts*TB\\,1.0)*gte(pts*TB\\,1.0)+lt(prev_pts*TB\\,5.0)*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
+                    filter = "select=(isnan(prev_pts)+lt(prev_pts*TB\\,1.0))*gte(pts*TB\\,1.0)+(isnan(prev_pts)+lt(prev_pts*TB\\,5.0))*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -47,7 +47,7 @@ class ThumbnailEncodeTest {
             job = defaultEncoreJob().copy(
                 thumbnailTime = 5.0,
             ),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -55,10 +55,10 @@ class ThumbnailEncodeTest {
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-fps_mode", "vfr", "-q:v", "5"),
-                    filter = "select=lt(prev_pts*TB\\,5.0)*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
+                    filter = "select=(isnan(prev_pts)+lt(prev_pts*TB\\,5.0))*gte(pts*TB\\,5.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -66,11 +66,11 @@ class ThumbnailEncodeTest {
     fun `use interval`() {
         val selectorEncode = encode.copy(
             intervalSeconds = 250.0,
-            suffixZeroPad = 4
+            suffixZeroPad = 4,
         )
         val output = selectorEncode.getOutput(
             job = defaultEncoreJob(),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
 
         assertThat(output)
@@ -81,8 +81,8 @@ class ThumbnailEncodeTest {
                     params = listOf("-fps_mode", "vfr", "-q:v", "5"),
                     filter = "select=isnan(prev_selected_t)+gt(floor(t/250.0)\\,floor(prev_selected_t/250.0)),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -91,9 +91,9 @@ class ThumbnailEncodeTest {
         val output = encode.getOutput(
             job = defaultEncoreJob().copy(
                 seekTo = 1.0,
-                duration = 4.0
+                duration = 4.0,
             ),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -101,10 +101,10 @@ class ThumbnailEncodeTest {
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-fps_mode", "vfr", "-q:v", "5"),
-                    filter = "select=lt(prev_pts*TB\\,1.4)*gte(pts*TB\\,1.4)+lt(prev_pts*TB\\,3.0)*gte(pts*TB\\,3.0),scale=w=1920:h=1080:out_range=jpeg",
+                    filter = "select=(isnan(prev_pts)+lt(prev_pts*TB\\,1.4))*gte(pts*TB\\,1.4)+(isnan(prev_pts)+lt(prev_pts*TB\\,3.0))*gte(pts*TB\\,3.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -119,11 +119,11 @@ class ThumbnailEncodeTest {
                     AudioVideoInput(
                         uri = "/input/test.mp4",
                         analyzed = longVideoFile,
-                        seekTo = 1190.0
-                    )
-                )
+                        seekTo = 1190.0,
+                    ),
+                ),
             ),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -131,10 +131,10 @@ class ThumbnailEncodeTest {
             .hasVideo(
                 VideoStreamEncode(
                     params = listOf("-fps_mode", "vfr", "-q:v", "5"),
-                    filter = "select=lt(prev_pts*TB\\,161.0)*gte(pts*TB\\,161.0),scale=w=1920:h=1080:out_range=jpeg",
+                    filter = "select=(isnan(prev_pts)+lt(prev_pts*TB\\,161.0))*gte(pts*TB\\,161.0),scale=w=1920:h=1080:out_range=jpeg",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -142,7 +142,7 @@ class ThumbnailEncodeTest {
     fun `unmapped input optional returns null`() {
         val output = encode.copy(inputLabel = "other", optional = true).getOutput(
             job = defaultEncoreJob(),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output).isNull()
     }
@@ -152,7 +152,7 @@ class ThumbnailEncodeTest {
         assertThatThrownBy {
             encode.copy(inputLabel = "other", optional = false).getOutput(
                 job = defaultEncoreJob(),
-                encodingProperties = EncodingProperties()
+                encodingProperties = EncodingProperties(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No video input with label other!")

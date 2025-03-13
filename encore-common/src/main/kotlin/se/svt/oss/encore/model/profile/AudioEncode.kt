@@ -5,8 +5,8 @@
 package se.svt.oss.encore.model.profile
 
 import se.svt.oss.encore.config.EncodingProperties
-import se.svt.oss.encore.model.input.DEFAULT_AUDIO_LABEL
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.DEFAULT_AUDIO_LABEL
 import se.svt.oss.encore.model.input.audioInput
 import se.svt.oss.encore.model.mediafile.AudioLayout
 import se.svt.oss.encore.model.mediafile.audioLayout
@@ -90,8 +90,8 @@ data class AudioEncode(
                 AudioStreamEncode(
                     params = outParams.toParams(),
                     inputLabels = listOf(inputLabel),
-                    filter = (dialogueEnhanceFilters + mixFilters + filters).joinToString(",").ifEmpty { null }
-                )
+                    filter = (dialogueEnhanceFilters + mixFilters + filters).joinToString(",").ifEmpty { null },
+                ),
             ),
             output = outputName,
         )
@@ -121,20 +121,18 @@ data class AudioEncode(
         return listOf(channelSplit, centerSplit, bgMerge, compress, mixMerge).joinToString(";")
     }
 
-    private fun isApplicable(channelCount: Int): Boolean {
-        return channelCount > 0 && (channelLayout == ChannelLayout.CH_LAYOUT_STEREO || channelLayout.channels.size in 1..channelCount)
-    }
+    private fun isApplicable(channelCount: Int): Boolean = channelCount > 0 && (channelLayout == ChannelLayout.CH_LAYOUT_STEREO || channelLayout.channels.size in 1..channelCount)
 
     data class DialogueEnhancement(
         val enabled: Boolean = false,
         val sidechainCompress: SidechainCompress = SidechainCompress(),
-        val dialogueEnhanceStereo: DialogueEnhanceStereo = DialogueEnhanceStereo()
+        val dialogueEnhanceStereo: DialogueEnhanceStereo = DialogueEnhanceStereo(),
     ) {
         data class DialogueEnhanceStereo(
             val enabled: Boolean = true,
             val original: Int = 1,
             val enhance: Int = 1,
-            val voice: Int = 2
+            val voice: Int = 2,
         ) {
             val filterString: String
                 get() = "dialoguenhance=original=$original:enhance=$enhance:voice=$voice"
@@ -144,7 +142,7 @@ data class AudioEncode(
             val ratio: Int = 8,
             val threshold: Double = 0.012,
             val release: Double = 1000.0,
-            val attack: Double = 100.0
+            val attack: Double = 100.0,
         ) {
             val filterString: String
                 get() = "sidechaincompress=threshold=$threshold:ratio=$ratio:release=$release:attack=$attack"

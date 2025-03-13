@@ -12,32 +12,36 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.redisson.api.RPriorityBlockingQueue
-import org.redisson.api.RedissonClient
+import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.core.BoundZSetOperations
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ZSetOperations.TypedTuple
+import org.springframework.data.redis.core.script.RedisScript
+import org.springframework.data.redis.support.atomic.RedisAtomicInteger
 import org.springframework.data.repository.findByIdOrNull
+import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.encore.repository.EncoreJobRepository
+import se.svt.oss.encore.service.ApplicationShutdownException
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockKExtension::class)
 internal class QueueServiceTest {
-    private val highPriorityQueue = mockk<RPriorityBlockingQueue<QueueItem>>()
-    private val standardPriorityQueue = mockk<RPriorityBlockingQueue<QueueItem>>()
-    private val lowPriorityQueue = mockk<RPriorityBlockingQueue<QueueItem>>()
-
+    private val highPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
+    private val standardPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
+    private val lowPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
     val keyPrefix = "encore"
     private val encoreProperties = mockk<EncoreProperties> {
         every { concurrency } returns 3
@@ -46,10 +50,13 @@ internal class QueueServiceTest {
     }
 
     @MockK
-    private lateinit var redisson: RedissonClient
+    private lateinit var redisTemplate: RedisTemplate<String, QueueItem>
 
     @MockK
     private lateinit var repository: EncoreJobRepository
+
+    @MockK
+    private lateinit var redisQueueMigrationScript: RedisScript<Boolean>
 
     @InjectMockKs
     private lateinit var queueService: QueueService
@@ -87,15 +94,16 @@ internal class QueueServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { highPriorityQueue.poll() } returns queueItemHighPrio
-        every { standardPriorityQueue.poll() } returns queueItemStandardPrio
-        every { lowPriorityQueue.poll() } returns queueItemLowPrio
+        every { highPriorityQueue.popMin() } returns TypedTuple.of(queueItemHighPrio, null)
+        every { standardPriorityQueue.popMin() } returns TypedTuple.of(queueItemStandardPrio, null)
+        every { lowPriorityQueue.popMin() } returns TypedTuple.of(queueItemLowPrio, null)
         every { repository.findByIdOrNull(UUID.fromString(queueItemHighPrio.id)) } returns highPrioJob
         every { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) } returns standardPrioJob
         every { repository.findByIdOrNull(UUID.fromString(queueItemLowPrio.id)) } returns lowPrioJob
-        every { redisson.getPriorityBlockingQueue<QueueItem>("$keyPrefix-queue-0") } returns highPriorityQueue
-        every { redisson.getPriorityBlockingQueue<QueueItem>("$keyPrefix-queue-1") } returns standardPriorityQueue
-        every { redisson.getPriorityBlockingQueue<QueueItem>("$keyPrefix-queue-2") } returns lowPriorityQueue
+        every { redisTemplate.boundZSetOps("$keyPrefix-queue-0") } returns highPriorityQueue
+        every { redisTemplate.boundZSetOps("$keyPrefix-queue-1") } returns standardPriorityQueue
+        every { redisTemplate.boundZSetOps("$keyPrefix-queue-2") } returns lowPriorityQueue
+        every { redisTemplate.execute(redisQueueMigrationScript, any()) } returns false
     }
 
     @Nested
@@ -103,25 +111,33 @@ internal class QueueServiceTest {
 
         @Test
         fun concurrencyReduced() {
-            val orphanedQueue1 = mockk<RPriorityBlockingQueue<QueueItem>>()
-            val orphanedQueue2 = mockk<RPriorityBlockingQueue<QueueItem>>()
-            every { orphanedQueue1.drainTo(any()) } returns 1
-            every { orphanedQueue2.drainTo(any()) } returns 1
-            every { orphanedQueue1.delete() } returns true
-            every { orphanedQueue2.delete() } returns true
             val concurrency = encoreProperties.concurrency
-            every {
-                redisson.getAtomicLong("$keyPrefix-concurrency").getAndSet(concurrency.toLong())
-            } returns concurrency.toLong() + 2
-            every { redisson.getPriorityBlockingQueue<QueueItem>("$keyPrefix-queue-$concurrency") } returns orphanedQueue1
-            every { redisson.getPriorityBlockingQueue<QueueItem>("$keyPrefix-queue-${concurrency + 1}") } returns orphanedQueue2
+            mockkConstructor(RedisAtomicInteger::class)
+            val connectionFactory = mockk<RedisConnectionFactory>(relaxed = true, relaxUnitFun = true)
+            every { redisTemplate.connectionFactory } returns connectionFactory
+            every { anyConstructed<RedisAtomicInteger>().getAndSet(concurrency) } returns concurrency + 2
+
+            every { lowPriorityQueue.add(any()) } returns 1
+            val orphanedQueue1 = mockk<BoundZSetOperations<String, QueueItem>>()
+            val orphanedQueue2 = mockk<BoundZSetOperations<String, QueueItem>>()
+            val orphanedQueue1Items = mockk<Set<TypedTuple<QueueItem>>> {
+                every { size } returns 4
+            }
+            val orphanedQueue2Items = mockk<Set<TypedTuple<QueueItem>>> {
+                every { size } returns 2
+            }
+            every { orphanedQueue1.popMin(Long.MAX_VALUE) } returns orphanedQueue1Items
+            every { orphanedQueue2.popMin(Long.MAX_VALUE) } returns orphanedQueue2Items
+
+            every { redisTemplate.boundZSetOps("$keyPrefix-queue-$concurrency") } returns orphanedQueue1
+            every { redisTemplate.boundZSetOps("$keyPrefix-queue-${concurrency + 1}") } returns orphanedQueue2
 
             queueService.handleOrphanedQueues()
 
-            verify { orphanedQueue1.drainTo(lowPriorityQueue) }
-            verify { orphanedQueue2.drainTo(lowPriorityQueue) }
-            verify { orphanedQueue1.delete() }
-            verify { orphanedQueue2.delete() }
+            verify { orphanedQueue1.popMin(Long.MAX_VALUE) }
+            verify { orphanedQueue2.popMin(Long.MAX_VALUE) }
+            verify { lowPriorityQueue.add(orphanedQueue1Items) }
+            verify { lowPriorityQueue.add(orphanedQueue2Items) }
         }
     }
 
@@ -130,7 +146,7 @@ internal class QueueServiceTest {
 
         @AfterEach
         fun tearDown() {
-            verify { highPriorityQueue.poll() }
+            verify { highPriorityQueue.popMin() }
             verify { standardPriorityQueue wasNot Called }
             verify { lowPriorityQueue wasNot Called }
         }
@@ -142,7 +158,7 @@ internal class QueueServiceTest {
 
         @Test
         fun `returns null if high priority queue is empty`() {
-            every { highPriorityQueue.poll() } returns null
+            every { highPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(0, expectNone)).isFalse
         }
     }
@@ -152,7 +168,7 @@ internal class QueueServiceTest {
 
         @AfterEach
         fun tearDown() {
-            verify { highPriorityQueue.poll() }
+            verify { highPriorityQueue.popMin() }
             verify { lowPriorityQueue wasNot Called }
         }
 
@@ -164,17 +180,17 @@ internal class QueueServiceTest {
 
         @Test
         fun `returns items from standard priority queue if high priority queue is empty`() {
-            every { highPriorityQueue.poll() } returns null
+            every { highPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(1, expectStandardPrio)).isTrue
-            verify { standardPriorityQueue.poll() }
+            verify { standardPriorityQueue.popMin() }
         }
 
         @Test
         fun `returns null if both queues empty`() {
-            every { highPriorityQueue.poll() } returns null
-            every { standardPriorityQueue.poll() } returns null
+            every { highPriorityQueue.popMin() } returns null
+            every { standardPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(1, expectNone)).isFalse
-            verify { standardPriorityQueue.poll() }
+            verify { standardPriorityQueue.popMin() }
         }
     }
 
@@ -188,7 +204,7 @@ internal class QueueServiceTest {
 
         @AfterEach
         fun tearDown() {
-            verify { standardPriorityQueue.poll() }
+            verify { standardPriorityQueue.popMin() }
             verify { highPriorityQueue wasNot Called }
             verify { lowPriorityQueue wasNot Called }
         }
@@ -200,7 +216,7 @@ internal class QueueServiceTest {
 
         @Test
         fun `empty queue`() {
-            every { standardPriorityQueue.poll() } returns null
+            every { standardPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(1, expectNone)).isFalse
         }
 
@@ -220,21 +236,21 @@ internal class QueueServiceTest {
         }
 
         @Test
-        fun `reenqueue on interrupt`() {
-            every { standardPriorityQueue.offer(any(), any(), any()) } returns true
+        fun `reenqueue on shutdown`() {
+            every { standardPriorityQueue.add(any(), any()) } returns true
             every { repository.save(any()) } answers { firstArg() }
-            queueService.poll(1) { _, _ -> throw InterruptedException("shut down") }
-            verify { standardPriorityQueue.offer(queueItemStandardPrio, 5, TimeUnit.SECONDS) }
+            assertThat(queueService.poll(1) { _, _ -> throw ApplicationShutdownException() }).isFalse()
+            verify { standardPriorityQueue.add(queueItemStandardPrio, (100 - queueItemStandardPrio.priority).toDouble()) }
             verify { standardPrioJob.status = Status.QUEUED }
             verify { repository.save(standardPrioJob) }
         }
 
         @Test
-        fun `reenqueue on interrupt fails`() {
-            every { standardPriorityQueue.offer(any(), any(), any()) } returns false
+        fun `reenqueue on shutdown fails`() {
+            every { standardPriorityQueue.add(any(), any()) } returns false
             every { repository.save(any()) } answers { firstArg() }
-            queueService.poll(1) { _, _ -> throw InterruptedException("shut down") }
-            verify { standardPriorityQueue.offer(queueItemStandardPrio, 5, TimeUnit.SECONDS) }
+            assertThat(queueService.poll(1) { _, _ -> throw ApplicationShutdownException() }).isFalse()
+            verify { standardPriorityQueue.add(queueItemStandardPrio, (100 - queueItemStandardPrio.priority).toDouble()) }
             verify { standardPrioJob.status = Status.FAILED }
             verify { repository.save(standardPrioJob) }
         }
@@ -245,7 +261,7 @@ internal class QueueServiceTest {
 
         @AfterEach
         fun tearDown() {
-            verify { highPriorityQueue.poll() }
+            verify { highPriorityQueue.popMin() }
         }
 
         @Test
@@ -257,21 +273,21 @@ internal class QueueServiceTest {
 
         @Test
         fun `returns items from low priority queue if present and high priority queue is empty`() {
-            every { highPriorityQueue.poll() } returns null
-            every { standardPriorityQueue.poll() } returns null
+            every { highPriorityQueue.popMin() } returns null
+            every { standardPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(2, expectLowPrio)).isTrue
-            verify { standardPriorityQueue.poll() }
-            verify { lowPriorityQueue.poll() }
+            verify { standardPriorityQueue.popMin() }
+            verify { lowPriorityQueue.popMin() }
         }
 
         @Test
         fun `returns null if all queues are empty`() {
-            every { highPriorityQueue.poll() } returns null
-            every { standardPriorityQueue.poll() } returns null
-            every { lowPriorityQueue.poll() } returns null
+            every { highPriorityQueue.popMin() } returns null
+            every { standardPriorityQueue.popMin() } returns null
+            every { lowPriorityQueue.popMin() } returns null
             assertThat(queueService.poll(2, expectNone)).isFalse
-            verify { standardPriorityQueue.poll() }
-            verify { lowPriorityQueue.poll() }
+            verify { standardPriorityQueue.popMin() }
+            verify { lowPriorityQueue.popMin() }
         }
     }
 
@@ -281,38 +297,39 @@ internal class QueueServiceTest {
         @Test
         fun `low priority job is enqueued on low priority queue`() {
             val job = defaultEncoreJob(10)
-            every { lowPriorityQueue.offer(any(), any(), any()) } returns true
+            every { lowPriorityQueue.add(any(), any()) } returns true
             queueService.enqueue(job)
-            verify { lowPriorityQueue.offer(expectedQueueItem(job), 5, TimeUnit.SECONDS) }
-            verify(exactly = 0) { standardPriorityQueue.offer(any(), any(), any()) }
-            verify(exactly = 0) { highPriorityQueue.offer(any(), any(), any()) }
+            val expectedQueueItem = expectedQueueItem(job)
+            verify { lowPriorityQueue.add(expectedQueueItem, (100 - expectedQueueItem.priority).toDouble()) }
+            verify(exactly = 0) { standardPriorityQueue.add(any(), any()) }
+            verify(exactly = 0) { highPriorityQueue.add(any(), any()) }
         }
 
         @Test
         fun `standard priority job is enqueued on standard priority queue`() {
             val job = defaultEncoreJob(55)
-            every { standardPriorityQueue.offer(any(), any(), any()) } returns true
+            every { standardPriorityQueue.add(any(), any()) } returns true
             queueService.enqueue(job)
-            verify { standardPriorityQueue.offer(expectedQueueItem(job), 5, TimeUnit.SECONDS) }
-            verify(exactly = 0) { highPriorityQueue.offer(any(), any(), any()) }
-            verify(exactly = 0) { lowPriorityQueue.offer(any(), any(), any()) }
+            verify { standardPriorityQueue.add(expectedQueueItem(job), 45.0) }
+            verify(exactly = 0) { highPriorityQueue.add(any(), any()) }
+            verify(exactly = 0) { lowPriorityQueue.add(any(), any()) }
         }
 
         @Test
         fun `high priority job is enqueued on high priority queue`() {
             val job = defaultEncoreJob(priority = 90)
-            every { highPriorityQueue.offer(any(), any(), any()) } returns true
+            every { highPriorityQueue.add(any(), any()) } returns true
             queueService.enqueue(job)
-            verify { highPriorityQueue.offer(expectedQueueItem(job), 5, TimeUnit.SECONDS) }
-            verify(exactly = 0) { standardPriorityQueue.offer(any(), any(), any()) }
-            verify(exactly = 0) { lowPriorityQueue.offer(any(), any(), any()) }
+            verify { highPriorityQueue.add(expectedQueueItem(job), 10.0) }
+            verify(exactly = 0) { standardPriorityQueue.add(any(), any()) }
+            verify(exactly = 0) { lowPriorityQueue.add(any(), any()) }
         }
 
         private fun expectedQueueItem(job: EncoreJob) =
             QueueItem(
                 id = job.id.toString(),
                 priority = job.priority,
-                created = job.createdDate.toLocalDateTime()
+                created = job.createdDate.toLocalDateTime(),
             )
     }
 }

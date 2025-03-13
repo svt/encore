@@ -13,17 +13,20 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.aot.DisabledInAotMode
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import se.svt.oss.encore.model.CancelEvent
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.RedisEvent
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.encore.repository.EncoreJobRepository
@@ -32,13 +35,15 @@ import java.util.UUID
 
 @WebMvcTest(EncoreController::class)
 @AutoConfigureMockMvc(addFilters = false)
+@DisabledInAotMode
+@ActiveProfiles("test")
 class EncoreControllerTest {
 
     @MockkBean
     private lateinit var encoreJobRepository: EncoreJobRepository
 
     @MockkBean
-    private lateinit var redissonClient: RedissonClient
+    private lateinit var redisTemplate: RedisTemplate<String, RedisEvent>
 
     @MockkBean
     private lateinit var queueService: QueueService
@@ -90,13 +95,13 @@ class EncoreControllerTest {
             val cancelEvent = CancelEvent(encoreJob.id)
             every { encoreJobRepository.findByIdOrNull(encoreJob.id) } returns encoreJob
             every { encoreJobRepository.save(encoreJob) } returns encoreJob
-            every { redissonClient.getTopic("cancel").publish(cancelEvent) } returns 5
+            every { redisTemplate.convertAndSend("cancel", cancelEvent) } returns 5
 
             cancelAndAssertStatus(encoreJob.id, 200)
 
             verify { encoreJobRepository.findByIdOrNull(encoreJob.id) }
             verify { encoreJobRepository.save(encoreJob) }
-            verify { redissonClient.getTopic("cancel").publish(cancelEvent) }
+            verify { redisTemplate.convertAndSend("cancel", cancelEvent) }
         }
 
         @Test
@@ -104,13 +109,13 @@ class EncoreControllerTest {
             val encoreJob = encoreJob.apply { status = Status.IN_PROGRESS }
             val cancelEvent = CancelEvent(encoreJob.id)
             every { encoreJobRepository.findByIdOrNull(encoreJob.id) } returns encoreJob
-            every { redissonClient.getTopic("cancel").publish(cancelEvent) } returns 5
+            every { redisTemplate.convertAndSend("cancel", cancelEvent) } returns 5
 
             cancelAndAssertStatus(encoreJob.id, 200)
 
             verify { encoreJobRepository.findByIdOrNull(encoreJob.id) }
             verify(exactly = 0) { encoreJobRepository.save(encoreJob) }
-            verify { redissonClient.getTopic("cancel").publish(cancelEvent) }
+            verify { redisTemplate.convertAndSend("cancel", cancelEvent) }
         }
 
         @Test

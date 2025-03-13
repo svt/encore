@@ -9,5 +9,8 @@ spring:
     config:
       import-check:
         enabled: false
+  threads:
+    virtual:
+      enabled: true
 logging:
   config: classpath:logback-json.xml

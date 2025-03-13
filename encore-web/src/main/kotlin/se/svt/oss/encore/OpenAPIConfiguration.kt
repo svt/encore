@@ -15,19 +15,17 @@ import se.svt.oss.encore.config.EncoreProperties
 class OpenAPIConfiguration {
 
     @Bean
-    fun customOpenAPI(encoreProperties: EncoreProperties): OpenAPI {
-        return OpenAPI().info(
-            Info()
-                .title(encoreProperties.openApi.title)
-                .description(encoreProperties.openApi.description)
-                .contact(
-                    Contact().name(encoreProperties.openApi.contactName)
-                        .url(encoreProperties.openApi.contactUrl)
-                        .email(encoreProperties.openApi.contactEmail)
-                ).license(
-                    License().name("EUPL-1.2-or-later")
-                        .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12")
-                )
-        )
-    }
+    fun customOpenAPI(encoreProperties: EncoreProperties): OpenAPI = OpenAPI().info(
+        Info()
+            .title(encoreProperties.openApi.title)
+            .description(encoreProperties.openApi.description)
+            .contact(
+                Contact().name(encoreProperties.openApi.contactName)
+                    .url(encoreProperties.openApi.contactUrl)
+                    .email(encoreProperties.openApi.contactEmail),
+            ).license(
+                License().name("EUPL-1.2-or-later")
+                    .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"),
+            ),
+    )
 }

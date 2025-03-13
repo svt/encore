@@ -4,22 +4,26 @@
 
 package se.svt.oss.encore.cancellation
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.trySendBlocking
-import org.redisson.api.listener.MessageListener
+import org.springframework.data.redis.connection.Message
+import org.springframework.data.redis.connection.MessageListener
 import se.svt.oss.encore.model.SegmentProgressEvent
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 class SegmentProgressListener(
+    private val objectMapper: ObjectMapper,
     private val encoreJobId: UUID,
     private val coroutineJob: Job,
     private val totalSegments: Int,
-    private val progressChannel: SendChannel<Int>
-) : MessageListener<SegmentProgressEvent> {
+    private val progressChannel: SendChannel<Int>,
+) : MessageListener {
 
     private val completedSegments: MutableSet<Int> = ConcurrentHashMap.newKeySet()
     val anyFailed = AtomicBoolean(false)
@@ -28,8 +32,9 @@ class SegmentProgressListener(
 
     fun completionCount() = completedSegments.size
 
-    override fun onMessage(channel: CharSequence?, msg: SegmentProgressEvent?) {
-        if (msg?.jobId == encoreJobId) {
+    override fun onMessage(message: Message, pattern: ByteArray?) {
+        val msg = objectMapper.readValue<SegmentProgressEvent>(message.body)
+        if (msg.jobId == encoreJobId) {
             if (!msg.success) {
                 progressChannel.close()
                 anyFailed.set(true)

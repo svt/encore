@@ -13,10 +13,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory
 class TestConfig {
 
     @Bean
-    fun encoreClient(@Value("\${local.server.port}") localPort: Int): EncoreClient {
-        return HttpServiceProxyFactory
-            .builder(WebClientAdapter.forClient(WebClient.create("http://localhost:$localPort")))
-            .build()
-            .createClient(EncoreClient::class.java)
-    }
+    fun encoreClient(@Value("\${local.server.port}") localPort: Int): EncoreClient = HttpServiceProxyFactory
+        .builderFor(WebClientAdapter.create(WebClient.create("http://localhost:$localPort")))
+        .build()
+        .createClient(EncoreClient::class.java)
 }

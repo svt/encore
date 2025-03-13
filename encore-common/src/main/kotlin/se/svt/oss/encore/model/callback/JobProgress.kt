@@ -4,12 +4,12 @@
 
 package se.svt.oss.encore.model.callback
 
-import java.util.UUID
 import se.svt.oss.encore.model.Status
+import java.util.UUID
 
 data class JobProgress(
     val jobId: UUID,
     val externalId: String?,
     val progress: Int,
-    val status: Status
+    val status: Status,
 )

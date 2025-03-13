@@ -4,8 +4,6 @@
 
 package se.svt.oss.encore.model
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.UUID
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-data class CancelEvent(val jobId: UUID)
+data class CancelEvent(val jobId: UUID) : RedisEvent

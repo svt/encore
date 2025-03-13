@@ -20,7 +20,7 @@ data class X265Encode(
     override val audioEncodes: List<AudioEncoder> = emptyList(),
     override val suffix: String,
     override val format: String = "mp4",
-    override val inputLabel: String = DEFAULT_VIDEO_LABEL
+    override val inputLabel: String = DEFAULT_VIDEO_LABEL,
 ) : X26XEncode() {
     override val codecParamName: String
         get() = "x265-params"

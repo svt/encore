@@ -13,7 +13,7 @@ class X265EncodeTest : VideoEncodeTest<X265Encode>() {
         twoPass: Boolean,
         params: LinkedHashMap<String, String>,
         filters: List<String>,
-        audioEncode: AudioEncode?
+        audioEncode: AudioEncode?,
     ): X265Encode = X265Encode(
         width = width,
         height = height,
@@ -22,7 +22,7 @@ class X265EncodeTest : VideoEncodeTest<X265Encode>() {
         codecParams = linkedMapOf("c" to "d"),
         filters = filters,
         audioEncode = audioEncode,
-        suffix = "-x265"
+        suffix = "-x265",
     )
 
     override fun verifyFirstPassParams(encode: VideoEncode, params: List<String>) {

@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.model.profile
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
@@ -17,6 +17,8 @@ import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.encore.process.createTempDir
 import se.svt.oss.mediaanalyzer.file.stringValue
 
+private val log = KotlinLogging.logger { }
+
 data class ThumbnailMapEncode(
     val tileWidth: Int = 160,
     val tileHeight: Int = 90,
@@ -27,10 +29,8 @@ data class ThumbnailMapEncode(
     val suffix: String = "_${cols}x${rows}_${tileWidth}x${tileHeight}_thumbnail_map",
     val format: String = "jpg",
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
-    val decodeOutput: Int? = null
+    val decodeOutput: Int? = null,
 ) : OutputProducer {
-
-    private val log = KotlinLogging.logger { }
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         if (job.segmentLength != null) {
@@ -66,7 +66,7 @@ data class ThumbnailMapEncode(
         val scale = "-1:$tileHeight"
 
         val params = linkedMapOf(
-            "fps_mode" to "vfr"
+            "fps_mode" to "vfr",
         )
         return Output(
             id = "$suffix.$format",
@@ -90,7 +90,7 @@ data class ThumbnailMapEncode(
                         "1",
                         "-q:v",
                         "$quality",
-                        "$targetFile"
+                        "$targetFile",
                     )
                         .directory(tempFolder)
                         .start()
@@ -106,7 +106,7 @@ data class ThumbnailMapEncode(
                 }
             },
             isImage = true,
-            decodeOutputStream = decodeOutput?.let { "$it:v:0" }
+            decodeOutputStream = decodeOutput?.let { "$it:v:0" },
         )
     }
 

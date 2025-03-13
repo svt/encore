@@ -14,7 +14,7 @@ class EncoreWebRuntimeHints : RuntimeHintsRegistrar {
         hints.reflection()
             .registerType(
                 EncoreJobHandler::class.java,
-                MemberCategory.INVOKE_PUBLIC_METHODS
+                MemberCategory.INVOKE_PUBLIC_METHODS,
             )
     }
 }
