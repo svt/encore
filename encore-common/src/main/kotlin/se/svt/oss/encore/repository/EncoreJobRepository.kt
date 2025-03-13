@@ -17,7 +17,9 @@ import java.util.UUID
 
 @RepositoryRestResource
 @Tag(name = "encorejob")
-interface EncoreJobRepository : PagingAndSortingRepository<EncoreJob, UUID>, CrudRepository<EncoreJob, UUID> {
+interface EncoreJobRepository :
+    PagingAndSortingRepository<EncoreJob, UUID>,
+    CrudRepository<EncoreJob, UUID> {
 
     @Operation(summary = "Find EncoreJobs By Status", description = "Returns EncoreJobs according to the given Status")
     fun findByStatus(status: Status, pageable: Pageable): Page<EncoreJob>

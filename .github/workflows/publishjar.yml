@@ -18,7 +18,7 @@ jobs:
       - name: Set up GraalVm
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'graalvm-community'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -26,7 +26,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build jars and native images with Gradle
-        run: ./gradlew build nativeCompile -x test
+        run: |
+          export LC_ALL=C.UTF-8
+          export LANG=C.UTF-8
+          export NATIVE_IMAGE_CONFIG_FILE="$(pwd)/native-image.properties"
+          echo 'NativeImageArgs = -J-Xmx14G -H:+AddAllCharsets -J-Dfile.encoding=UTF-8' > $NATIVE_IMAGE_CONFIG_FILE
+          ./gradlew build nativeCompile -x test
       
       - name: Release Jars and native images
         uses: softprops/action-gh-release@v1

@@ -4,11 +4,12 @@
 
 package se.svt.oss.encore.model.profile
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.svt.oss.encore.model.output.Output
 
+private val log = KotlinLogging.logger { }
+
 abstract class AudioEncoder : OutputProducer {
-    private val log = KotlinLogging.logger { }
 
     abstract val optional: Boolean
 

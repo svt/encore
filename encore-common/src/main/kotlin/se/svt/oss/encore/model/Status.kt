@@ -10,7 +10,8 @@ enum class Status(val isCompleted: Boolean) {
     IN_PROGRESS(false),
     SUCCESSFUL(true),
     FAILED(true),
-    CANCELLED(true);
+    CANCELLED(true),
+    ;
 
     val isCancelled: Boolean
         get() = this == CANCELLED

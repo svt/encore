@@ -31,7 +31,7 @@ interface EncoreClient {
     fun cancel(@PathVariable("jobId") jobId: UUID)
 
     @PostExchange(
-        "/encoreJobs"
+        "/encoreJobs",
     )
     fun createJob(@RequestBody jobRequest: EncoreJob): EncoreJob
 
@@ -39,7 +39,7 @@ interface EncoreClient {
     fun health(): String
 
     @PostExchange(
-        "/encoreJobs"
+        "/encoreJobs",
     )
     fun postJson(@RequestBody json: String): EncoreJob
 

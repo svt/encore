@@ -37,8 +37,8 @@ class ProfileServiceTest {
     fun `successully uses profile params`() {
         val profile = profileService.getProfile(
             jobWithProfile("archive").copy(
-                profileParams = mapOf("height" to 1080, "suffix" to "test_suffix")
-            )
+                profileParams = mapOf("height" to 1080, "suffix" to "test_suffix"),
+            ),
         )
         assertThat(profile.encodes).describedAs("encodes").hasSize(1)
         val outputProducer = profile.encodes.first()

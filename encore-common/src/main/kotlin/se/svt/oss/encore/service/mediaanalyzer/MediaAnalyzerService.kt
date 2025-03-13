@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.service.mediaanalyzer
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.model.input.AudioIn
@@ -14,9 +14,12 @@ import se.svt.oss.encore.model.mediafile.selectAudioStream
 import se.svt.oss.encore.model.mediafile.selectVideoStream
 import se.svt.oss.encore.model.mediafile.trimAudio
 import se.svt.oss.mediaanalyzer.MediaAnalyzer
+import se.svt.oss.mediaanalyzer.ffprobe.DisplayMatrix
 import se.svt.oss.mediaanalyzer.ffprobe.FfAudioStream
 import se.svt.oss.mediaanalyzer.ffprobe.FfVideoStream
 import se.svt.oss.mediaanalyzer.ffprobe.ProbeResult
+import se.svt.oss.mediaanalyzer.ffprobe.SideData
+import se.svt.oss.mediaanalyzer.ffprobe.UnknownSideData
 import se.svt.oss.mediaanalyzer.ffprobe.UnknownStream
 import se.svt.oss.mediaanalyzer.file.AudioFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
@@ -27,6 +30,8 @@ import se.svt.oss.mediaanalyzer.mediainfo.MediaInfo
 import se.svt.oss.mediaanalyzer.mediainfo.OtherTrack
 import se.svt.oss.mediaanalyzer.mediainfo.TextTrack
 import se.svt.oss.mediaanalyzer.mediainfo.VideoTrack
+
+private val log = KotlinLogging.logger {}
 
 @Service
 @RegisterReflectionForBinding(
@@ -40,11 +45,12 @@ import se.svt.oss.mediaanalyzer.mediainfo.VideoTrack
     ProbeResult::class,
     FfAudioStream::class,
     FfVideoStream::class,
-    UnknownStream::class
+    UnknownStream::class,
+    SideData::class,
+    DisplayMatrix::class,
+    UnknownSideData::class,
 )
 class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
-
-    private val log = KotlinLogging.logger {}
 
     fun analyzeInput(input: Input) {
         log.debug { "Analyzing input $input" }
@@ -54,7 +60,7 @@ class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
         input.analyzed = mediaAnalyzer.analyze(
             file = input.uri,
             probeInterlaced = probeInterlaced,
-            ffprobeInputParams = input.params
+            ffprobeInputParams = input.params,
         ).let {
             val selectedVideoStream = (input as? VideoIn)?.videoStream
             val selectedAudioStream = (input as? AudioIn)?.audioStream

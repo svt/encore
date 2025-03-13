@@ -4,8 +4,10 @@
 
 package se.svt.oss.encore.model
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.UUID
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-data class SegmentProgressEvent(val jobId: UUID, val segment: Int, val success: Boolean)
+data class SegmentProgressEvent(
+    val jobId: UUID,
+    val segment: Int,
+    val success: Boolean,
+) : RedisEvent

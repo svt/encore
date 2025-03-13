@@ -18,7 +18,7 @@ class ThumbnailMapEncodeTest {
         tileWidth = 160,
         tileHeight = 90,
         cols = 12,
-        rows = 20
+        rows = 20,
     )
 
     @Test
@@ -32,8 +32,8 @@ class ThumbnailMapEncodeTest {
                     params = listOf("-fps_mode", "vfr"),
                     filter = "select=isnan(prev_selected_t)+gt(floor(t/0.041666666666666664)\\,floor(prev_selected_t/0.041666666666666664)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -43,7 +43,7 @@ class ThumbnailMapEncodeTest {
             .getOutput(
                 defaultEncoreJob()
                     .copy(seekTo = 1.0, duration = 5.0),
-                EncodingProperties()
+                EncodingProperties(),
             )
         assertThat(output)
             .hasNoAudioStreams()
@@ -53,8 +53,8 @@ class ThumbnailMapEncodeTest {
                     params = listOf("-fps_mode", "vfr"),
                     filter = "select=gte(t\\,1.0)*(isnan(prev_selected_t)+gt(floor((t-1.0)/0.08333333333333333)\\,floor((prev_selected_t-1.0)/0.08333333333333333))),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,scale=-1:90",
                     twoPass = false,
-                    inputLabels = listOf(DEFAULT_VIDEO_LABEL)
-                )
+                    inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                ),
             )
     }
 
@@ -62,7 +62,7 @@ class ThumbnailMapEncodeTest {
     fun `unmapped input optional returns null`() {
         val output = encode.copy(inputLabel = "other", optional = true).getOutput(
             job = defaultEncoreJob(),
-            encodingProperties = EncodingProperties()
+            encodingProperties = EncodingProperties(),
         )
         assertThat(output).isNull()
     }
@@ -72,7 +72,7 @@ class ThumbnailMapEncodeTest {
         assertThatThrownBy {
             encode.copy(inputLabel = "other", optional = false).getOutput(
                 job = defaultEncoreJob(),
-                encodingProperties = EncodingProperties()
+                encodingProperties = EncodingProperties(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No input with label other!")

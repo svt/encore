@@ -8,7 +8,7 @@
 &nbsp;
 &nbsp;
   
-SVT *Encore* is a scalable video transcoding tool, built on Open Source giants like [FFmpeg](https://www.ffmpeg.org/) and [Redisson](https://github.com/redisson).
+SVT *Encore* is a scalable video transcoding tool, built on Open Source giants like [FFmpeg](https://www.ffmpeg.org/) and [Spring Boot](https://spring.io/projects/spring-boot).
 
 
 *Encore* was created to scale, and abstract the transcoding _power of FFmpeg_, and to offer a simple solution for Transcoding - Transcoding-as-a-Service.
@@ -34,7 +34,6 @@ _Built with_
 * Gradle
 * Spring Boot
 * FFmpeg
-* Redisson
 * and many other great projects
 
 ## Documentation

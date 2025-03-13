@@ -4,12 +4,15 @@
 
 package se.svt.oss.encore.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -19,17 +22,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.coroutines.time.withTimeout
-import mu.KotlinLogging
-import org.redisson.api.RTopic
-import org.redisson.api.RedissonClient
 import org.springframework.data.redis.core.PartialUpdate
 import org.springframework.data.redis.core.RedisKeyValueTemplate
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.listener.ChannelTopic
+import org.springframework.data.redis.listener.RedisMessageListenerContainer
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.cancellation.CancellationListener
 import se.svt.oss.encore.cancellation.SegmentProgressListener
 import se.svt.oss.encore.config.EncoreProperties
-import se.svt.oss.encore.model.CancelEvent
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.RedisEvent
 import se.svt.oss.encore.model.SegmentProgressEvent
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.queue.QueueItem
@@ -49,20 +52,22 @@ import java.util.Locale
 import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
+private val log = KotlinLogging.logger {}
+
 @Service
 class EncoreService(
     private val callbackService: CallbackService,
     private val repository: EncoreJobRepository,
     private val ffmpegExecutor: FfmpegExecutor,
-    private val redissonClient: RedissonClient,
+    private val redisMessageListerenerContainer: RedisMessageListenerContainer,
     private val redisKeyValueTemplate: RedisKeyValueTemplate,
+    private val objectMapper: ObjectMapper,
+    private val redisTemplate: RedisTemplate<String, RedisEvent>,
     private val mediaAnalyzerService: MediaAnalyzerService,
     private val localEncodeService: LocalEncodeService,
     private val encoreProperties: EncoreProperties,
     private val queueService: QueueService,
 ) {
-
-    private val log = KotlinLogging.logger {}
 
     private val cancelTopicName = "cancel"
 
@@ -83,20 +88,17 @@ class EncoreService(
 
     private fun encodeSegmented(encoreJob: EncoreJob) {
         val coroutineJob = Job()
-        val cancelListener = CancellationListener(encoreJob.id, coroutineJob)
+        val cancelListener = CancellationListener(objectMapper, encoreJob.id, coroutineJob)
         var progressListener: SegmentProgressListener? = null
-        var cancelTopic: RTopic? = null
-        var progressTopic: RTopic? = null
         try {
             initJob(encoreJob)
             val numSegments = encoreJob.numSegments()
             log.debug { "Encoding using $numSegments segments" }
-            cancelTopic = redissonClient.getTopic(cancelTopicName)
-            cancelTopic.addListener(CancelEvent::class.java, cancelListener)
-            progressTopic = redissonClient.getTopic("segment-progress")
+            redisMessageListerenerContainer.addMessageListener(cancelListener, ChannelTopic.of(cancelTopicName))
             val progressChannel = Channel<Int>()
-            progressListener = SegmentProgressListener(encoreJob.id, coroutineJob, numSegments, progressChannel)
-            progressTopic.addListener(SegmentProgressEvent::class.java, progressListener)
+            progressListener =
+                SegmentProgressListener(objectMapper, encoreJob.id, coroutineJob, numSegments, progressChannel)
+            redisMessageListerenerContainer.addMessageListener(progressListener, ChannelTopic.of("segment-progress"))
             val timedOutput = measureTimedValue {
                 sharedWorkDir(encoreJob).mkdirs()
                 repeat(numSegments) {
@@ -104,15 +106,17 @@ class EncoreService(
                         QueueItem(
                             id = encoreJob.id.toString(),
                             priority = encoreJob.priority,
-                            segment = it
-                        )
+                            segment = it,
+                        ),
                     )
                 }
 
                 runBlocking(coroutineJob + MDCContext()) {
                     withTimeout(encoreProperties.segmentedEncodeTimeout) {
                         handleProgress(progressChannel, encoreJob)
+                        progressChannel.trySendBlocking(0)
                         while (!progressListener.completed()) {
+                            ShutdownHandler.checkShutdown()
                             log.info { "Awaiting completion ${progressListener.completionCount()}/$numSegments..." }
                             delay(1000)
                         }
@@ -155,8 +159,8 @@ class EncoreService(
         } finally {
             repository.save(encoreJob)
             sharedWorkDirOrNull(encoreJob)?.deleteRecursively()
-            cancelTopic?.removeListener(cancelListener)
-            progressListener?.let { progressTopic?.removeListener(it) }
+            redisMessageListerenerContainer.removeMessageListener(cancelListener)
+            progressListener?.let { redisMessageListerenerContainer.removeMessageListener(it) }
             callbackService.sendProgressCallback(encoreJob)
         }
     }
@@ -170,27 +174,26 @@ class EncoreService(
                 duration = encoreJob.segmentDuration(segmentNumber),
                 inputs = encoreJob.inputs.map {
                     it.withSeekTo((it.seekTo ?: 0.0) + encoreJob.segmentLengthOrThrow() * segmentNumber)
-                }
+                },
             )
             ffmpegExecutor.run(job, outputFolder, null)
-            redissonClient.getTopic("segment-progress").publish(SegmentProgressEvent(encoreJob.id, segmentNumber, true))
+            redisTemplate.convertAndSend("segment-progress", SegmentProgressEvent(encoreJob.id, segmentNumber, true))
             log.info { "Completed ${encoreJob.baseName} segment $segmentNumber/${encoreJob.numSegments()} " }
+        } catch (e: ApplicationShutdownException) {
+            throw e
         } catch (e: Exception) {
             log.error(e) { "Error encoding segment $segmentNumber: ${e.message}" }
-            redissonClient.getTopic("segment-progress")
-                .publish(SegmentProgressEvent(encoreJob.id, segmentNumber, false))
+            redisTemplate.convertAndSend("segment-progress", SegmentProgressEvent(encoreJob.id, segmentNumber, false))
         }
     }
 
     private fun encode(encoreJob: EncoreJob) {
         val coroutineJob = Job()
-        val cancelListener = CancellationListener(encoreJob.id, coroutineJob)
-        var cancelTopic: RTopic? = null
+        val cancelListener = CancellationListener(objectMapper, encoreJob.id, coroutineJob)
         var outputFolder: String? = null
 
         try {
-            cancelTopic = redissonClient.getTopic(cancelTopicName)
-            cancelTopic.addListener(CancelEvent::class.java, cancelListener)
+            redisMessageListerenerContainer.addMessageListener(cancelListener, ChannelTopic.of(cancelTopicName))
             outputFolder = localEncodeService.outputFolder(encoreJob)
 
             val timedOutput = measureTimedValue {
@@ -199,6 +202,7 @@ class EncoreService(
                 val outputFiles = runBlocking(coroutineJob + MDCContext()) {
                     val progressChannel = Channel<Int>()
                     handleProgress(progressChannel, encoreJob)
+                    progressChannel.trySendBlocking(0)
                     ffmpegExecutor.run(encoreJob, outputFolder, progressChannel)
                 }
 
@@ -207,24 +211,22 @@ class EncoreService(
 
             updateSuccessfulJob(encoreJob, timedOutput)
             log.info { "Done with $encoreJob" }
-        } catch (e: InterruptedException) {
-            val message = "Job execution interrupted"
-            log.error(e) { message }
-            encoreJob.status = Status.QUEUED
-            encoreJob.message = message
+            repository.save(encoreJob)
+            callbackService.sendProgressCallback(encoreJob)
+        } catch (e: ApplicationShutdownException) {
             throw e
-        } catch (e: CancellationException) {
-            log.error(e) { "Job execution cancelled: ${e.message}" }
-            encoreJob.status = Status.CANCELLED
-            encoreJob.message = e.message
         } catch (e: Exception) {
             log.error(e) { "Job execution failed: ${e.message}" }
-            encoreJob.status = Status.FAILED
+            encoreJob.status = if (e is CancellationException) {
+                Status.CANCELLED
+            } else {
+                Status.FAILED
+            }
             encoreJob.message = e.message
-        } finally {
             repository.save(encoreJob)
-            cancelTopic?.removeListener(cancelListener)
             callbackService.sendProgressCallback(encoreJob)
+        } finally {
+            redisMessageListerenerContainer.removeMessageListener(cancelListener)
             localEncodeService.cleanup(outputFolder)
         }
     }
@@ -232,7 +234,7 @@ class EncoreService(
     @OptIn(FlowPreview::class)
     private fun CoroutineScope.handleProgress(
         progressChannel: ReceiveChannel<Int>,
-        encoreJob: EncoreJob
+        encoreJob: EncoreJob,
     ) {
         launch {
             progressChannel.consumeAsFlow()
@@ -256,11 +258,11 @@ class EncoreService(
 
     private fun updateSuccessfulJob(encoreJob: EncoreJob, timedOutput: TimedValue<List<MediaFile>>) {
         val outputFiles = timedOutput.value
-        val timeInSeconds = timedOutput.duration.inWholeSeconds
+        val timeInMilliSeconds = timedOutput.duration.inWholeMilliseconds
         val speed = outputFiles.filterIsInstance<MediaContainer>().firstOrNull()?.let {
-            "%.3f".format(Locale.US, it.duration / timeInSeconds).toDouble()
+            "%.3f".format(Locale.US, it.duration * 1000 / timeInMilliSeconds).toDouble()
         } ?: 0.0
-        log.info { "Done encoding, time: ${timeInSeconds}s, speed: ${speed}X" }
+        log.info { "Done encoding, time: ${timedOutput.duration.inWholeSeconds}s, speed: ${speed}X" }
         encoreJob.output = outputFiles
         encoreJob.status = Status.SUCCESSFUL
         encoreJob.progress = 100

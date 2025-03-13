@@ -1,0 +1,42 @@
+{
+  "file": "/input/test.mov",
+  "fileSize": 34453567,
+  "format": "MPEG-4",
+  "overallBitrate": 39004036,
+  "duration": 7.066667,
+  "videoStreams": [
+    {
+      "format": "AVC",
+      "codec": "h264",
+      "profile": "High",
+      "level": "5.1",
+      "width": 3840,
+      "height": 2160,
+      "sampleAspectRatio": null,
+      "displayAspectRatio": null,
+      "rotation": -90,
+      "pixelFormat": "yuv420p",
+      "frameRate": "24/1",
+      "duration": 7.066667,
+      "bitrate": 34431965,
+      "bitDepth": 8,
+      "numFrames": 181,
+      "isInterlaced": false,
+      "transferCharacteristics": "BT.709",
+      "codecTagString": "avc1"
+    }
+  ],
+  "audioStreams": [
+    {
+      "format": "AAC",
+      "codec": "aac",
+      "duration": 7.066667,
+      "channels": 2,
+      "channelLayout": "stereo",
+      "samplingRate": 44100,
+      "bitrate": 190951,
+      "profile": "LC"
+    }
+  ],
+  "type": "VideoFile"
+}

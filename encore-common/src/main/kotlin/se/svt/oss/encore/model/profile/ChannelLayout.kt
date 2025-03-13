@@ -72,8 +72,8 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     CH_LAYOUT_HEXADECAGONAL(
         "hexadecagonal",
         listOf(
-            FL, FR, FC, BL, BR, BC, SL, SR, TFL, TFC, TFR, TBL, TBC, TBR, WL, WR
-        )
+            FL, FR, FC, BL, BR, BC, SL, SR, TFL, TFC, TFR, TBL, TBC, TBR, WL, WR,
+        ),
     ),
     CH_LAYOUT_DOWNMIX("downmix)", listOf(DL, DR)),
     CH_LAYOUT_22POINT2(
@@ -102,9 +102,10 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
             TSR,
             BFC,
             BFL,
-            BFR
-        )
-    );
+            BFR,
+        ),
+    ),
+    ;
 
     companion object {
         fun defaultChannelLayout(numChannels: Int) = entries.firstOrNull { it.channels.size == numChannels }

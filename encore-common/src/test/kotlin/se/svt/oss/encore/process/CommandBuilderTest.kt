@@ -50,11 +50,11 @@ internal class CommandBuilderTest {
                 AudioStreamEncode(
                     params = listOf("-c:a", "copy"),
                     inputLabels = listOf(DEFAULT_AUDIO_LABEL),
-                    preserveLayout = true
-                )
+                    preserveLayout = true,
+                ),
             ),
             output = "out.mp4",
-            id = "test-out"
+            id = "test-out",
         )
         val buildCommands = commandBuilder.buildCommands(listOf(output))
         val command = buildCommands.first().joinToString(" ")
@@ -68,9 +68,9 @@ internal class CommandBuilderTest {
                 AudioVideoInput(
                     channelLayout = ChannelLayout.CH_LAYOUT_3POINT0,
                     analyzed = defaultVideoFile.trimAudio(3),
-                    uri = "/input/test.mp4"
-                )
-            )
+                    uri = "/input/test.mp4",
+                ),
+            ),
         )
         commandBuilder = CommandBuilder(job, profile, encoreJob.outputFolder, encodingProperties)
         val output = Output(
@@ -79,11 +79,11 @@ internal class CommandBuilderTest {
                 AudioStreamEncode(
                     params = listOf("-c:a:{stream_index}", "aac"),
                     inputLabels = listOf(DEFAULT_AUDIO_LABEL),
-                    filter = "aformat=channel_layouts=stereo"
-                )
+                    filter = "aformat=channel_layouts=stereo",
+                ),
             ),
             output = "out.mp4",
-            id = "test-out"
+            id = "test-out",
         )
         val buildCommands = commandBuilder.buildCommands(listOf(output))
         val command = buildCommands.first().joinToString(" ")
@@ -118,8 +118,8 @@ internal class CommandBuilderTest {
             AudioVideoInput(
                 uri = "/input/test.mp4",
                 analyzed = defaultVideoFile,
-                seekTo = 47.11
-            )
+                seekTo = 47.11,
+            ),
         )
 
         encoreJob = encoreJob.copy(inputs = inputs)
@@ -144,9 +144,9 @@ internal class CommandBuilderTest {
                     width = 720,
                     height = 576,
                     sampleAspectRatio = "4:3",
-                    displayAspectRatio = "0/0"
+                    displayAspectRatio = "0/0",
                 )
-            }
+            },
         )
         val mainAudioFile = AudioFile(
             file = "/input/main-audio.mp4",
@@ -154,7 +154,7 @@ internal class CommandBuilderTest {
             format = "AAC",
             overallBitrate = 1000,
             duration = videoFile.duration,
-            audioStreams = videoFile.audioStreams.slice(1..4).map { it.copy(channels = 1) }
+            audioStreams = videoFile.audioStreams.slice(1..4).map { it.copy(channels = 1) },
         )
         val secondaryAudioFile = AudioFile(
             file = "/input/other-audio.mp4",
@@ -162,7 +162,7 @@ internal class CommandBuilderTest {
             format = "AAC",
             overallBitrate = 1000,
             duration = videoFile.duration,
-            audioStreams = videoFile.audioStreams.take(1).map { it.copy(channels = 6) }
+            audioStreams = videoFile.audioStreams.take(1).map { it.copy(channels = 6) },
         )
 
         val inputs = listOf(
@@ -174,7 +174,7 @@ internal class CommandBuilderTest {
                 padTo = "16:9",
                 videoFilters = listOf("video", "filter"),
                 analyzed = videoFile,
-                videoStream = 1
+                videoStream = 1,
             ),
             AudioInput(
                 uri = mainAudioFile.file,
@@ -186,20 +186,20 @@ internal class CommandBuilderTest {
                 uri = secondaryAudioFile.file,
                 audioLabel = "other",
                 audioStream = 3,
-                analyzed = secondaryAudioFile
-            )
+                analyzed = secondaryAudioFile,
+            ),
         )
         encoreJob = encoreJob.copy(
             seekTo = 12.1,
             duration = 10.4,
-            inputs = inputs
+            inputs = inputs,
         )
 
         commandBuilder = CommandBuilder(
             encoreJob,
             profile,
             "/tmp/123",
-            encodingProperties.copy(exitOnError = false, globalParams = linkedMapOf("err_detect" to "explode"))
+            encodingProperties.copy(exitOnError = false, globalParams = linkedMapOf("err_detect" to "explode")),
         )
 
         val buildCommands = commandBuilder.buildCommands(listOf(output(true), audioOutput("other", "extra"), thumbnailOutput("thumb", "0:v:0")))
@@ -219,47 +219,43 @@ internal class CommandBuilderTest {
             firstPassParams = if (twoPass) listOf("first", "pass") else emptyList(),
             filter = "video-filter",
             twoPass = twoPass,
-            inputLabels = listOf(DEFAULT_VIDEO_LABEL)
+            inputLabels = listOf(DEFAULT_VIDEO_LABEL),
         )
         val audioStreamEncode = AudioStreamEncode(
             params = listOf("audio", "params"),
             filter = "audio-filter",
-            inputLabels = listOf(DEFAULT_AUDIO_LABEL)
+            inputLabels = listOf(DEFAULT_AUDIO_LABEL),
         )
         return Output(
             video = videoStreamEncode,
             audioStreams = listOf(audioStreamEncode),
             output = "out.mp4",
-            id = "test-out"
+            id = "test-out",
         )
     }
 
-    private fun audioOutput(label: String, id: String): Output {
-        return Output(
-            id = id,
-            output = "$id.mp4",
-            video = null,
-            audioStreams = listOf(
-                AudioStreamEncode(
-                    params = listOf("audio", id),
-                    filter = "audio-filter-$id",
-                    inputLabels = listOf(label)
-                )
-            )
-        )
-    }
-
-    private fun thumbnailOutput(id: String, decodeOutputStream: String? = null): Output {
-        return Output(
-            id = id,
-            output = "$id.jpg",
-            video = VideoStreamEncode(
-                params = listOf("thumb", id),
-                inputLabels = listOf(DEFAULT_VIDEO_LABEL),
-                filter = "thumb-filter",
+    private fun audioOutput(label: String, id: String): Output = Output(
+        id = id,
+        output = "$id.mp4",
+        video = null,
+        audioStreams = listOf(
+            AudioStreamEncode(
+                params = listOf("audio", id),
+                filter = "audio-filter-$id",
+                inputLabels = listOf(label),
             ),
-            isImage = true,
-            decodeOutputStream = decodeOutputStream
-        )
-    }
+        ),
+    )
+
+    private fun thumbnailOutput(id: String, decodeOutputStream: String? = null): Output = Output(
+        id = id,
+        output = "$id.jpg",
+        video = VideoStreamEncode(
+            params = listOf("thumb", id),
+            inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+            filter = "thumb-filter",
+        ),
+        isImage = true,
+        decodeOutputStream = decodeOutputStream,
+    )
 }

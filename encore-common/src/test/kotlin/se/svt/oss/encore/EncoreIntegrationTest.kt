@@ -4,28 +4,27 @@
 
 package se.svt.oss.encore
 
-import org.awaitility.Awaitility.await
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo
+import com.github.tomakehurst.wiremock.junit5.WireMockTest
 import org.awaitility.Durations
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.core.io.ClassPathResource
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.input.AudioInput
 import se.svt.oss.encore.model.input.VideoInput
 import se.svt.oss.encore.model.profile.ChannelLayout
-import se.svt.oss.encore.model.queue.QueueItem
 import se.svt.oss.mediaanalyzer.file.ImageFile
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.VideoFile
 import java.io.File
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 @ActiveProfiles("test")
-class EncoreIntegrationTest : EncoreIntegrationTestBase() {
+@WireMockTest
+class EncoreIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIntegrationTestBase(wireMockRuntimeInfo) {
 
     @Test
     fun jobIsSuccessfulSurround(@TempDir outputDir: File) {
@@ -36,7 +35,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
                     expectedFile(outputDir, testFileSurround, "STEREO_DE.mp4"),
                     expectedFile(outputDir, testFileSurround, "SURROUND.mp4"),
                     expectedFile(outputDir, testFileSurround, "SURROUND_DE.mp4"),
-                )
+                ),
         )
     }
 
@@ -47,7 +46,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
             baseName = baseName,
             profile = "audio-streams",
             segmentLength = 3.84,
-            priority = 100
+            priority = 100,
         )
         val expectedOutPut = listOf(outputDir.resolve("$baseName.mp4").absolutePath)
         val createdJob = successfulTest(job, expectedOutPut)
@@ -86,20 +85,20 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
                     uri = testFileMultipleVideo.file.absolutePath,
                     videoStream = 1,
                     probeInterlaced = false,
-                    seekTo = 1.0
+                    seekTo = 1.0,
                 ),
                 AudioInput(
                     uri = testFileMultipleAudio.file.absolutePath,
                     audioStream = 1,
-                    seekTo = 1.0
+                    seekTo = 1.0,
                 ),
                 AudioInput(
                     uri = testFileSurround.file.absolutePath,
                     channelLayout = ChannelLayout.CH_LAYOUT_5POINT1,
                     audioLabel = "alt",
-                    seekTo = 1.0
-                )
-            )
+                    seekTo = 1.0,
+                ),
+            ),
         )
 
         val expectedOutputFiles = listOf(
@@ -109,7 +108,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
             "STEREO_ALT.mp4",
             "SURROUND.mp4",
             "thumb01.jpg",
-            "6x10_160x90_thumbnail_map.jpg"
+            "6x10_160x90_thumbnail_map.jpg",
         ).map { expectedFile(outputDir, baseName, it) }
 
         val createdJob = successfulTest(job, expectedOutputFiles)
@@ -135,7 +134,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
         successfulTest(
             job(outputDir = outputDir, file = testFileStereo),
             defaultExpectedOutputFiles(outputDir, testFileStereo) +
-                listOf(expectedFile(outputDir, testFileStereo, "STEREO_DE.mp4"))
+                listOf(expectedFile(outputDir, testFileStereo, "STEREO_DE.mp4")),
         )
     }
 
@@ -156,12 +155,12 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
                             "video_size" to "640x360",
                             "framerate" to "25",
                             "pixel_format" to "yuv420p",
-                        )
-                    )
-                )
+                        ),
+                    ),
+                ),
             ),
 
-            listOf(outputDir.resolve("testyuv_raw.mxf").absolutePath)
+            listOf(outputDir.resolve("testyuv_raw.mxf").absolutePath),
         )
     }
 
@@ -170,17 +169,15 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
         val standardPriorityJob = createAndAwaitJob(
             job = job(
                 outputDir = outputDir1,
-                priority = 0
+                priority = 0,
             ),
-            pollInterval = Duration.ofMillis(200)
         ) { it.status == Status.IN_PROGRESS }
 
         val highPriorityJob = createAndAwaitJob(
             job = job(
                 outputDir = outputDir2,
-                priority = 100
+                priority = 100,
             ),
-            pollInterval = Duration.ofMillis(200)
         ) { it.status == Status.IN_PROGRESS }
 
         encoreClient.cancel(standardPriorityJob.id)
@@ -194,7 +191,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
     fun jobIsCancelled(@TempDir outputDir: File) {
         var createdJob = createAndAwaitJob(
             job(outputDir),
-            pollInterval = Duration.ofMillis(200)
+            pollInterval = Duration.ofMillis(200),
         ) {
             it.status == Status.IN_PROGRESS
         }
@@ -204,7 +201,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
         createdJob = awaitJob(
             jobId = createdJob.id,
             pollInterval = Durations.ONE_SECOND,
-            timeout = Durations.ONE_MINUTE
+            timeout = Durations.ONE_MINUTE,
         ) { it.status.isCompleted }
 
         assertThat(createdJob)
@@ -216,7 +213,7 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
         val createdJob = createAndAwaitJob(
             job = job(outputDir).copy(profile = "dpb_size_failed"),
             pollInterval = Durations.ONE_SECOND,
-            timeout = Durations.ONE_MINUTE
+            timeout = Durations.ONE_MINUTE,
         ) { it.status.isCompleted }
 
         assertThat(createdJob)
@@ -224,33 +221,5 @@ class EncoreIntegrationTest : EncoreIntegrationTestBase() {
 
         assertThat(createdJob.message)
             .contains("Coding might not be compatible on all devices")
-    }
-
-    @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    fun jobIsInterrupted(@TempDir outputDir: File) {
-        var createdJob = createAndAwaitJob(
-            job = job(outputDir),
-            timeout = Durations.ONE_MINUTE
-        ) { it.status == Status.IN_PROGRESS }
-
-        scheduler.shutdown()
-
-        createdJob = awaitJob(
-            jobId = createdJob.id,
-            timeout = Durations.TEN_SECONDS
-        ) { it.status == Status.QUEUED }
-
-        var queueItem: QueueItem? = null
-        await().pollInterval(2, TimeUnit.SECONDS)
-            .atMost(Durations.TEN_SECONDS)
-            .until {
-                queueItem = encoreClient.queue().firstOrNull()
-                queueItem != null
-            }
-
-        assertThat(queueItem)
-            .hasId(createdJob.id.toString())
-            .hasPriority(createdJob.priority)
     }
 }

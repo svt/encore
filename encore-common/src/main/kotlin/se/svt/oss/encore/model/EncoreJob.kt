@@ -29,9 +29,9 @@ data class EncoreJob(
     @Schema(
         description = "The Encore Internal EncoreJob Identity",
         example = "fb2baa17-8972-451b-bb1e-1bc773283476",
-        accessMode = Schema.AccessMode.READ_ONLY,
+        readOnly = true,
         hidden = false,
-        defaultValue = "A random UUID"
+        defaultValue = "A random UUID",
     )
     @Id
     val id: UUID = UUID.randomUUID(),
@@ -39,28 +39,28 @@ data class EncoreJob(
     @Schema(
         description = "External id - for external backreference",
         example = "any-string",
-        nullable = true
+        nullable = true,
     )
     val externalId: String? = null,
 
     @Schema(
         description = "The name of the encoding profile to use",
         example = "x264-animated",
-        required = true
+        required = true,
     )
     @NotBlank
     val profile: String,
 
     @Schema(
         description = "Properties for evaluation of spring spel expressions in profile",
-        defaultValue = "{}"
+        defaultValue = "{}",
     )
     val profileParams: Map<String, Any?> = emptyMap(),
 
     @Schema(
         description = "A directory path to where the output should be written",
         example = "/an/output/path/dir",
-        required = true
+        required = true,
     )
     @NotBlank
     val outputFolder: String,
@@ -68,7 +68,7 @@ data class EncoreJob(
     @Schema(
         description = "Base filename of output files",
         example = "any_file",
-        required = true
+        required = true,
     )
     @NotBlank
     val baseName: String,
@@ -76,8 +76,8 @@ data class EncoreJob(
     @Schema(
         description = "The Creation date for the EncoreJob",
         example = "2021-04-22T03:00:48.759168+02:00",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        defaultValue = "now()"
+        readOnly = true,
+        defaultValue = "now()",
     )
     @Indexed
     val createdDate: OffsetDateTime = OffsetDateTime.now(),
@@ -85,7 +85,7 @@ data class EncoreJob(
     @Schema(
         description = "An url to which the progress status callback should be directed",
         example = "http://projectx/encorecallback",
-        nullable = true
+        nullable = true,
     )
     val progressCallbackUri: String? = null,
 
@@ -93,7 +93,7 @@ data class EncoreJob(
         description = "The queue priority of the EncoreJob",
         defaultValue = "0",
         minimum = "0",
-        maximum = "100"
+        maximum = "100",
     )
     @Min(0)
     @Max(100)
@@ -102,7 +102,7 @@ data class EncoreJob(
     @Schema(
         description = "Transcode segments of specified length in seconds in parallell. Should be a multiple of target GOP.",
         example = "19.2",
-        nullable = true
+        nullable = true,
     )
     @Positive
     val segmentLength: Double? = null,
@@ -110,52 +110,52 @@ data class EncoreJob(
     @Schema(
         description = "The exception message, if the EncoreJob failed",
         example = "input/output error",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
+        readOnly = true,
+        nullable = true,
     )
     var message: String? = null,
 
     @Schema(
         description = "The EncoreJob progress",
         example = "57",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        defaultValue = "0"
+        readOnly = true,
+        defaultValue = "0",
     )
     var progress: Int = 0,
 
     @Schema(
         description = "The Encoding speed of the job (compared to it's play speed/input duration)",
         example = "0.334",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
+        readOnly = true,
+        nullable = true,
     )
     var speed: Double? = null,
 
     @Schema(
         description = "The time for when the EncoreJob was picked from the queue)",
         example = "2021-04-19T07:20:43.819141+02:00",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
+        readOnly = true,
+        nullable = true,
     )
     var startedDate: OffsetDateTime? = null,
 
     @Schema(
         description = "The time for when the EncoreJob was completed (fail or success)",
         example = "2021-04-19T07:20:43.819141+02:00",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
+        readOnly = true,
+        nullable = true,
     )
     var completedDate: OffsetDateTime? = null,
 
     @Schema(
         description = "Instruct Encore to overlay encoding metadata on the encoded video stream",
-        defaultValue = "false"
+        defaultValue = "false",
     )
     val debugOverlay: Boolean = false,
 
     @Schema(
         description = "Key/Values to append to the MDC log context",
-        defaultValue = "{}"
+        defaultValue = "{}",
     )
     val logContext: Map<String, String> = emptyMap(),
 
@@ -168,24 +168,24 @@ data class EncoreJob(
     @Schema(
         description = "Time in seconds for when the thumbnail should be picked. Overrides profile configuration for thumbnails",
         example = "1800.5",
-        nullable = true
+        nullable = true,
     )
     @Positive
     val thumbnailTime: Double? = null,
 
     @NotEmpty
-    val inputs: List<Input> = emptyList()
+    val inputs: List<Input> = emptyList(),
 ) {
 
     @Schema(
         description = "Analyzed models of the output files",
-        accessMode = Schema.AccessMode.READ_ONLY
+        readOnly = true,
     )
     var output = emptyList<MediaFile>()
 
     @Schema(
         description = "The Job Status",
-        accessMode = Schema.AccessMode.READ_ONLY
+        readOnly = true,
     )
     @Indexed
     var status = Status.NEW
@@ -205,6 +205,6 @@ data class EncoreJob(
             "id" to id.toString(),
             "file" to baseName,
             "externalId" to (externalId ?: ""),
-            "profile" to profile
+            "profile" to profile,
         ) + logContext
 }

@@ -17,5 +17,5 @@ data class GenericVideoEncode(
     override val suffix: String,
     override val format: String,
     override val codec: String,
-    override val inputLabel: String = DEFAULT_VIDEO_LABEL
+    override val inputLabel: String = DEFAULT_VIDEO_LABEL,
 ) : VideoEncode

@@ -31,14 +31,14 @@ class CallbackServiceTest {
         profile = "program",
         progressCallbackUri = "wwww.callback.com",
         progress = 50,
-        baseName = "file"
+        baseName = "file",
     )
 
     private val progress = JobProgress(
         encoreJob.id,
         encoreJob.externalId,
         encoreJob.progress,
-        encoreJob.status
+        encoreJob.status,
     )
 
     @Test
@@ -55,7 +55,7 @@ class CallbackServiceTest {
         every {
             callackClient.sendProgressCallback(
                 URI.create(encoreJob.progressCallbackUri!!),
-                progress
+                progress,
             )
         } throws Exception("error")
 

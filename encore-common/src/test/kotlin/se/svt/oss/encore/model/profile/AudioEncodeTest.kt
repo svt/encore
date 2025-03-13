@@ -22,7 +22,7 @@ class AudioEncodeTest {
         codec = "aac",
         bitrate = null,
         samplerate = 48000,
-        channelLayout = ChannelLayout.CH_LAYOUT_STEREO
+        channelLayout = ChannelLayout.CH_LAYOUT_STEREO,
     )
 
     private val videoFile = defaultVideoFile
@@ -41,7 +41,7 @@ class AudioEncodeTest {
         assertThatThrownBy {
             audioEncode.getOutput(
                 job,
-                EncodingProperties(audioMixPresets = mapOf("default" to AudioMixPreset(fallbackToAuto = false)))
+                EncodingProperties(audioMixPresets = mapOf("default" to AudioMixPreset(fallbackToAuto = false))),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessage("Audio layout of audio input 'main' is not supported!")
@@ -51,7 +51,7 @@ class AudioEncodeTest {
     fun `valid output`() {
         val output = audioEncode.getOutput(
             job(getAudioStream(6)),
-            EncodingProperties()
+            EncodingProperties(),
         )
         assertThat(output)
             .hasOutput("test_aac_stereo.mp4")
@@ -61,8 +61,8 @@ class AudioEncodeTest {
                 AudioStreamEncode(
                     params = listOf("-c:a:{stream_index}", "aac", "-ar:a:{stream_index}", "48000"),
                     inputLabels = listOf(DEFAULT_AUDIO_LABEL),
-                    filter = "aformat=channel_layouts=stereo"
-                )
+                    filter = "aformat=channel_layouts=stereo",
+                ),
             )
     }
 
@@ -74,7 +74,7 @@ class AudioEncodeTest {
             samplerate = 48000,
             channelLayout = ChannelLayout.CH_LAYOUT_STEREO,
             params = linkedMapOf("profile:a" to "LC", "cutoff" to "14000"),
-            filters = listOf("1", "3")
+            filters = listOf("1", "3"),
         )
 
         val output = audioEncodeLocal.getOutput(
@@ -83,11 +83,11 @@ class AudioEncodeTest {
                 audioMixPresets = mapOf(
                     "default" to AudioMixPreset(
                         panMapping = mapOf(
-                            ChannelLayout.CH_LAYOUT_5POINT1 to mapOf(ChannelLayout.CH_LAYOUT_STEREO to "c0=c0|c1=c1")
-                        )
-                    )
-                )
-            )
+                            ChannelLayout.CH_LAYOUT_5POINT1 to mapOf(ChannelLayout.CH_LAYOUT_STEREO to "c0=c0|c1=c1"),
+                        ),
+                    ),
+                ),
+            ),
         )
         assertThat(output)
             .hasOutput("test_aac_stereo.mp4")
@@ -104,13 +104,13 @@ class AudioEncodeTest {
                         "-profile:a",
                         "LC",
                         "-cutoff",
-                        "14000"
+                        "14000",
                     ),
                     "pan=stereo|c0=c0|c1=c1,1,3",
                     listOf(
-                        DEFAULT_AUDIO_LABEL
-                    )
-                )
+                        DEFAULT_AUDIO_LABEL,
+                    ),
+                ),
             )
     }
 
@@ -118,7 +118,7 @@ class AudioEncodeTest {
     fun `valid output with no matching audio preset optional gives null`() {
         val audioEncodeLocal = audioEncode.copy(
             audioMixPreset = "de",
-            optional = true
+            optional = true,
         )
 
         val output = audioEncodeLocal.getOutput(
@@ -126,10 +126,10 @@ class AudioEncodeTest {
             encodingProperties = EncodingProperties(
                 audioMixPresets = mapOf(
                     "de" to AudioMixPreset(
-                        fallbackToAuto = false
-                    )
-                )
-            )
+                        fallbackToAuto = false,
+                    ),
+                ),
+            ),
         )
         assertThat(output).isNull()
     }
@@ -146,10 +146,10 @@ class AudioEncodeTest {
                 encodingProperties = EncodingProperties(
                     audioMixPresets = mapOf(
                         "de" to AudioMixPreset(
-                            fallbackToAuto = false
-                        )
-                    )
-                )
+                            fallbackToAuto = false,
+                        ),
+                    ),
+                ),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No audio mix preset for 'de': 5.1 -> stereo")
@@ -176,9 +176,9 @@ class AudioEncodeTest {
             inputs = listOf(
                 AudioVideoInput(
                     uri = defaultVideoFile.file,
-                    analyzed = videoFile.copy(audioStreams = audioStreams.toList())
-                )
-            )
+                    analyzed = videoFile.copy(audioStreams = audioStreams.toList()),
+                ),
+            ),
         )
 
     private fun getAudioStream(channelCount: Int) = AudioStream(
@@ -189,6 +189,6 @@ class AudioEncodeTest {
         channelLayout = ChannelLayout.defaultChannelLayout(channelCount)?.layoutName,
         samplingRate = 23123,
         bitrate = 213123,
-        profile = null
+        profile = null,
     )
 }

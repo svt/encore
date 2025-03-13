@@ -18,7 +18,7 @@ import se.svt.oss.encore.model.output.Output
     JsonSubTypes.Type(value = X265Encode::class, name = "X265Encode"),
     JsonSubTypes.Type(value = GenericVideoEncode::class, name = "VideoEncode"),
     JsonSubTypes.Type(value = ThumbnailEncode::class, name = "ThumbnailEncode"),
-    JsonSubTypes.Type(value = ThumbnailMapEncode::class, name = "ThumbnailMapEncode")
+    JsonSubTypes.Type(value = ThumbnailMapEncode::class, name = "ThumbnailMapEncode"),
 )
 interface OutputProducer {
     fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output?

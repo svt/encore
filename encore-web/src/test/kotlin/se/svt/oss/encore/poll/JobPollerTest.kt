@@ -58,7 +58,7 @@ class JobPollerTest {
     @BeforeEach
     fun setUp() {
         every { scheduler.scheduleWithFixedDelay(capture(capturedRunnables), any<Instant>(), any()) } answers {
-            val scheduled = mockk<ScheduledFuture<*>>()
+            val scheduled = mockk<ScheduledFuture<*>>(relaxed = true)
             scheduledTasks.add(scheduled)
             scheduled
         }
@@ -67,6 +67,8 @@ class JobPollerTest {
             lambda<(QueueItem, EncoreJob) -> Unit>().captured.invoke(queueItem, encoreJob)
             true
         }
+        every { queueService.handleOrphanedQueues() } just Runs
+        every { queueService.migrateQueues() } just Runs
         every { encoreProperties.concurrency } returns 3
         every { encoreProperties.pollDelay } returns Duration.ofSeconds(1)
         every { encoreProperties.pollInitialDelay } returns Duration.ofSeconds(10)
@@ -80,21 +82,8 @@ class JobPollerTest {
         jobPoller.init()
         verify { scheduler wasNot Called }
         verify { encoreService wasNot Called }
+        verify { queueService.handleOrphanedQueues() }
         assertThat(capturedRunnables).isEmpty()
-    }
-
-    @Test
-    fun testDestroy() {
-        jobPoller.init()
-        assertThat(capturedRunnables).hasSize(3)
-        assertThat(scheduledTasks).hasSize(3)
-        scheduledTasks.forEach {
-            every { it.cancel(false) } returns true
-        }
-        jobPoller.destroy()
-        scheduledTasks.forEach {
-            verify { it.cancel(false) }
-        }
     }
 
     @ParameterizedTest
@@ -105,6 +94,8 @@ class JobPollerTest {
         capturedRunnables[thread].run()
 
         verifySequence {
+            queueService.migrateQueues()
+            queueService.handleOrphanedQueues()
             queueService.poll(thread, any())
             encoreService.encode(queueItem, encoreJob)
         }
@@ -118,6 +109,8 @@ class JobPollerTest {
         assertThat(capturedRunnables).hasSize(1)
         capturedRunnables.first().run()
         verifySequence {
+            queueService.migrateQueues()
+            queueService.handleOrphanedQueues()
             queueService.poll(queueNo, any())
             encoreService.encode(queueItem, encoreJob)
         }
@@ -132,6 +125,8 @@ class JobPollerTest {
         capturedRunnables[thread].run()
 
         verifySequence {
+            queueService.migrateQueues()
+            queueService.handleOrphanedQueues()
             queueService.poll(thread, any())
         }
     }

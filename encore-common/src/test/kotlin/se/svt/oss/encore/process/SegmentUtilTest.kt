@@ -6,9 +6,9 @@ package se.svt.oss.encore.process
 
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.Test
-import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
+import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.longVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
@@ -19,7 +19,7 @@ class SegmentUtilTest {
         baseName = "segment_test",
         segmentLength = 19.2,
         duration = null,
-        inputs = listOf(AudioVideoInput(uri = "test", analyzed = longVideoFile))
+        inputs = listOf(AudioVideoInput(uri = "test", analyzed = longVideoFile)),
     )
 
     @Test

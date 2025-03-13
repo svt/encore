@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.process
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
@@ -29,20 +29,21 @@ import java.io.File
 
 private val defaultAspectRatio = Fraction(16, 9)
 
+private val log = KotlinLogging.logger { }
+
 class CommandBuilder(
     private val encoreJob: EncoreJob,
     private val profile: Profile,
     private val outputFolder: String,
-    private val encodingProperties: EncodingProperties
+    private val encodingProperties: EncodingProperties,
 ) {
-    private val log = KotlinLogging.logger { }
 
     fun buildCommands(outputs: List<Output>): List<List<String>> {
         val (twoPassOuts, singlePassOuts) = outputs.partition { it.video?.twoPass == true }
         return if (twoPassOuts.isNotEmpty()) {
             listOf(
                 firstPassCommand(twoPassOuts),
-                secondPassCommand(twoPassOuts + singlePassOuts)
+                secondPassCommand(twoPassOuts + singlePassOuts),
             )
         } else {
             listOf(secondPassCommand(singlePassOuts))
@@ -50,7 +51,7 @@ class CommandBuilder(
     }
 
     private fun firstPassCommand(
-        outputs: List<Output>
+        outputs: List<Output>,
     ): List<String> {
         val inputs = encoreJob.inputs.filterIsInstance<VideoIn>()
             .filter { input ->
@@ -75,7 +76,7 @@ class CommandBuilder(
                 "-dec",
                 output.decodeOutputStream ?: throw RuntimeException("No decodeOutputStream in $output!"),
                 "-filter_complex",
-                "[dec:$index]${output.video?.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}"
+                "[dec:$index]${output.video?.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}",
             ) + secondPassParams(output)
         }
 
@@ -165,12 +166,10 @@ class CommandBuilder(
     private fun VideoStreamEncode?.usesInput(input: VideoIn) =
         this?.inputLabels?.contains(input.videoLabel) == true
 
-    private fun filterParam(filters: List<String>): List<String> {
-        return if (filters.isEmpty()) {
-            emptyList()
-        } else {
-            listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
-        }
+    private fun filterParam(filters: List<String>): List<String> = if (filters.isEmpty()) {
+        emptyList()
+    } else {
+        listOf("-filter_complex", (listOf("sws_flags=${profile.scaling}") + filters).joinToString(";"))
     }
 
     private fun inputParams(inputs: List<Input>): List<String> {
@@ -218,15 +217,13 @@ class CommandBuilder(
         return filters + input.videoFilters
     }
 
-    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> {
-        return if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
-            val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
-            val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
-            listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
-        } else {
-            emptyList()
-        } + input.audioFilters
-    }
+    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> = if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
+        val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
+        val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
+        listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
+    } else {
+        emptyList()
+    } + input.audioFilters
 
     private fun firstPassParams(output: Output): List<String> {
         if (output.video == null) {
@@ -301,7 +298,8 @@ class CommandBuilder(
 
     private enum class MapName {
         VIDEO,
-        AUDIO;
+        AUDIO,
+        ;
 
         fun mapLabel(id: String) = "[$this-$id]"
         fun preFilterLabel(label: String, id: String) = "[$this-$label-$id]"

@@ -13,6 +13,7 @@ import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
+import kotlin.math.absoluteValue
 
 interface VideoEncode : OutputProducer {
     val width: Int?
@@ -42,24 +43,20 @@ interface VideoEncode : OutputProducer {
                 filter = videoFilter(job.debugOverlay, encodingProperties, videoInput),
             ),
             audioStreams = audio,
-            output = "${job.baseName}$suffix.$format"
+            output = "${job.baseName}$suffix.$format",
         )
     }
 
-    fun firstPassParams(): Map<String, String> {
-        return if (!twoPass) {
-            emptyMap()
-        } else {
-            params + Pair("c:v", codec) + passParams(1)
-        }
+    fun firstPassParams(): Map<String, String> = if (!twoPass) {
+        emptyMap()
+    } else {
+        params + Pair("c:v", codec) + passParams(1)
     }
 
-    fun secondPassParams(): Map<String, String> {
-        return if (!twoPass) {
-            params + Pair("c:v", codec)
-        } else {
-            params + Pair("c:v", codec) + passParams(2)
-        }
+    fun secondPassParams(): Map<String, String> = if (!twoPass) {
+        params + Pair("c:v", codec)
+    } else {
+        params + Pair("c:v", codec) + passParams(2)
     }
 
     fun passParams(pass: Int): Map<String, String> =
@@ -68,14 +65,16 @@ interface VideoEncode : OutputProducer {
     fun videoFilter(
         debugOverlay: Boolean,
         encodingProperties: EncodingProperties,
-        videoInput: VideoIn
+        videoInput: VideoIn,
     ): String? {
         val videoFilters = mutableListOf<String>()
         var scaleToWidth = width
         var scaleToHeight = height
         val videoStream = videoInput.analyzedVideo.highestBitrateVideoStream
-        val outputDar = (videoInput.padTo ?: videoInput.cropTo ?: videoStream.displayAspectRatio)?.toFractionOrNull()
-            ?: Fraction(videoStream.width, videoStream.height)
+        val isRotated90 = videoStream.rotation?.rem(180)?.absoluteValue == 90
+        val outputDar = (videoInput.padTo ?: videoInput.cropTo)?.toFractionOrNull()
+            ?: (videoStream.displayAspectRatio?.toFractionOrNull() ?: Fraction(videoStream.width, videoStream.height))
+                .let { if (isRotated90) it.reciprocal() else it }
         val outputIsPortrait = outputDar < Fraction.ONE
         val isScalingWithinLandscape =
             scaleToWidth != null && scaleToHeight != null && Fraction(scaleToWidth, scaleToHeight) > Fraction.ONE

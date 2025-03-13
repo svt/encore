@@ -15,6 +15,7 @@ import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.portraitVideoFile
+import se.svt.oss.encore.rotateToPortraitVideoFile
 
 abstract class VideoEncodeTest<T : VideoEncode> {
 
@@ -24,7 +25,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         twoPass: Boolean,
         params: LinkedHashMap<String, String>,
         filters: List<String>,
-        audioEncode: AudioEncode?
+        audioEncode: AudioEncode?,
     ): T
 
     private val encodingProperties = EncodingProperties()
@@ -45,21 +46,23 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             twoPass = false,
             params = defaultParams,
             filters = emptyList(),
-            audioEncode = audioEncode
+            audioEncode = audioEncode,
         )
-        val output = encode.getOutput(
-            defaultEncoreJob().copy(
-                inputs = listOf(
-                    AudioVideoInput(
-                        uri = "/test.mp4",
-                        analyzed = portraitVideoFile
-                    )
-                )
-            ),
-            encodingProperties
-        )
+        listOf(portraitVideoFile, rotateToPortraitVideoFile).forEach { analyzedFile ->
+            val output = encode.getOutput(
+                defaultEncoreJob().copy(
+                    inputs = listOf(
+                        AudioVideoInput(
+                            uri = "/test.mp4",
+                            analyzed = analyzedFile,
+                        ),
+                    ),
+                ),
+                encodingProperties,
+            )
 
-        assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
+            assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
+        }
     }
 
     @Test
@@ -70,7 +73,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             twoPass = false,
             params = defaultParams,
             filters = emptyList(),
-            audioEncode = audioEncode
+            audioEncode = audioEncode,
         )
         val output = encode.getOutput(
             defaultEncoreJob().copy(
@@ -78,11 +81,11 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                     AudioVideoInput(
                         uri = "/test.mp4",
                         analyzed = defaultVideoFile,
-                        cropTo = "9:16"
-                    )
-                )
+                        cropTo = "9:16",
+                    ),
+                ),
             ),
-            encodingProperties
+            encodingProperties,
         )
 
         assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
@@ -96,7 +99,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             twoPass = false,
             params = defaultParams,
             filters = listOf("afilter"),
-            audioEncode = audioEncode
+            audioEncode = audioEncode,
         )
         val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output)
@@ -119,7 +122,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             twoPass = true,
             params = defaultParams,
             filters = listOf("afilter"),
-            audioEncode = audioEncode
+            audioEncode = audioEncode,
         )
         val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output).isNotNull

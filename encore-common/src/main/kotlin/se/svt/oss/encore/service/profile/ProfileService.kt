@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.expression.common.TemplateParserContext
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service
 import se.svt.oss.encore.config.ProfileProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.profile.AudioEncode
+import se.svt.oss.encore.model.profile.ChannelLayout
 import se.svt.oss.encore.model.profile.GenericVideoEncode
 import se.svt.oss.encore.model.profile.OutputProducer
 import se.svt.oss.encore.model.profile.Profile
@@ -31,6 +32,8 @@ import se.svt.oss.encore.model.profile.X265Encode
 import java.io.File
 import java.util.Locale
 
+private val log = KotlinLogging.logger { }
+
 @Service
 @RegisterReflectionForBinding(
     Profile::class,
@@ -41,14 +44,18 @@ import java.util.Locale
     X265Encode::class,
     GenericVideoEncode::class,
     ThumbnailEncode::class,
-    ThumbnailMapEncode::class
+    ThumbnailMapEncode::class,
+    ChannelLayout::class,
 )
 @EnableConfigurationProperties(ProfileProperties::class)
 class ProfileService(
     private val properties: ProfileProperties,
-    objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-    private val log = KotlinLogging.logger { }
+    private val yamlMapper: YAMLMapper =
+        YAMLMapper()
+            .findAndRegisterModules()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) as YAMLMapper
 
     private val spelExpressionParser = SpelExpressionParser(
         SpelParserConfiguration(
@@ -57,8 +64,8 @@ class ProfileService(
             false,
             false,
             Int.MAX_VALUE,
-            100_000
-        )
+            100_000,
+        ),
     )
 
     private val spelEvaluationContext = SimpleEvaluationContext
@@ -67,25 +74,22 @@ class ProfileService(
 
     private val spelParserContext = TemplateParserContext(
         properties.spelExpressionPrefix,
-        properties.spelExpressionSuffix
+        properties.spelExpressionSuffix,
     )
 
-    private val mapper =
+    private fun mapper() =
         if (properties.location.filename?.let {
-            File(it).extension.lowercase(Locale.getDefault()) in setOf(
-                    "yml",
-                    "yaml"
-                )
-        } == true
+                File(it).extension.lowercase(Locale.getDefault()) in setOf("yml", "yaml")
+            } == true
         ) {
-            yamlMapper()
+            yamlMapper
         } else {
             objectMapper
         }
 
     fun getProfile(job: EncoreJob): Profile = try {
         log.debug { "Get profile ${job.profile}. Reading profiles from ${properties.location}" }
-        val profiles = mapper.readValue<Map<String, String>>(properties.location.inputStream)
+        val profiles = mapper().readValue<Map<String, String>>(properties.location.inputStream)
 
         profiles[job.profile]
             ?.let { readProfile(it, job) }
@@ -101,9 +105,6 @@ class ProfileService(
         val resolvedProfileContent = spelExpressionParser
             .parseExpression(profileContent, spelParserContext)
             .getValue(spelEvaluationContext, job) as String
-        return mapper.readValue(resolvedProfileContent)
+        return mapper().readValue(resolvedProfileContent)
     }
-
-    private fun yamlMapper() =
-        YAMLMapper().findAndRegisterModules().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 }

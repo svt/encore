@@ -8,14 +8,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.PositiveOrZero
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.profile.ChannelLayout
 import se.svt.oss.mediaanalyzer.file.FractionString
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.PositiveOrZero
 
 const val TYPE_AUDIO_VIDEO = "AudioVideo"
 const val TYPE_AUDIO = "Audio"
@@ -41,20 +41,20 @@ sealed interface Input {
     @get:Schema(
         description = "Type of input",
         allowableValues = [TYPE_AUDIO_VIDEO, TYPE_VIDEO, TYPE_AUDIO],
-        required = true
+        required = true,
     )
     val type: String
 
     @get:Schema(
         description = "Analyzed model of the input file",
-        accessMode = Schema.AccessMode.READ_ONLY,
-        nullable = true
+        readOnly = true,
+        nullable = true,
     )
     var analyzed: MediaFile?
 
     @get:Schema(
         description = "Seek to given time in seconds before decoding input. Faster than output seek (seekTo in encoreJob) but accuracy may depend on type of input. For some inputs a combination of the two might be preferred",
-        nullable = true
+        nullable = true,
     )
     val seekTo: Double?
 
@@ -68,21 +68,21 @@ sealed interface AudioIn : Input {
     @get:Schema(
         description = "Label of the input to be matched with a profile output",
         example = "dub",
-        defaultValue = DEFAULT_AUDIO_LABEL
+        defaultValue = DEFAULT_AUDIO_LABEL,
     )
     val audioLabel: String
 
     @get:Schema(
         description = "Hint for channel layout when input has mono audio streams. If input has less channels than specified channel layout a default channel will be used.",
         example = "5.1",
-        nullable = true
+        nullable = true,
     )
     val channelLayout: ChannelLayout?
 
     @get:Schema(
         description = "List of FFmpeg filters to apply to all audio outputs",
         example = "to-do",
-        defaultValue = "[]"
+        defaultValue = "[]",
     )
     val audioFilters: List<String>
 
@@ -91,7 +91,7 @@ sealed interface AudioIn : Input {
     @get:Schema(
         description = "The index of the audio stream to be used as input",
         example = "1",
-        nullable = true
+        nullable = true,
     )
     @get:PositiveOrZero
     val audioStream: Int?
@@ -101,7 +101,7 @@ sealed interface VideoIn : Input {
     @get:Schema(
         description = "Label of the input to be matched with a profile output",
         example = "sign",
-        defaultValue = DEFAULT_VIDEO_LABEL
+        defaultValue = DEFAULT_VIDEO_LABEL,
     )
     val videoLabel: String
 
@@ -109,7 +109,7 @@ sealed interface VideoIn : Input {
         description = "The Display Aspect Ratio to use if the input is anamorphic." +
             " Overrides DAR found from input metadata (for corrupt video metadata)",
         example = "16:9",
-        nullable = true
+        nullable = true,
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val dar: FractionString?
@@ -117,7 +117,7 @@ sealed interface VideoIn : Input {
     @get:Schema(
         description = "Crop input video to given aspect ratio",
         example = "1:1",
-        nullable = true
+        nullable = true,
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val cropTo: FractionString?
@@ -125,7 +125,7 @@ sealed interface VideoIn : Input {
     @get:Schema(
         description = "Pad input video to given aspect ratio",
         example = "16:9",
-        nullable = true
+        nullable = true,
     )
     @get:Pattern(regexp = AR_REGEX, message = AR_MESSAGE)
     val padTo: FractionString?
@@ -133,7 +133,7 @@ sealed interface VideoIn : Input {
     @get:Schema(
         description = "List of FFmpeg filters to apply to all video outputs",
         example = "proxy=filter_path=/ffmpeg-filters/libsvg_filter.so:config='svg=/path/logo-white.svg",
-        defaultValue = "[]"
+        defaultValue = "[]",
     )
     val videoFilters: List<String>
 
@@ -142,7 +142,7 @@ sealed interface VideoIn : Input {
     @get:Schema(
         description = "The index of the video stream to be used as input",
         example = "1",
-        nullable = true
+        nullable = true,
     )
     @get:PositiveOrZero
     val videoStream: Int?
@@ -158,7 +158,7 @@ data class AudioInput(
     override val audioStream: Int? = null,
     override val channelLayout: ChannelLayout? = null,
     override val seekTo: Double? = null,
-    override val copyTs: Boolean = false
+    override val copyTs: Boolean = false,
 ) : AudioIn {
     override val analyzedAudio: MediaContainer
         @JsonIgnore
@@ -186,7 +186,7 @@ data class VideoInput(
     override val videoStream: Int? = null,
     override val probeInterlaced: Boolean = true,
     override val seekTo: Double? = null,
-    override val copyTs: Boolean = false
+    override val copyTs: Boolean = false,
 ) : VideoIn {
     override val analyzedVideo: VideoFile
         @JsonIgnore
@@ -218,8 +218,9 @@ data class AudioVideoInput(
     override val probeInterlaced: Boolean = true,
     override val channelLayout: ChannelLayout? = null,
     override val seekTo: Double? = null,
-    override val copyTs: Boolean = false
-) : VideoIn, AudioIn {
+    override val copyTs: Boolean = false,
+) : VideoIn,
+    AudioIn {
     override val analyzedVideo: VideoFile
         @JsonIgnore
         get() = analyzed as? VideoFile ?: throw RuntimeException("Analyzed audio/video for $uri is ${analyzed?.type}")

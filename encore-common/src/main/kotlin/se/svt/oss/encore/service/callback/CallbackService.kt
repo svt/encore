@@ -4,16 +4,16 @@
 
 package se.svt.oss.encore.service.callback
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.callback.JobProgress
 import java.net.URI
 
+private val log = KotlinLogging.logger {}
+
 @Service
 class CallbackService(private val callbackClient: CallbackClient) {
-
-    private val log = KotlinLogging.logger {}
 
     fun sendProgressCallback(encoreJob: EncoreJob) {
         encoreJob.progressCallbackUri?.let {
@@ -24,8 +24,8 @@ class CallbackService(private val callbackClient: CallbackClient) {
                         encoreJob.id,
                         encoreJob.externalId,
                         encoreJob.progress,
-                        encoreJob.status
-                    )
+                        encoreJob.status,
+                    ),
                 )
             } catch (e: Exception) {
                 log.debug(e) { "Sending progress callback failed" }

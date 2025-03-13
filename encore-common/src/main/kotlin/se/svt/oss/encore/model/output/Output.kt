@@ -14,7 +14,7 @@ data class Output(
     val postProcessor: PostProcessor = PostProcessor { outputFolder -> listOf(outputFolder.resolve(output)) },
     val id: String,
     val isImage: Boolean = false,
-    val decodeOutputStream: String? = null
+    val decodeOutputStream: String? = null,
 )
 
 fun interface PostProcessor {

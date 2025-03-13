@@ -21,7 +21,7 @@ internal class MediaFileExtensionsTest {
     private val invalidAudio = defaultVideoFile.copy(
         audioStreams = defaultVideoFile.audioStreams.mapIndexed { index, audioStream ->
             if (index == 0) audioStream else audioStream.copy(channels = 2)
-        }
+        },
     )
 
     private val defaultChannelLayouts = mapOf(3 to ChannelLayout.CH_LAYOUT_3POINT0)
@@ -194,7 +194,7 @@ internal class MediaFileExtensionsTest {
         val audioFile = multipleAudioFile.copy(
             audioStreams = multipleAudioFile.audioStreams.take(1).map {
                 it.copy(channelLayout = null, channels = 3)
-            }
+            },
         )
 
         assertThat(audioInput(audioFile).channelLayout(defaultChannelLayouts))
@@ -207,7 +207,7 @@ internal class MediaFileExtensionsTest {
         val audioFile = multipleAudioFile.copy(
             audioStreams = multipleAudioFile.audioStreams.take(1).map {
                 it.copy(channelLayout = null, channels = 3)
-            }
+            },
         )
 
         assertThat(audioInput(audioFile).channelLayout(emptyMap()))
@@ -216,6 +216,6 @@ internal class MediaFileExtensionsTest {
 
     private fun audioInput(analyzed: MediaFile) = AudioInput(
         uri = "/test.mp",
-        analyzed = analyzed
+        analyzed = analyzed,
     )
 }

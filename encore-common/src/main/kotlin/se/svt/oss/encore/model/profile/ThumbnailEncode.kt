@@ -4,7 +4,7 @@
 
 package se.svt.oss.encore.model.profile
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
@@ -13,6 +13,8 @@ import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
+
+private val log = KotlinLogging.logger { }
 
 data class ThumbnailEncode(
     val percentages: List<Int> = listOf(25, 50, 75),
@@ -24,10 +26,8 @@ data class ThumbnailEncode(
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
     val optional: Boolean = false,
     val intervalSeconds: Double? = null,
-    val decodeOutput: Int? = null
+    val decodeOutput: Int? = null,
 ) : OutputProducer {
-
-    private val log = KotlinLogging.logger { }
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         if (job.segmentLength != null) {
@@ -49,7 +49,7 @@ data class ThumbnailEncode(
         val filter = "$select,scale=w=$thumbnailWidth:h=$thumbnailHeight:out_range=jpeg"
         val params = linkedMapOf(
             "fps_mode" to "vfr",
-            "q:v" to "$quality"
+            "q:v" to "$quality",
         )
 
         val fileRegex = Regex("${job.baseName}$suffix\\d{$suffixZeroPad}\\.jpg")
@@ -66,7 +66,7 @@ data class ThumbnailEncode(
                 outputFolder.listFiles().orEmpty().filter { it.name.matches(fileRegex) }
             },
             isImage = true,
-            decodeOutputStream = decodeOutput?.let { "$it:v:0" }
+            decodeOutputStream = decodeOutput?.let { "$it:v:0" },
         )
     }
 
@@ -102,7 +102,7 @@ data class ThumbnailEncode(
     }
 
     private fun selectTimes(times: List<Double>) =
-        "select=${times.joinToString("+") { "lt(prev_pts*TB\\,$it)*gte(pts*TB\\,$it)" }}"
+        "select=${times.joinToString("+") { "(isnan(prev_pts)+lt(prev_pts*TB\\,$it))*gte(pts*TB\\,$it)" }}"
 
     private fun logOrThrow(message: String): Output? {
         if (optional) {
