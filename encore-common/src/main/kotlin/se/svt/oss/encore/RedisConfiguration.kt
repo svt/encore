@@ -9,12 +9,15 @@ import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
+import org.springframework.core.task.SimpleAsyncTaskExecutor
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.core.RedisKeyValueAdapter
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.convert.RedisCustomConversions
 import org.springframework.data.redis.core.script.RedisScript
+import org.springframework.data.redis.listener.PatternTopic
 import org.springframework.data.redis.listener.RedisMessageListenerContainer
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializer
@@ -72,6 +75,11 @@ class RedisConfiguration {
     fun redisMessageListenerContainer(connectionFactory: RedisConnectionFactory): RedisMessageListenerContainer {
         val container = RedisMessageListenerContainer()
         container.setConnectionFactory(connectionFactory)
+        val taskExecutor = SimpleAsyncTaskExecutor("redisMessageListenerContainer-")
+            .apply { setVirtualThreads(true) }
+        container.setTaskExecutor(taskExecutor)
+        // https://github.com/spring-projects/spring-data-redis/issues/2425
+        container.addMessageListener(MessageListenerAdapter(), PatternTopic.of("Dummy"))
         return container
     }
 
