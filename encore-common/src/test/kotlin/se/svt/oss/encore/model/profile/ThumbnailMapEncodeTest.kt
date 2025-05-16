@@ -23,7 +23,7 @@ class ThumbnailMapEncodeTest {
 
     @Test
     fun `correct output`() {
-        val output = encode.getOutput(defaultEncoreJob(), EncodingProperties())
+        val output = encode.getOutput(defaultEncoreJob(), EncodingProperties(), FilterSettings())
         assertThat(output)
             .hasNoAudioStreams()
             .hasId("_12x20_160x90_thumbnail_map.jpg")
@@ -44,6 +44,7 @@ class ThumbnailMapEncodeTest {
                 defaultEncoreJob()
                     .copy(seekTo = 1.0, duration = 5.0),
                 EncodingProperties(),
+                FilterSettings(),
             )
         assertThat(output)
             .hasNoAudioStreams()
@@ -63,6 +64,7 @@ class ThumbnailMapEncodeTest {
         val output = encode.copy(inputLabel = "other", optional = true).getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output).isNull()
     }
@@ -73,6 +75,7 @@ class ThumbnailMapEncodeTest {
             encode.copy(inputLabel = "other", optional = false).getOutput(
                 job = defaultEncoreJob(),
                 encodingProperties = EncodingProperties(),
+                FilterSettings(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No input with label other!")
@@ -83,6 +86,7 @@ class ThumbnailMapEncodeTest {
         val output = encode.copy(enabled = false).getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            filterSettings = FilterSettings(),
         )
         assertThat(output).isNull()
     }

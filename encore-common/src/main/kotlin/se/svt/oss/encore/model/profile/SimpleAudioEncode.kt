@@ -23,7 +23,11 @@ data class SimpleAudioEncode(
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : AudioEncoder() {
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         val outputName = "${job.baseName}$suffix.$format"
         if (!enabled) {
             return logOrThrow("$outputName is disabled. Skipping...")

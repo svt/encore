@@ -32,7 +32,11 @@ data class AudioEncode(
     override val enabled: Boolean = true,
 ) : AudioEncoder() {
 
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         val outputName = "${job.baseName}$suffix.$format"
         if (!enabled) {
             return logOrThrow("$outputName is disabled. Skipping...")

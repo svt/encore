@@ -27,6 +27,7 @@ class ThumbnailEncodeTest {
         val output = encode.getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -46,6 +47,7 @@ class ThumbnailEncodeTest {
         val output = encode.copy(enabled = false).getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output).isNull()
     }
@@ -57,6 +59,7 @@ class ThumbnailEncodeTest {
                 thumbnailTime = 5.0,
             ),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -80,6 +83,7 @@ class ThumbnailEncodeTest {
         val output = selectorEncode.getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
 
         assertThat(output)
@@ -103,6 +107,7 @@ class ThumbnailEncodeTest {
                 duration = 4.0,
             ),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -133,6 +138,7 @@ class ThumbnailEncodeTest {
                 ),
             ),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_thumb%02d.jpg")
@@ -152,6 +158,7 @@ class ThumbnailEncodeTest {
         val output = encode.copy(inputLabel = "other", optional = true).getOutput(
             job = defaultEncoreJob(),
             encodingProperties = EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output).isNull()
     }
@@ -162,6 +169,7 @@ class ThumbnailEncodeTest {
             encode.copy(inputLabel = "other", optional = false).getOutput(
                 job = defaultEncoreJob(),
                 encodingProperties = EncodingProperties(),
+                FilterSettings(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No video input with label other!")

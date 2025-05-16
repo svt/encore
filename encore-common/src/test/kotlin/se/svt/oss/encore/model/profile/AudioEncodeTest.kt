@@ -30,7 +30,7 @@ class AudioEncodeTest {
     @Test
     fun `no audio streams throws exception`() {
         assertThatThrownBy {
-            audioEncode.getOutput(job(), EncodingProperties())
+            audioEncode.getOutput(job(), EncodingProperties(), FilterSettings())
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No audio streams in input")
     }
@@ -42,6 +42,7 @@ class AudioEncodeTest {
             audioEncode.getOutput(
                 job,
                 EncodingProperties(audioMixPresets = mapOf("default" to AudioMixPreset(fallbackToAuto = false))),
+                FilterSettings(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessage("Audio layout of audio input 'main' is not supported!")
@@ -52,6 +53,7 @@ class AudioEncodeTest {
         val output = audioEncode.getOutput(
             job(getAudioStream(6)),
             EncodingProperties(),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_aac_stereo.mp4")
@@ -69,7 +71,7 @@ class AudioEncodeTest {
     @Test
     fun `returns null when not enabled`() {
         val output = audioEncode.copy(enabled = false)
-            .getOutput(job(getAudioStream(6)), EncodingProperties())
+            .getOutput(job(getAudioStream(6)), EncodingProperties(), FilterSettings())
         assertThat(output).isNull()
     }
 
@@ -95,6 +97,7 @@ class AudioEncodeTest {
                     ),
                 ),
             ),
+            FilterSettings(),
         )
         assertThat(output)
             .hasOutput("test_aac_stereo.mp4")
@@ -137,6 +140,7 @@ class AudioEncodeTest {
                     ),
                 ),
             ),
+            FilterSettings(),
         )
         assertThat(output).isNull()
     }
@@ -157,6 +161,7 @@ class AudioEncodeTest {
                         ),
                     ),
                 ),
+                FilterSettings(),
             )
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No audio mix preset for 'de': 5.1 -> stereo")
@@ -165,7 +170,7 @@ class AudioEncodeTest {
     @Test
     fun `unmapped input optional returns null`() {
         val audioEncodeLocal = audioEncode.copy(inputLabel = "other", optional = true)
-        val output = audioEncodeLocal.getOutput(job(getAudioStream(6)), EncodingProperties())
+        val output = audioEncodeLocal.getOutput(job(getAudioStream(6)), EncodingProperties(), FilterSettings())
         assertThat(output).isNull()
     }
 
@@ -173,7 +178,7 @@ class AudioEncodeTest {
     fun `unmapped input not optional throws`() {
         val audioEncodeLocal = audioEncode.copy(inputLabel = "other")
         assertThatThrownBy {
-            audioEncodeLocal.getOutput(job(getAudioStream(6)), EncodingProperties())
+            audioEncodeLocal.getOutput(job(getAudioStream(6)), EncodingProperties(), FilterSettings())
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessage("Can not generate test_aac_stereo.mp4! No audio input with label 'other'.")
     }

@@ -49,6 +49,7 @@ class FfmpegExecutor(
             it.getOutput(
                 encoreJob,
                 encoreProperties.encoding,
+                profile.filterSettings,
             )
         }
         check(outputs.isNotEmpty()) {

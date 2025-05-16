@@ -15,6 +15,7 @@ jacocoTestCoverageVerification {
                     '*QueueService.migrateQueues()',
                     '*.ShutdownHandler.*',
                     '*FfmpegExecutor.runFfmpeg$lambda$?(java.lang.Process)',
+                    '*FilterSettings.*',
             ]
             limit {
                 counter = 'LINE'
