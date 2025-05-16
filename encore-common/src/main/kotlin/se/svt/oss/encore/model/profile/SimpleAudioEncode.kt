@@ -22,7 +22,11 @@ data class SimpleAudioEncode(
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : AudioEncoder() {
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         val outputName = "${job.baseName}$suffix.$format"
         job.inputs.analyzedAudio(inputLabel)
             ?: return logOrThrow("Can not generate $outputName! No audio input with label '$inputLabel'.")

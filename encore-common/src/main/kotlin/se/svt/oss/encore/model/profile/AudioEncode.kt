@@ -31,7 +31,11 @@ data class AudioEncode(
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : AudioEncoder() {
 
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         val outputName = "${job.baseName}$suffix.$format"
         val audioIn = job.inputs.audioInput(inputLabel)
             ?: return logOrThrow("Can not generate $outputName! No audio input with label '$inputLabel'.")

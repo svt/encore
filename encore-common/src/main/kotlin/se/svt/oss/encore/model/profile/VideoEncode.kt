@@ -28,9 +28,9 @@ interface VideoEncode : OutputProducer {
     val codec: String
     val inputLabel: String
 
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties, filterSettings: FilterSettings): Output? {
         val audioEncodesToUse = audioEncodes.ifEmpty { listOfNotNull(audioEncode) }
-        val audio = audioEncodesToUse.flatMap { it.getOutput(job, encodingProperties)?.audioStreams.orEmpty() }
+        val audio = audioEncodesToUse.flatMap { it.getOutput(job, encodingProperties, filterSettings)?.audioStreams.orEmpty() }
         val videoInput = job.inputs.videoInput(inputLabel)
             ?: throw RuntimeException("No valid video input with label $inputLabel!")
         return Output(
@@ -40,7 +40,7 @@ interface VideoEncode : OutputProducer {
                 firstPassParams = firstPassParams().toParams(),
                 inputLabels = listOf(inputLabel),
                 twoPass = twoPass,
-                filter = videoFilter(job.debugOverlay, encodingProperties, videoInput),
+                filter = videoFilter(job.debugOverlay, encodingProperties, videoInput, filterSettings),
             ),
             audioStreams = audio,
             output = "${job.baseName}$suffix.$format",
@@ -66,6 +66,7 @@ interface VideoEncode : OutputProducer {
         debugOverlay: Boolean,
         encodingProperties: EncodingProperties,
         videoInput: VideoIn,
+        filterSettings: FilterSettings,
     ): String? {
         val videoFilters = mutableListOf<String>()
         var scaleToWidth = width
@@ -83,10 +84,28 @@ interface VideoEncode : OutputProducer {
             scaleToHeight = width
         }
         if (scaleToWidth != null && scaleToHeight != null) {
-            videoFilters.add("scale=$scaleToWidth:$scaleToHeight:force_original_aspect_ratio=decrease:force_divisible_by=2")
+            val scaleParams = listOf(
+                "$scaleToWidth",
+                "$scaleToHeight",
+            ) + (
+                linkedMapOf<String, String>(
+                    "force_original_aspect_ratio" to "decrease",
+                    "force_divisible_by" to "2",
+                ) + filterSettings.scaleFilterParams
+                )
+                .map { "${it.key}=${it.value}" }
+            videoFilters.add(
+                "${filterSettings.scaleFilter}=${scaleParams.joinToString(":") }",
+            )
             videoFilters.add("setsar=1/1")
         } else if (scaleToWidth != null || scaleToHeight != null) {
-            videoFilters.add("scale=${scaleToWidth ?: -2}:${scaleToHeight ?: -2}")
+            val filterParams = listOf(
+                scaleToWidth?.toString() ?: "-2",
+                scaleToHeight?.toString() ?: "-2",
+            ) + filterSettings.scaleFilterParams.map { "${it.key}=${it.value}" }
+            videoFilters.add(
+                "${filterSettings.scaleFilter}=${filterParams.joinToString(":") }",
+            )
         }
         filters?.let { videoFilters.addAll(it) }
         if (debugOverlay) {
