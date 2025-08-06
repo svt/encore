@@ -14,5 +14,17 @@ data class QueueItem(
     val id: String,
     val priority: Int = 0,
     val created: LocalDateTime = LocalDateTime.now(),
-    val segment: Int? = null,
+    val task: Task? = null,
+)
+
+enum class TaskType {
+    AUDIOVIDEOSEGMENT,
+    VIDEOSEGMENT,
+    AUDIOFULL,
+}
+
+data class Task(
+    val type: TaskType,
+    val taskNo: Int,
+    val segment: Int,
 )

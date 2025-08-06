@@ -1,0 +1,51 @@
+name: separate-video-audio
+description: Testing profile with one video/audio output and multiple audio only outputs
+scaling: bicubic
+encodes:
+  - type: X264Encode
+    suffix: _x264_3100
+    twoPass: true
+    height: 1080
+    params:
+      b:v: 3100k
+      maxrate: 4700k
+      bufsize: 6200k
+      r: 25
+      fps_mode: cfr
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+      profile:v: high
+      level: 4.1
+    audioEncode:
+      type: AudioEncode
+      bitrate: 128k
+      suffix: STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE
+    dialogueEnhancement:
+      enabled: true
+    audioMixPreset: de
+    optional: true
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: _SURROUND
+    optional: true
+    channelLayout: '5.1'
+
+  - type: AudioEncode
+    codec: ac3
+    bitrate: 448k
+    suffix: _SURROUND_DE
+    dialogueEnhancement:
+      enabled: true
+    audioMixPreset: de
+    optional: true
+    channelLayout: '5.1'

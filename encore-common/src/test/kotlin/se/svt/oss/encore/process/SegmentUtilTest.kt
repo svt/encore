@@ -35,7 +35,7 @@ class SegmentUtilTest {
             encoreJob.segmentLengthOrThrow()
         }.hasMessage(message)
         assertThatThrownBy {
-            encoreJob.numSegments()
+            encoreJob.numVideoSegments()
         }.hasMessage(message)
         assertThatThrownBy {
             encoreJob.segmentDuration(1)
@@ -48,20 +48,20 @@ class SegmentUtilTest {
     }
 
     @Test
-    fun numSegmentsDurationSet() {
+    fun numVideoSegmentsDurationSet() {
         val encoreJob = job.copy(duration = 125.0)
-        assertThat(encoreJob.numSegments()).isEqualTo(7)
+        assertThat(encoreJob.numVideoSegments()).isEqualTo(7)
     }
 
     @Test
-    fun numSegmentsDurationNotSet() {
-        assertThat(job.numSegments()).isEqualTo(141)
+    fun numVideoSegmentsDurationNotSet() {
+        assertThat(job.numVideoSegments()).isEqualTo(141)
     }
 
     @Test
-    fun numSegmentsInputsDiffer() {
+    fun numVideoSegmentsInputsDiffer() {
         val encoreJob = job.copy(inputs = job.inputs + AudioVideoInput(uri = "test", analyzed = defaultVideoFile))
-        assertThatThrownBy { encoreJob.numSegments() }
+        assertThatThrownBy { encoreJob.numVideoSegments() }
             .hasMessage("Inputs differ in length")
     }
 

@@ -10,7 +10,9 @@ import kotlin.math.ceil
 
 fun EncoreJob.segmentLengthOrThrow() = segmentLength ?: throw RuntimeException("No segmentLength in job!")
 
-fun EncoreJob.numSegments(): Int {
+fun EncoreJob.segmentedEncodingInfoOrThrow() = segmentedEncodingInfo ?: throw RuntimeException("No segmentedEncodingInfo in job!")
+
+fun EncoreJob.numVideoSegments(): Int {
     val segLen = segmentLengthOrThrow()
     val readDuration = duration
     return if (readDuration != null) {
@@ -24,10 +26,9 @@ fun EncoreJob.numSegments(): Int {
         segments.first()
     }
 }
-
 fun EncoreJob.segmentDuration(segmentNumber: Int): Double = when {
     duration == null -> segmentLengthOrThrow()
-    segmentNumber < numSegments() - 1 -> segmentLengthOrThrow()
+    segmentNumber < numVideoSegments() - 1 -> segmentLengthOrThrow()
     else -> duration!! % segmentLengthOrThrow()
 }
 

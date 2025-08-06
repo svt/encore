@@ -6,4 +6,5 @@ archive: archive.yml
 audio-streams: audio-streams.yml
 test-invalid: test_profile_invalid.yml
 test-invalid-location: test_profile_invalid_location.yml
+separate-video-audio: separate-video-audio.yml
 none:

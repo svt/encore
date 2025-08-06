@@ -40,6 +40,35 @@ class EncoreIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIn
     }
 
     @Test
+    fun jobIsSuccessfulSurroundSegmentedEncodeSeparateAudio(@TempDir outputDir: File) {
+        val job = job(outputDir = outputDir, file = testFileSurround).copy(
+            profile = "separate-video-audio",
+            segmentLength = 3.84,
+            segmentedEncodingEnabledForAudio = false,
+            priority = 100,
+        )
+        val expectedFiles = listOf(
+            "x264_3100.mp4",
+            "STEREO.mp4",
+        )
+            .map { expectedFile(outputDir, testFileSurround, it) } +
+            listOf(
+                expectedFile(outputDir, testFileSurround, "STEREO_DE.mp4"),
+                expectedFile(outputDir, testFileSurround, "SURROUND.mp4"),
+                expectedFile(outputDir, testFileSurround, "SURROUND_DE.mp4"),
+            )
+
+        val createdJob = successfulTest(
+            job,
+            expectedFiles,
+        )
+        assertThat(createdJob.segmentedEncodingInfo)
+            .hasSegmentedAudioEncode(false)
+            .hasNumSegments(3)
+            .hasNumTasks(4)
+    }
+
+    @Test
     fun multipleAudioStreamsOutputSegmentedEncode(@TempDir outputDir: File) {
         val baseName = "multiple_audio"
         val job = job(outputDir).copy(
@@ -50,11 +79,52 @@ class EncoreIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIn
         )
         val expectedOutPut = listOf(outputDir.resolve("$baseName.mp4").absolutePath)
         val createdJob = successfulTest(job, expectedOutPut)
+        assertThat(createdJob.segmentedEncodingInfo)
+            .hasSegmentedAudioEncode(true)
+            .hasNumSegments(3)
+            .hasNumTasks(3)
+        assertThat(createdJob.output)
+            .hasSize(1)
+        assertThat(createdJob.output[0])
+            .isInstanceOf(VideoFile::class.java)
+        val audioStreams = (createdJob.output[0] as VideoFile).audioStreams
+        assertThat(audioStreams).hasSize(2)
+        assertThat(audioStreams[0])
+            .hasFormat("AC-3")
+            .hasCodec("ac3")
+            .hasDurationCloseTo(10.0, 0.1)
+            .hasChannels(6)
+            .hasSamplingRate(48000)
+        assertThat(audioStreams[1])
+            .hasFormat("AAC")
+            .hasCodec("aac")
+            .hasDurationCloseTo(10.0, 0.1)
+            .hasChannels(2)
+            .hasSamplingRate(48000)
+    }
+
+    @Test
+    fun multipleAudioStreamsOutputSegmentedEncodeSeparateAudio(@TempDir outputDir: File) {
+        val baseName = "multiple_audio"
+        val job = job(outputDir).copy(
+            baseName = baseName,
+            profile = "audio-streams",
+            segmentLength = 3.84,
+            priority = 100,
+            segmentedEncodingEnabledForAudio = false,
+        )
+        val expectedOutPut = listOf(outputDir.resolve("$baseName.mp4").absolutePath)
+        val createdJob = successfulTest(job, expectedOutPut)
 
         assertThat(createdJob.output)
             .hasSize(1)
         assertThat(createdJob.output[0])
             .isInstanceOf(VideoFile::class.java)
+        assertThat(createdJob.segmentedEncodingInfo)
+            .hasSegmentedAudioEncode(false)
+            .hasNumSegments(3)
+            .hasNumTasks(4)
+
         val audioStreams = (createdJob.output[0] as VideoFile).audioStreams
         assertThat(audioStreams).hasSize(2)
         assertThat(audioStreams[0])

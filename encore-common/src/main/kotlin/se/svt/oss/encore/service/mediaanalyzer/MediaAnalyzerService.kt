@@ -22,6 +22,7 @@ import se.svt.oss.mediaanalyzer.ffprobe.SideData
 import se.svt.oss.mediaanalyzer.ffprobe.UnknownSideData
 import se.svt.oss.mediaanalyzer.ffprobe.UnknownStream
 import se.svt.oss.mediaanalyzer.file.AudioFile
+import se.svt.oss.mediaanalyzer.file.MediaFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
 import se.svt.oss.mediaanalyzer.mediainfo.AudioTrack
 import se.svt.oss.mediaanalyzer.mediainfo.GeneralTrack
@@ -74,4 +75,6 @@ class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
             }
         }
     }
+
+    fun analyze(absolutePath: String): MediaFile = mediaAnalyzer.analyze(absolutePath)
 }
