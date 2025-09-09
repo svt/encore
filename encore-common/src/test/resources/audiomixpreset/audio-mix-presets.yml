@@ -1,0 +1,15 @@
+default:
+  default-pan:
+    stereo: FL=FL+0.707107*FC+0.707107*BL+0.707107*SL|FR=FR+0.707107*FC+0.707107*BR+0.707107*SR
+  pan-mapping:
+    mono:
+      stereo: FL=0.707*FC|FR=0.707*FC
+de:
+  fallback-to-auto: false
+  default-pan:
+    stereo: FL<FL+1.5*FC+0.707107*BL+0.707107*SL|FR<FR+1.5*FC+0.707107*BR+0.707107*SR
+  pan-mapping:
+    "[5.1]":
+      "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
+    "[5.1(side)]":
+      "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
