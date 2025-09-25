@@ -36,7 +36,7 @@ class FfmpegExecutor(
     fun getLoglevel(line: String) = logLevelRegex.matchEntire(line)?.groups?.get("level")?.value
 
     val progressRegex =
-        Regex(".*time=(?<hours>\\d{2}):(?<minutes>\\d{2}):(?<seconds>\\d{2}\\.\\d+) .* speed= *(?<speed>[0-9.e-]+x) *")
+        Regex(".*time=(?<hours>\\d{2}):(?<minutes>\\d{2}):(?<seconds>\\d{2}\\.\\d+) .* speed= *(?<speed>[0-9.e-]+x) .*")
 
     fun run(
         encoreJob: EncoreJob,

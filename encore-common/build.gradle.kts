@@ -5,10 +5,10 @@ plugins {
 
 dependencies {
 
-    api("se.svt.oss:media-analyzer:2.0.7")
+    api("se.svt.oss:media-analyzer:2.0.9")
     implementation(kotlin("reflect"))
 
-    compileOnly("org.springdoc:springdoc-openapi-starter-webmvc-api:2.6.0")
+    compileOnly("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.13")
     compileOnly("org.springframework.data:spring-data-rest-core")
     compileOnly("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -22,9 +22,9 @@ dependencies {
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.wiremock:wiremock-standalone:3.12.1")
     testImplementation("org.springframework.boot:spring-boot-starter-data-rest")
-    testFixturesImplementation(platform("org.springframework.boot:spring-boot-dependencies:3.4.3"))
+    testFixturesImplementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.5"))
     testFixturesImplementation("com.redis:testcontainers-redis:2.2.4")
-    testFixturesImplementation("io.github.microutils:kotlin-logging:3.0.5")
+    testFixturesImplementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
     testFixturesImplementation("org.junit.jupiter:junit-jupiter-api")
     testFixturesRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
