@@ -19,6 +19,7 @@ import org.springframework.test.json.JsonCompareMode
 import org.springframework.test.web.reactive.server.WebTestClient
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
+import se.svt.oss.encore.model.input.AudioVideoInput
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -66,7 +67,16 @@ class EncoreEndpointAccessIntegrationTest {
                     it.setBasicAuth("user", "upw")
                     it.contentType = MediaType.APPLICATION_JSON
                 }
-                .bodyValue(EncoreJob(baseName = "TEST", profile = "program", outputFolder = "/test"))
+                .bodyValue(
+                    EncoreJob(
+                        baseName = "TEST",
+                        profile = "program",
+                        outputFolder = "/test",
+                        inputs = listOf(
+                            AudioVideoInput(uri = "/some/file.mp4"),
+                        ),
+                    ),
+                )
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
@@ -95,7 +105,16 @@ class EncoreEndpointAccessIntegrationTest {
                     it.setBasicAuth("admin", "apw")
                     it.contentType = MediaType.APPLICATION_JSON
                 }
-                .bodyValue(EncoreJob(baseName = "TEST", profile = "program", outputFolder = "/test"))
+                .bodyValue(
+                    EncoreJob(
+                        baseName = "TEST",
+                        profile = "program",
+                        outputFolder = "/test",
+                        inputs = listOf(
+                            AudioVideoInput(uri = "/some/file.mp4"),
+                        ),
+                    ),
+                )
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
@@ -157,7 +176,16 @@ class EncoreEndpointAccessIntegrationTest {
                 .headers {
                     it.contentType = MediaType.APPLICATION_JSON
                 }
-                .bodyValue(EncoreJob(baseName = "TEST", profile = "program", outputFolder = "/test"))
+                .bodyValue(
+                    EncoreJob(
+                        baseName = "TEST",
+                        profile = "program",
+                        outputFolder = "/test",
+                        inputs = listOf(
+                            AudioVideoInput(uri = "/some/file.mp4"),
+                        ),
+                    ),
+                )
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()

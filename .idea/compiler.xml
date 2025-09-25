@@ -6,4 +6,18 @@
     </annotationProcessing>
     <bytecodeTargetLevel target="21" />
   </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="encore.encore-web" options="-parameters" />
+      <module name="encore.encore-web.aot" options="-parameters" />
+      <module name="encore.encore-web.aotTest" options="-parameters" />
+      <module name="encore.encore-web.main" options="-parameters" />
+      <module name="encore.encore-web.test" options="-parameters" />
+      <module name="encore.encore-worker" options="-parameters" />
+      <module name="encore.encore-worker.aot" options="-parameters" />
+      <module name="encore.encore-worker.aotTest" options="-parameters" />
+      <module name="encore.encore-worker.main" options="-parameters" />
+      <module name="encore.encore-worker.test" options="-parameters" />
+    </option>
+  </component>
 </project>

@@ -19,5 +19,6 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
     disable-swagger-default-url: true
+  enable-kotlin: false # springdoc does not work with graalvm if enabled (v2.8.13)
 server:
   forward-headers-strategy: framework

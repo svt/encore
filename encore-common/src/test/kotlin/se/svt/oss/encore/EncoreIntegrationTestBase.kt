@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.core.io.Resource
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
 import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.model.EncoreJob
@@ -43,9 +42,6 @@ class EncoreIntegrationTestBase(val wireMockRuntimeInfo: WireMockRuntimeInfo) {
 
     @Autowired
     lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    lateinit var scheduler: ThreadPoolTaskScheduler
 
     @Value("classpath:input/test.mp4")
     lateinit var testFileSurround: Resource

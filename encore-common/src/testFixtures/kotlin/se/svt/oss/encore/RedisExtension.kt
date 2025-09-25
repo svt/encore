@@ -1,7 +1,7 @@
 package se.svt.oss.encore
 
 import com.redis.testcontainers.RedisContainer
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.testcontainers.DockerClientFactory
