@@ -217,13 +217,16 @@ class CommandBuilder(
         return filters + input.videoFilters
     }
 
-    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> = if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
-        val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
-        val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
-        listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
-    } else {
-        emptyList()
-    } + input.audioFilters
+    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> =
+        if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS ||
+            analyzed.audioLayout() == AudioLayout.MIXED_MONO_MULTI
+        ) {
+            val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
+            val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
+            listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
+        } else {
+            emptyList()
+        } + input.audioFilters
 
     private fun firstPassParams(output: Output): List<String> {
         if (output.video == null) {
