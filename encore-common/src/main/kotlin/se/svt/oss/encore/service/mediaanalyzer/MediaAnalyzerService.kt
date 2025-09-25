@@ -22,6 +22,8 @@ import se.svt.oss.mediaanalyzer.ffprobe.SideData
 import se.svt.oss.mediaanalyzer.ffprobe.UnknownSideData
 import se.svt.oss.mediaanalyzer.ffprobe.UnknownStream
 import se.svt.oss.mediaanalyzer.file.AudioFile
+import se.svt.oss.mediaanalyzer.file.ImageFile
+import se.svt.oss.mediaanalyzer.file.SubtitleFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
 import se.svt.oss.mediaanalyzer.mediainfo.AudioTrack
 import se.svt.oss.mediaanalyzer.mediainfo.GeneralTrack
@@ -58,20 +60,25 @@ class MediaAnalyzerService(private val mediaAnalyzer: MediaAnalyzer) {
         val useFirstAudioStreams = (input as? AudioIn)?.channelLayout?.channels?.size
 
         input.analyzed = mediaAnalyzer.analyze(
-            file = input.uri,
+            file = input.accessUri,
             probeInterlaced = probeInterlaced,
             ffprobeInputParams = input.params,
-        ).let {
-            val selectedVideoStream = (input as? VideoIn)?.videoStream
-            val selectedAudioStream = (input as? AudioIn)?.audioStream
-            when (it) {
-                is VideoFile -> it.selectVideoStream(selectedVideoStream)
-                    .selectAudioStream(selectedAudioStream)
-                    .trimAudio(useFirstAudioStreams)
-                is AudioFile -> it.selectAudioStream(selectedAudioStream)
-                    .trimAudio(useFirstAudioStreams)
-                else -> it
+        )
+            .let {
+                val selectedVideoStream = (input as? VideoIn)?.videoStream
+                val selectedAudioStream = (input as? AudioIn)?.audioStream
+                when (it) {
+                    is VideoFile -> it.selectVideoStream(selectedVideoStream)
+                        .selectAudioStream(selectedAudioStream)
+                        .trimAudio(useFirstAudioStreams)
+                        .copy(file = input.uri)
+                    is AudioFile -> it.selectAudioStream(selectedAudioStream)
+                        .trimAudio(useFirstAudioStreams)
+                        .copy(file = input.uri)
+                    is ImageFile -> it.copy(file = input.uri)
+                    is SubtitleFile -> it.copy(file = input.uri)
+                    else -> it
+                }
             }
-        }
     }
 }

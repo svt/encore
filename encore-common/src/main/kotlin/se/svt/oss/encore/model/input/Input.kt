@@ -35,6 +35,8 @@ sealed interface Input {
     @get:Schema(description = "URI of input file", required = true, example = "/path/to/file.mp4")
     val uri: String
 
+    var accessUri: String
+
     @get:Schema(description = "Input params required to properly decode input", example = """{ "ac": "2" }""")
     val params: LinkedHashMap<String, String?>
 
@@ -167,6 +169,9 @@ data class AudioInput(
     override val type: String
         get() = TYPE_AUDIO
 
+    @JsonIgnore
+    override var accessUri: String = uri
+
     override fun withSeekTo(seekTo: Double) = copy(seekTo = seekTo)
 
     val duration: Double
@@ -188,6 +193,9 @@ data class VideoInput(
     override val seekTo: Double? = null,
     override val copyTs: Boolean = false,
 ) : VideoIn {
+    @JsonIgnore
+    override var accessUri: String = uri
+
     override val analyzedVideo: VideoFile
         @JsonIgnore
         get() = analyzed as? VideoFile ?: throw RuntimeException("Analyzed video for $uri is ${analyzed?.type}")
@@ -221,6 +229,9 @@ data class AudioVideoInput(
     override val copyTs: Boolean = false,
 ) : VideoIn,
     AudioIn {
+    @JsonIgnore
+    override var accessUri: String = uri
+
     override val analyzedVideo: VideoFile
         @JsonIgnore
         get() = analyzed as? VideoFile ?: throw RuntimeException("Analyzed audio/video for $uri is ${analyzed?.type}")
@@ -245,7 +256,7 @@ fun List<Input>.inputParams(readDuration: Double?): List<String> =
             (readDuration?.let { listOf("-t", "$it") } ?: emptyList()) +
             (input.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()) +
             (if (input.copyTs) listOf("-copyts") else emptyList()) +
-            listOf("-i", input.uri)
+            listOf("-i", input.accessUri)
     }
 
 fun List<Input>.maxDuration(): Double? = maxOfOrNull {
