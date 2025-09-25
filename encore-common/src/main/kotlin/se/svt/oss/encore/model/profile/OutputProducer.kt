@@ -21,5 +21,5 @@ import se.svt.oss.encore.model.output.Output
     JsonSubTypes.Type(value = ThumbnailMapEncode::class, name = "ThumbnailMapEncode"),
 )
 interface OutputProducer {
-    fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output?
+    fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties, filterSettings: FilterSettings): Output?
 }

@@ -29,7 +29,11 @@ data class ThumbnailEncode(
     val decodeOutput: Int? = null,
 ) : OutputProducer {
 
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         if (job.segmentLength != null) {
             return logOrThrow("Thumbnail is not supported in segmented encode!")
         }
