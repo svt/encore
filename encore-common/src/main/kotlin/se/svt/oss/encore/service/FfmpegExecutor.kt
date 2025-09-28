@@ -14,6 +14,7 @@ import se.svt.oss.encore.model.input.maxDuration
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.process.CommandBuilder
 import se.svt.oss.encore.process.createTempDir
+import se.svt.oss.encore.service.audiomix.AudiomixPresetService
 import se.svt.oss.encore.service.profile.ProfileService
 import se.svt.oss.mediaanalyzer.MediaAnalyzer
 import se.svt.oss.mediaanalyzer.file.MediaFile
@@ -28,6 +29,7 @@ private val log = KotlinLogging.logger { }
 class FfmpegExecutor(
     private val mediaAnalyzer: MediaAnalyzer,
     private val profileService: ProfileService,
+    private val audioMixService: AudiomixPresetService,
     private val encoreProperties: EncoreProperties,
 ) {
 
@@ -45,10 +47,14 @@ class FfmpegExecutor(
     ): List<MediaFile> {
         ShutdownHandler.checkShutdown()
         val profile = profileService.getProfile(encoreJob)
+        val audioMixPresets = audioMixService.getAudioMixPresets()
+        val encodingProperties = encoreProperties.encoding.copy(
+            audioMixPresets = audioMixPresets,
+        )
         val outputs = profile.encodes.mapNotNull {
             it.getOutput(
                 encoreJob,
-                encoreProperties.encoding,
+                encodingProperties,
             )
         }
 
