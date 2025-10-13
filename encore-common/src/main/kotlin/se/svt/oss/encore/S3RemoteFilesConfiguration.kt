@@ -36,34 +36,39 @@ class S3RemoteFilesConfiguration {
             .build()
 
     @Bean
-    fun s3Client(s3Region: Region, s3Properties: S3Properties) = S3AsyncClient.builder()
-        .region(s3Region)
-        .crossRegionAccessEnabled(true)
-        .multipartConfiguration { multipartConfigurationBuilder ->
-            multipartConfigurationBuilder
+    fun s3Client(s3Region: Region, s3Properties: S3Properties) =
+        if (s3Properties.anonymousAccess) {
+            // Use standard s3 client for anonymous access since it supports
+            // disabling multipart
+            S3AsyncClient.builder()
+                .forcePathStyle(s3Properties.usePathStyle)
+                .crossRegionAccessEnabled(true)
+                .credentialsProvider(AnonymousCredentialsProvider.create())
+                .multipartEnabled(false) // Multipart is not supported with anonymous access
+                .region(s3Region)
+                .apply {
+                    if (s3Properties.endpoint.isNotBlank()) {
+                        endpointOverride(URI.create(s3Properties.endpoint))
+                    }
+                }
+                .build()
+        } else {
+            S3AsyncClient.crtBuilder()
+                .region(s3Region)
+                .crossRegionAccessEnabled(true)
+                .forcePathStyle(s3Properties.usePathStyle)
+                .maxConcurrency(s3Properties.multipart.maxConcurrency)
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .minimumPartSizeInBytes(s3Properties.multipart.minimumPartSize)
                 .thresholdInBytes(s3Properties.multipart.threshold)
-                .apiCallBufferSizeInBytes(s3Properties.multipart.apiCallBufferSize)
+                .targetThroughputInGbps(s3Properties.multipart.targetThroughputGbps)
+                .apply {
+                    if (s3Properties.endpoint.isNotBlank()) {
+                        endpointOverride(URI.create(s3Properties.endpoint))
+                    }
+                }
+                .build()
         }
-        .multipartEnabled(!s3Properties.anonymousAccess) // Multipart upload requires credentials
-        .serviceConfiguration(
-            S3Configuration.builder()
-                .pathStyleAccessEnabled(s3Properties.usePathStyle)
-                .build(),
-        )
-        .credentialsProvider(
-            if (s3Properties.anonymousAccess) {
-                AnonymousCredentialsProvider.create()
-            } else {
-                DefaultCredentialsProvider.builder().build()
-            },
-        )
-        .apply {
-            if (s3Properties.endpoint.isNotBlank()) {
-                endpointOverride(URI.create(s3Properties.endpoint))
-            }
-        }
-        .build()
 
     @Bean
     fun s3Presigner(s3Region: Region, s3Properties: S3Properties) = S3Presigner.builder()

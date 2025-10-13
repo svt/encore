@@ -11,9 +11,10 @@ import java.time.Duration
 const val MB = 1024 * 1024L
 
 data class MultipartUploadProperties(
-    val minimumPartSize: Long = 8 * MB,
-    val threshold: Long = 8 * MB,
-    val apiCallBufferSize: Long = 32 * MB,
+    val minimumPartSize: Long? = null,
+    val threshold: Long? = null,
+    val targetThroughputGbps: Double? = null,
+    val maxConcurrency: Int? = null,
 )
 
 @ConfigurationProperties("remote-files.s3")

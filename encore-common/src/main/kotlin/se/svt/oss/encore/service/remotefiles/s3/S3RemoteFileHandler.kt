@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.transfer.s3.S3TransferManager
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
+import software.amazon.awssdk.transfer.s3.progress.LoggingTransferListener
 import java.net.URI
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
@@ -67,6 +68,7 @@ class S3RemoteFileHandler(
     private fun transferManagerUpload(localFile: String, bucket: String, key: String) {
         val uploadRequest = UploadFileRequest.builder()
             .putObjectRequest { por -> por.bucket(bucket).key(key) }
+            .addTransferListener(LoggingTransferListener.create())
             .source(Paths.get(localFile))
             .build()
         val fileUpload = transferManager.uploadFile(uploadRequest)
