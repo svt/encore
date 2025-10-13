@@ -33,3 +33,9 @@ fun EncoreJob.segmentDuration(segmentNumber: Int): Double = when {
 }
 
 fun EncoreJob.baseName(segmentNumber: Int) = "${baseName}_%05d".format(segmentNumber)
+
+fun EncoreJob.segmentSuffixFromFilename(file: String): String {
+    val regex = Regex("${baseName}_\\d{5}(.*)")
+    val match = regex.find(file) ?: throw RuntimeException("Could not find segment suffix for file $file")
+    return match.groupValues[1]
+}
