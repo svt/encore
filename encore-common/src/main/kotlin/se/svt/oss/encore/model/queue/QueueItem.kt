@@ -21,6 +21,7 @@ enum class TaskType {
     AUDIOVIDEOSEGMENT,
     VIDEOSEGMENT,
     AUDIOFULL,
+    AUDIOSEGMENT,
 }
 
 data class Task(

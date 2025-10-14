@@ -203,11 +203,29 @@ class FfmpegExecutor(
     private fun totalProgress(subtaskProgress: Int, subtaskIndex: Int, subtaskCount: Int) =
         (subtaskIndex * 100 + subtaskProgress) / subtaskCount
 
-    fun joinSegments(encoreJob: EncoreJob, segmentList: File, targetFile: File, audioFile: File?): MediaFile {
+    fun joinSegments(
+        encoreJob: EncoreJob,
+        segmentList: File,
+        targetFile: File,
+        audioFile: File?,
+        audioSegmentList: File?,
+    ): MediaFile {
+        require(audioFile == null || audioSegmentList == null) {
+            "Cannot provide both audioFile and audioSegmentList"
+        }
+
         val joinParams = profileService.getProfile(encoreJob).joinSegmentParams.toParams()
-        val inputArgs = mutableListOf("-i", "$segmentList")
+        val inputArgs = mutableListOf<String>()
         val mapArgs = mutableListOf("-map", "0")
-        if (audioFile != null) {
+
+        // Add video segments input with concat demuxer
+        inputArgs.addAll(listOf("-f", "concat", "-safe", "0", "-i", "$segmentList"))
+
+        // Add audio input (either segment list with concat or direct file)
+        if (audioSegmentList != null) {
+            inputArgs.addAll(listOf("-f", "concat", "-safe", "0", "-i", "$audioSegmentList"))
+            mapArgs.addAll(listOf("-map", "1"))
+        } else if (audioFile != null) {
             inputArgs.addAll(listOf("-i", audioFile.absolutePath))
             mapArgs.addAll(listOf("-map", "1"))
         }
@@ -218,10 +236,6 @@ class FfmpegExecutor(
             "-loglevel",
             "+level",
             "-y",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
             *inputArgs.toTypedArray(),
             *mapArgs.toTypedArray(),
             "-ignore_unknown",

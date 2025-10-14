@@ -39,6 +39,7 @@ encodes:
     suffix: _SURROUND
     optional: true
     channelLayout: '5.1'
+    enabled: #{profileParams['enableSurround'] ?: 'true'}
 
   - type: AudioEncode
     codec: ac3
@@ -49,3 +50,4 @@ encodes:
     audioMixPreset: de
     optional: true
     channelLayout: '5.1'
+    enabled: #{profileParams['enableSurround'] ?: 'true'}

@@ -30,24 +30,44 @@ data class SegmentedEncodingInfo(
     )
     val segmentLength: Double,
     @field:Schema(
-        description = "Number of segments",
+        description = "Number of video segments",
         nullable = false,
         readOnly = true,
     )
     val numSegments: Int,
     @field:Schema(
-        description = "Number of encoding tasks used for this job. This is either the number of segments, or the number of segments + 1 if separate audio encode is used.",
+        description = "Number of encoding tasks used for this job. This will be equal to numSegments plus numAudioSegments",
         nullable = false,
         readOnly = true,
     )
     val numTasks: Int,
     @field:Schema(
-        description = "Indicates if audio is encoded in segments. Otherwise a separate task will be used to encode the full audio.",
-        example = "true",
+        description = "The audio encoding mode used for this job.",
+        example = "ENCODE_WITH_VIDEO",
         nullable = false,
         readOnly = true,
     )
-    val segmentedAudioEncode: Boolean,
+    val audioEncodingMode: AudioEncodingMode,
+    @field:Schema(
+        description = "Audio segment padding in seconds (added at start/end of segments to avoid artifacts). Only relevant in ENCODE_SEPARATELY_SEGMENTED mode.",
+        example = "0.04267",
+        nullable = false,
+        readOnly = true,
+    )
+    val audioSegmentPadding: Double = 0.0,
+    @field:Schema(
+        description = "Length of each audio segment in seconds. Only relevant in ENCODE_SEPARATELY_SEGMENTED mode.",
+        example = "256.0",
+        nullable = false,
+        readOnly = true,
+    )
+    val audioSegmentLength: Double = 0.0,
+    @field:Schema(
+        description = "Number of audio segments",
+        nullable = false,
+        readOnly = true,
+    )
+    val numAudioSegments: Int,
 )
 
 @Validated
@@ -137,12 +157,20 @@ data class EncoreJob(
     val segmentLength: Double? = null,
 
     @field:Schema(
-        description = "If true, and segmented encoding i used, audio will be encoded in segments. Otherwise a separate task will be used to encode the full audio.",
-        example = "true",
-        defaultValue = "true",
+        description = "Defines how audio should be encoded when using segmented encoding. ENCODE_WITH_VIDEO: audio and video together in segments; ENCODE_SEPARATELY_FULL: audio separately as full file; ENCODE_SEPARATELY_SEGMENTED: audio separately in segments.",
+        example = "ENCODE_WITH_VIDEO",
+        defaultValue = "ENCODE_WITH_VIDEO",
         nullable = true,
     )
-    val segmentedEncodingEnabledForAudio: Boolean? = null,
+    val audioEncodingMode: AudioEncodingMode? = null,
+
+    @field:Schema(
+        description = "Length of audio segments in seconds when using ENCODE_SEPARATELY_SEGMENTED mode. If not specified, a value close to 256s will be calculated that is a multiple of the audio frame size.",
+        example = "256.0",
+        nullable = true,
+    )
+    @field:Positive
+    val audioSegmentLength: Double? = null,
 
     @field:Schema(
         description = "Properties for segmented encoding, or null if not used",
