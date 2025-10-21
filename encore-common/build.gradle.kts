@@ -16,6 +16,10 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
+    implementation(platform("software.amazon.awssdk:bom:2.33.9"))
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:s3-transfer-manager")
+    implementation("software.amazon.awssdk.crt:aws-crt:0.39.0")
 
     testImplementation(project(":encore-web"))
     testImplementation("org.springframework.security:spring-security-test")
@@ -26,6 +30,7 @@ dependencies {
     testFixturesImplementation("com.redis:testcontainers-redis:2.2.4")
     testFixturesImplementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
     testFixturesImplementation("org.junit.jupiter:junit-jupiter-api")
+    testFixturesImplementation("org.testcontainers:localstack:1.20.3")
     testFixturesRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

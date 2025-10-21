@@ -4,7 +4,6 @@ import com.redis.testcontainers.RedisContainer
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import org.testcontainers.DockerClientFactory
 import org.testcontainers.utility.DockerImageName
 
 private const val DEFAULT_REDIS_DOCKER_IMAGE = "redis:6.2.13"
@@ -24,15 +23,5 @@ class RedisExtension : BeforeAllCallback {
             System.setProperty("spring.data.redis.host", host)
             System.setProperty("spring.data.redis.port", port)
         }
-    }
-
-    private fun isDockerAvailable(): Boolean = try {
-        log.info { "Checking for docker..." }
-        DockerClientFactory.instance().client()
-        log.info { "Docker is available" }
-        true
-    } catch (ex: Throwable) {
-        log.warn { "Docker is not available! Make sure redis is available as configured by spring.data.redis (default localhost:6379)" }
-        false
     }
 }

@@ -11,6 +11,8 @@ jacocoTestCoverageVerification {
                     '*.static {...}',
                     '*.model.*.get*',
                     '*.service.localencode.LocalEncodeService.moveFile*',
+                    '*.S3Properties*.get*()',
+                    '*RemoteFileService.DefaultHandler.*',
                     '*QueueService.getQueue*',
                     '*QueueService.migrateQueues()',
                     '*.ShutdownHandler.*',
