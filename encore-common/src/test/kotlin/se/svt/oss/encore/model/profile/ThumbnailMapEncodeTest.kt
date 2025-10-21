@@ -77,4 +77,13 @@ class ThumbnailMapEncodeTest {
         }.isInstanceOf(RuntimeException::class.java)
             .hasMessageContaining("No input with label other!")
     }
+
+    @Test
+    fun `returns null when not enabled`() {
+        val output = encode.copy(enabled = false).getOutput(
+            job = defaultEncoreJob(),
+            encodingProperties = EncodingProperties(),
+        )
+        assertThat(output).isNull()
+    }
 }

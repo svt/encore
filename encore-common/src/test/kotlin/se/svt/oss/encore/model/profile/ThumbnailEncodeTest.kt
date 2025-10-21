@@ -42,6 +42,15 @@ class ThumbnailEncodeTest {
     }
 
     @Test
+    fun `returns null when not enabled`() {
+        val output = encode.copy(enabled = false).getOutput(
+            job = defaultEncoreJob(),
+            encodingProperties = EncodingProperties(),
+        )
+        assertThat(output).isNull()
+    }
+
+    @Test
     fun `use thumbnail time`() {
         val output = encode.getOutput(
             job = defaultEncoreJob().copy(

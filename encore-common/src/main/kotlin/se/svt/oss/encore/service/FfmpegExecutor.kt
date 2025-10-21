@@ -51,7 +51,9 @@ class FfmpegExecutor(
                 encoreProperties.encoding,
             )
         }
-
+        check(outputs.isNotEmpty()) {
+            "No outputs to encode! Check your profile and inputs!"
+        }
         check(outputs.distinctBy { it.id }.size == outputs.size) {
             "Profile ${encoreJob.profile} contains duplicate suffixes: ${outputs.map { it.id }}!"
         }

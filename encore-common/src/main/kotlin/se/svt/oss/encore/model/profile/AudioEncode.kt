@@ -29,10 +29,14 @@ data class AudioEncode(
     override val optional: Boolean = false,
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
+    override val enabled: Boolean = true,
 ) : AudioEncoder() {
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val outputName = "${job.baseName}$suffix.$format"
+        if (!enabled) {
+            return logOrThrow("$outputName is disabled. Skipping...")
+        }
         val audioIn = job.inputs.audioInput(inputLabel)
             ?: return logOrThrow("Can not generate $outputName! No audio input with label '$inputLabel'.")
         val analyzed = audioIn.analyzedAudio
