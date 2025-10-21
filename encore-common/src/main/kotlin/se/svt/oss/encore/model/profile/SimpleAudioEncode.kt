@@ -19,7 +19,7 @@ data class SimpleAudioEncode(
     val suffix: String = "_$codec",
     val params: LinkedHashMap<String, String> = linkedMapOf(),
     override val optional: Boolean = false,
-    override val enabled: Boolean = false,
+    override val enabled: Boolean = true,
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : AudioEncoder() {
