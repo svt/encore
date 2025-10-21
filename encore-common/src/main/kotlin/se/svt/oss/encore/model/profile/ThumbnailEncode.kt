@@ -25,11 +25,15 @@ data class ThumbnailEncode(
     val suffixZeroPad: Int = 2,
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
     val optional: Boolean = false,
+    val enabled: Boolean = true,
     val intervalSeconds: Double? = null,
     val decodeOutput: Int? = null,
 ) : OutputProducer {
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+        if (!enabled) {
+            return logOrThrow("Thumbnail with suffix $suffix is disabled. Skipping...")
+        }
         if (job.segmentLength != null) {
             return logOrThrow("Thumbnail is not supported in segmented encode!")
         }
@@ -105,7 +109,7 @@ data class ThumbnailEncode(
         "select=${times.joinToString("+") { "(isnan(prev_pts)+lt(prev_pts*TB\\,$it))*gte(pts*TB\\,$it)" }}"
 
     private fun logOrThrow(message: String): Output? {
-        if (optional) {
+        if (optional || !enabled) {
             log.info { message }
             return null
         } else {

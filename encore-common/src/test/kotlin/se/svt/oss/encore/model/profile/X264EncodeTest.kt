@@ -5,6 +5,7 @@
 package se.svt.oss.encore.model.profile
 
 import se.svt.oss.encore.Assertions
+import se.svt.oss.mediaanalyzer.file.FractionString
 
 class X264EncodeTest : VideoEncodeTest<X264Encode>() {
     override fun createEncode(
@@ -14,6 +15,10 @@ class X264EncodeTest : VideoEncodeTest<X264Encode>() {
         params: LinkedHashMap<String, String>,
         filters: List<String>,
         audioEncode: AudioEncode?,
+        optional: Boolean,
+        enabled: Boolean,
+        cropTo: FractionString?,
+        padTo: FractionString?,
     ): X264Encode = X264Encode(
         width = width,
         height = height,
@@ -23,6 +28,10 @@ class X264EncodeTest : VideoEncodeTest<X264Encode>() {
         filters = filters,
         audioEncode = audioEncode,
         suffix = "-x264",
+        optional = optional,
+        enabled = enabled,
+        cropTo = cropTo,
+        padTo = padTo,
     )
     override fun verifyFirstPassParams(encode: VideoEncode, params: List<String>) {
         if (encode.twoPass) {

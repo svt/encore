@@ -5,6 +5,7 @@
 package se.svt.oss.encore.model.profile
 
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
+import se.svt.oss.mediaanalyzer.file.FractionString
 
 data class GenericVideoEncode(
     override val width: Int?,
@@ -18,4 +19,8 @@ data class GenericVideoEncode(
     override val format: String,
     override val codec: String,
     override val inputLabel: String = DEFAULT_VIDEO_LABEL,
+    override val optional: Boolean = false,
+    override val cropTo: FractionString? = null,
+    override val padTo: FractionString? = null,
+    override val enabled: Boolean = true,
 ) : VideoEncode

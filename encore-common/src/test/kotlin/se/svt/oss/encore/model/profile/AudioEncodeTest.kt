@@ -67,6 +67,13 @@ class AudioEncodeTest {
     }
 
     @Test
+    fun `returns null when not enabled`() {
+        val output = audioEncode.copy(enabled = false)
+            .getOutput(job(getAudioStream(6)), EncodingProperties())
+        assertThat(output).isNull()
+    }
+
+    @Test
     fun `valid output all values set`() {
         val audioEncodeLocal = AudioEncode(
             codec = "aac",

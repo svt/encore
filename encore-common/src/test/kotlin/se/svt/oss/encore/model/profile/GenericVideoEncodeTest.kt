@@ -4,6 +4,8 @@
 
 package se.svt.oss.encore.model.profile
 
+import se.svt.oss.mediaanalyzer.file.FractionString
+
 class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
     override fun createEncode(
         width: Int?,
@@ -12,6 +14,10 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         params: LinkedHashMap<String, String>,
         filters: List<String>,
         audioEncode: AudioEncode?,
+        optional: Boolean,
+        enabled: Boolean,
+        cropTo: FractionString?,
+        padTo: FractionString?,
     ) = GenericVideoEncode(
         width = width,
         height = height,
@@ -22,5 +28,9 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         suffix = "-generic",
         codec = "acodec",
         format = "mp4",
+        optional = optional,
+        enabled = enabled,
+        cropTo = cropTo,
+        padTo = padTo,
     )
 }

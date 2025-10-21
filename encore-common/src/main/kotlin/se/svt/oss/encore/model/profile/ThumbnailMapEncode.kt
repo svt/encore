@@ -26,6 +26,7 @@ data class ThumbnailMapEncode(
     val rows: Int = 20,
     val quality: Int = 5,
     val optional: Boolean = true,
+    val enabled: Boolean = true,
     val suffix: String = "_${cols}x${rows}_${tileWidth}x${tileHeight}_thumbnail_map",
     val format: String = "jpg",
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
@@ -33,6 +34,9 @@ data class ThumbnailMapEncode(
 ) : OutputProducer {
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+        if (!enabled) {
+            return logOrThrow("Thumbnail map with suffix $suffix is disabled. Skipping...")
+        }
         if (job.segmentLength != null) {
             return logOrThrow("Thumbnail map is not supported in segmented encode!")
         }
@@ -111,7 +115,7 @@ data class ThumbnailMapEncode(
     }
 
     private fun logOrThrow(message: String): Output? {
-        if (optional) {
+        if (optional || !enabled) {
             log.info { message }
             return null
         } else {

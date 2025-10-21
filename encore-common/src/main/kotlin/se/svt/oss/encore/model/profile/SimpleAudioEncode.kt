@@ -19,11 +19,15 @@ data class SimpleAudioEncode(
     val suffix: String = "_$codec",
     val params: LinkedHashMap<String, String> = linkedMapOf(),
     override val optional: Boolean = false,
+    override val enabled: Boolean = false,
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
 ) : AudioEncoder() {
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         val outputName = "${job.baseName}$suffix.$format"
+        if (!enabled) {
+            return logOrThrow("$outputName is disabled. Skipping...")
+        }
         job.inputs.analyzedAudio(inputLabel)
             ?: return logOrThrow("Can not generate $outputName! No audio input with label '$inputLabel'.")
         val outParams = linkedMapOf<String, Any>()

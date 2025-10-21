@@ -4,6 +4,7 @@
 
 package se.svt.oss.encore.model.profile
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.math3.fraction.Fraction
 import se.svt.oss.encore.config.EncodingProperties
 import se.svt.oss.encore.model.EncoreJob
@@ -12,8 +13,13 @@ import se.svt.oss.encore.model.input.videoInput
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
+import se.svt.oss.mediaanalyzer.file.FractionString
+import se.svt.oss.mediaanalyzer.file.stringValue
+import se.svt.oss.mediaanalyzer.file.toFraction
 import se.svt.oss.mediaanalyzer.file.toFractionOrNull
 import kotlin.math.absoluteValue
+
+private val log = KotlinLogging.logger { }
 
 interface VideoEncode : OutputProducer {
     val width: Int?
@@ -27,12 +33,20 @@ interface VideoEncode : OutputProducer {
     val format: String
     val codec: String
     val inputLabel: String
+    val optional: Boolean
+    val enabled: Boolean
+    val cropTo: FractionString?
+    val padTo: FractionString?
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+        if (!enabled) {
+            log.info { "Encode $suffix is not enabled. Skipping." }
+            return null
+        }
         val audioEncodesToUse = audioEncodes.ifEmpty { listOfNotNull(audioEncode) }
         val audio = audioEncodesToUse.flatMap { it.getOutput(job, encodingProperties)?.audioStreams.orEmpty() }
         val videoInput = job.inputs.videoInput(inputLabel)
-            ?: throw RuntimeException("No valid video input with label $inputLabel!")
+            ?: return logOrThrow("No valid video input with label $inputLabel!")
         return Output(
             id = "$suffix.$format",
             video = VideoStreamEncode(
@@ -68,11 +82,14 @@ interface VideoEncode : OutputProducer {
         videoInput: VideoIn,
     ): String? {
         val videoFilters = mutableListOf<String>()
+        cropTo?.toFraction()?.let {
+            videoFilters.add("crop=min(iw\\,ih*${it.stringValue()}):min(ih\\,iw/(${it.stringValue()}))")
+        }
         var scaleToWidth = width
         var scaleToHeight = height
         val videoStream = videoInput.analyzedVideo.highestBitrateVideoStream
         val isRotated90 = videoStream.rotation?.rem(180)?.absoluteValue == 90
-        val outputDar = (videoInput.padTo ?: videoInput.cropTo)?.toFractionOrNull()
+        val outputDar = (padTo ?: cropTo ?: videoInput.padTo ?: videoInput.cropTo)?.toFractionOrNull()
             ?: (videoStream.displayAspectRatio?.toFractionOrNull() ?: Fraction(videoStream.width, videoStream.height))
                 .let { if (isRotated90) it.reciprocal() else it }
         val outputIsPortrait = outputDar < Fraction.ONE
@@ -88,10 +105,22 @@ interface VideoEncode : OutputProducer {
         } else if (scaleToWidth != null || scaleToHeight != null) {
             videoFilters.add("scale=${scaleToWidth ?: -2}:${scaleToHeight ?: -2}")
         }
+        padTo?.toFraction()?.let {
+            videoFilters.add("pad=aspect=${it.stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2")
+        }
         filters?.let { videoFilters.addAll(it) }
         if (debugOverlay) {
             videoFilters.add("drawtext=text=$suffix:fontcolor=white:fontsize=50:box=1:boxcolor=black@0.75:boxborderw=5:x=10:y=10")
         }
         return if (videoFilters.isEmpty()) null else videoFilters.joinToString(",")
+    }
+
+    fun logOrThrow(message: String): Output? {
+        if (optional) {
+            log.info { message }
+            return null
+        } else {
+            throw RuntimeException(message)
+        }
     }
 }
