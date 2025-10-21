@@ -22,6 +22,7 @@ import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.encore.model.profile.ChannelLayout
+import se.svt.oss.encore.model.profile.FilterSettings
 import se.svt.oss.encore.model.profile.Profile
 import se.svt.oss.mediaanalyzer.file.AudioFile
 
@@ -40,6 +41,7 @@ internal class CommandBuilderTest {
         commandBuilder = CommandBuilder(encoreJob, profile, encoreJob.outputFolder, encodingProperties)
         every { profile.scaling } returns "scaling"
         every { profile.deinterlaceFilter } returns "yadif"
+        every { profile.filterSettings } returns FilterSettings()
     }
 
     @Test
@@ -88,6 +90,72 @@ internal class CommandBuilderTest {
         val buildCommands = commandBuilder.buildCommands(listOf(output))
         val command = buildCommands.first().joinToString(" ")
         assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:a]join=inputs=3:channel_layout=3.0:map=0.0-FL|1.0-FR|2.0-FC,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]aformat=channel_layouts=stereo[AUDIO-test-out-0] -map [AUDIO-test-out-0] -vn -c:a:0 aac -metadata comment=Transcoded using Encore /output/path/out.mp4")
+    }
+
+    @Test
+    fun `custom splitFilter no size param`() {
+        every { profile.filterSettings } returns FilterSettings(splitFilter = "custom-split-filter")
+        val buildCommands = commandBuilder.buildCommands(listOf(output(false)))
+
+        assertThat(buildCommands).hasSize(1)
+
+        val command = buildCommands.first().joinToString(" ")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]custom-split-filter=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
+    }
+
+    @Test
+    fun `custom splitFilter with size params`() {
+        every { profile.filterSettings } returns FilterSettings(splitFilter = "custom-split-filter=1:2:3")
+        val buildCommands = commandBuilder.buildCommands(listOf(output(false)))
+
+        assertThat(buildCommands).hasSize(1)
+
+        val command = buildCommands.first().joinToString(" ")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]custom-split-filter=1:2:3[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
+    }
+
+    @Test
+    fun `custom crop filter`() {
+        val job = defaultEncoreJob().copy(
+            inputs = listOf(
+                AudioVideoInput(
+                    uri = "/input/test.mp4",
+                    analyzed = defaultVideoFile,
+                    cropTo = "1:1",
+                ),
+            ),
+        )
+        every { profile.filterSettings } returns FilterSettings(cropFilter = "hw_crop")
+        commandBuilder = CommandBuilder(job, profile, encoreJob.outputFolder, encodingProperties)
+
+        val buildCommands = commandBuilder.buildCommands(listOf(output(false)))
+
+        assertThat(buildCommands).hasSize(1)
+
+        val command = buildCommands.first().joinToString(" ")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]hw_crop=min(iw\\,ih*1/1):min(ih\\,iw/(1/1)),split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
+    }
+
+    @Test
+    fun `custom pad filter`() {
+        val job = defaultEncoreJob().copy(
+            inputs = listOf(
+                AudioVideoInput(
+                    uri = "/input/test.mp4",
+                    analyzed = defaultVideoFile,
+                    padTo = "1:1",
+                ),
+            ),
+        )
+        every { profile.filterSettings } returns FilterSettings(padFilter = "hw_pad")
+        commandBuilder = CommandBuilder(job, profile, encoreJob.outputFolder, encodingProperties)
+
+        val buildCommands = commandBuilder.buildCommands(listOf(output(false)))
+
+        assertThat(buildCommands).hasSize(1)
+
+        val command = buildCommands.first().joinToString(" ")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]hw_pad=aspect=1/1:x=(ow-iw)/2:y=(oh-ih)/2,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
     }
 
     @Test

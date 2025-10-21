@@ -33,7 +33,11 @@ data class ThumbnailMapEncode(
     val decodeOutput: Int? = null,
 ) : OutputProducer {
 
-    override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
+    override fun getOutput(
+        job: EncoreJob,
+        encodingProperties: EncodingProperties,
+        filterSettings: FilterSettings,
+    ): Output? {
         if (!enabled) {
             return logOrThrow("Thumbnail map with suffix $suffix is disabled. Skipping...")
         }

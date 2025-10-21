@@ -35,13 +35,14 @@ abstract class VideoEncodeTest<T : VideoEncode> {
     ): T
 
     private val encodingProperties = EncodingProperties()
+    private val filterSettings = FilterSettings()
     private val audioEncode = mockk<AudioEncode>()
     private val audioStreamEncode = mockk<AudioStreamEncode>()
     private val defaultParams = linkedMapOf("a" to "b")
 
     @BeforeEach
     internal fun setUp() {
-        every { audioEncode.getOutput(any(), encodingProperties)?.audioStreams } returns listOf(audioStreamEncode)
+        every { audioEncode.getOutput(any(), encodingProperties, filterSettings)?.audioStreams } returns listOf(audioStreamEncode)
     }
 
     @Test
@@ -65,6 +66,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                     ),
                 ),
                 encodingProperties,
+                filterSettings,
             )
 
             assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
@@ -92,6 +94,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                 ),
             ),
             encodingProperties,
+            filterSettings,
         )
 
         assertThat(output?.video).hasFilter("scale=1080:1920:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1")
@@ -107,7 +110,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             filters = listOf("afilter"),
             audioEncode = audioEncode,
         )
-        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties, filterSettings)
         assertThat(output)
             .hasOnlyAudioStreams(audioStreamEncode)
         val videoStreamEncode = output!!.video
@@ -116,6 +119,31 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             .hasNoFirstPassParams()
             .hasTwoPass(false)
             .hasFilter("scale=-2:1080,afilter")
+        verifyFirstPassParams(encode, videoStreamEncode!!.firstPassParams)
+        verifySecondPassParams(encode, videoStreamEncode.params)
+    }
+
+    @Test
+    fun `single pass scale to height with custom scale filter`() {
+        val filterSettings = FilterSettings(scaleFilter = "myscale")
+        every { audioEncode.getOutput(any(), encodingProperties, filterSettings)?.audioStreams } returns listOf(audioStreamEncode)
+        val encode = createEncode(
+            width = null,
+            height = 1080,
+            twoPass = false,
+            params = defaultParams,
+            filters = listOf("afilter"),
+            audioEncode = audioEncode,
+        )
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties, filterSettings)
+        assertThat(output)
+            .hasOnlyAudioStreams(audioStreamEncode)
+        val videoStreamEncode = output!!.video
+        assertThat(videoStreamEncode)
+            .isNotNull
+            .hasNoFirstPassParams()
+            .hasTwoPass(false)
+            .hasFilter("myscale=-2:1080,afilter")
         verifyFirstPassParams(encode, videoStreamEncode!!.firstPassParams)
         verifySecondPassParams(encode, videoStreamEncode.params)
     }
@@ -130,7 +158,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             filters = listOf("afilter"),
             audioEncode = audioEncode,
         )
-        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties, filterSettings)
         assertThat(output).isNotNull
         val videoStreamEncode = output!!.video
         assertThat(videoStreamEncode)
@@ -162,6 +190,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                 ),
             ),
             encodingProperties,
+            FilterSettings(),
         )
         assertThat(output).isNull()
     }
@@ -190,6 +219,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
                     ),
                 ),
                 encodingProperties,
+                FilterSettings(),
             )
         }.hasMessage("No valid video input with label main!")
     }
@@ -205,7 +235,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             audioEncode = audioEncode,
             enabled = false,
         )
-        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties, FilterSettings())
         assertThat(output).isNull()
     }
 
@@ -221,7 +251,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
             cropTo = "9:16",
             padTo = "16:9",
         )
-        val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
+        val output = encode.getOutput(defaultEncoreJob(), encodingProperties, FilterSettings())
         assertThat(output?.video).hasFilter("crop=min(iw\\,ih*9/16):min(ih\\,iw/(9/16)),scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1,pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,afilter")
     }
 
