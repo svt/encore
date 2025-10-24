@@ -17,7 +17,7 @@ import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
 
 data class AudioEncode(
-    val codec: String = "libfdk_aac",
+    override val codec: String = "libfdk_aac",
     val bitrate: String? = null,
     val samplerate: Int = 48000,
     val channelLayout: ChannelLayout = ChannelLayout.CH_LAYOUT_STEREO,
