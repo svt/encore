@@ -13,7 +13,7 @@ import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
 
 data class SimpleAudioEncode(
-    val codec: String = "libfdk_aac",
+    override val codec: String = "libfdk_aac",
     val bitrate: String? = null,
     val samplerate: Int? = null,
     val suffix: String = "_$codec",

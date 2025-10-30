@@ -25,7 +25,7 @@ data class ThumbnailEncode(
     val suffixZeroPad: Int = 2,
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
     val optional: Boolean = false,
-    val enabled: Boolean = true,
+    override val enabled: Boolean = true,
     val intervalSeconds: Double? = null,
     val decodeOutput: Int? = null,
 ) : OutputProducer {

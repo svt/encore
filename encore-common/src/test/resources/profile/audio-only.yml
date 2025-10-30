@@ -1,0 +1,14 @@
+name: audio-only
+description: Audio-only profile for testing segmented audio encoding
+encodes:
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO
+
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE
+    dialogueEnhancement:
+      enabled: true
+    audioMixPreset: de
+    optional: true

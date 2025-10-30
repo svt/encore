@@ -26,7 +26,7 @@ data class ThumbnailMapEncode(
     val rows: Int = 20,
     val quality: Int = 5,
     val optional: Boolean = true,
-    val enabled: Boolean = true,
+    override val enabled: Boolean = true,
     val suffix: String = "_${cols}x${rows}_${tileWidth}x${tileHeight}_thumbnail_map",
     val format: String = "jpg",
     val inputLabel: String = DEFAULT_VIDEO_LABEL,
