@@ -374,4 +374,19 @@ class EncoreIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIn
             .hasNumSegments(0) // No video segments
             .hasNumTasks(2) // Only 2 audio segments
     }
+
+    @Test
+    fun jobIsFailedOnUnknownProfile(@TempDir outputDir: File) {
+        val createdJob = createAndAwaitJob(
+            job = job(outputDir).copy(profile = "unknown_profile"),
+            pollInterval = Durations.ONE_SECOND,
+            timeout = Durations.ONE_MINUTE,
+        ) { it.status.isCompleted }
+
+        assertThat(createdJob)
+            .hasStatus(Status.FAILED)
+
+        assertThat(createdJob.message)
+            .contains("Could not find location for profile unknown_profile!")
+    }
 }

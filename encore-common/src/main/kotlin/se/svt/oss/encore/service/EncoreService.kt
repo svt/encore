@@ -83,7 +83,16 @@ class EncoreService(
             ?: throw IllegalStateException("Shared work dir has not been configured")
 
     fun encode(queueItem: QueueItem, job: EncoreJob) {
-        initJob(job)
+        try {
+            initJob(job)
+        } catch (e: Exception) {
+            log.error(e) { "Job initialization failed: ${e.message}" }
+            job.status = Status.FAILED
+            job.message = e.message
+            repository.save(job)
+            callbackService.sendProgressCallback(job)
+            return
+        }
         when {
             queueItem.task != null -> encodeSegment(job, queueItem.task)
             job.segmentedEncodingInfo != null -> encodeSegmented(job)
