@@ -54,7 +54,7 @@ class QueueService(
             log.info { "Job was cancelled" }
             return true
         }
-        if (queueItem.segment != null && job.status == Status.FAILED) {
+        if (queueItem.task != null && job.status == Status.FAILED) {
             log.info { "Main job has failed" }
             return true
         }
@@ -91,13 +91,13 @@ class QueueService(
         try {
             log.info { "Adding job to queue (repost on interrupt)" }
             enqueue(queueItem)
-            if (queueItem.segment == null) {
+            if (queueItem.task == null) {
                 job.status = Status.QUEUED
                 repository.save(job)
             }
             log.info { "Added job to queue (repost on interrupt)" }
         } catch (e: Exception) {
-            if (queueItem.segment == null) {
+            if (queueItem.task == null) {
                 val message = "Failed to add interrupted job to queue"
                 log.error(e) { message }
                 job.message = message

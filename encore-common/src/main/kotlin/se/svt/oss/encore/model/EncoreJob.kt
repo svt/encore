@@ -21,6 +21,55 @@ import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.time.OffsetDateTime
 import java.util.UUID
 
+data class SegmentedEncodingInfo(
+    @field:Schema(
+        description = "Length of each segment in seconds. Should be a multiple of target GOP.",
+        example = "19.2",
+        readOnly = true,
+        nullable = false,
+    )
+    val segmentLength: Double,
+    @field:Schema(
+        description = "Number of video segments",
+        nullable = false,
+        readOnly = true,
+    )
+    val numSegments: Int,
+    @field:Schema(
+        description = "Number of encoding tasks used for this job. This will be equal to numSegments plus numAudioSegments",
+        nullable = false,
+        readOnly = true,
+    )
+    val numTasks: Int,
+    @field:Schema(
+        description = "The audio encoding mode used for this job.",
+        example = "ENCODE_WITH_VIDEO",
+        nullable = false,
+        readOnly = true,
+    )
+    val audioEncodingMode: AudioEncodingMode,
+    @field:Schema(
+        description = "Audio segment padding in seconds (added at start/end of segments to avoid artifacts). Only relevant in ENCODE_SEPARATELY_SEGMENTED mode.",
+        example = "0.04267",
+        nullable = false,
+        readOnly = true,
+    )
+    val audioSegmentPadding: Double = 0.0,
+    @field:Schema(
+        description = "Length of each audio segment in seconds. Only relevant in ENCODE_SEPARATELY_SEGMENTED mode.",
+        example = "256.0",
+        nullable = false,
+        readOnly = true,
+    )
+    val audioSegmentLength: Double = 0.0,
+    @field:Schema(
+        description = "Number of audio segments",
+        nullable = false,
+        readOnly = true,
+    )
+    val numAudioSegments: Int,
+)
+
 @Validated
 @RedisHash("encore-jobs", timeToLive = (60 * 60 * 24 * 7).toLong()) // 1 week ttl
 @Tag(name = "encorejob")
@@ -106,6 +155,29 @@ data class EncoreJob(
     )
     @field:Positive
     val segmentLength: Double? = null,
+
+    @field:Schema(
+        description = "Defines how audio should be encoded when using segmented encoding. ENCODE_WITH_VIDEO: audio and video together in segments; ENCODE_SEPARATELY_FULL: audio separately as full file; ENCODE_SEPARATELY_SEGMENTED: audio separately in segments.",
+        example = "ENCODE_WITH_VIDEO",
+        defaultValue = "ENCODE_WITH_VIDEO",
+        nullable = true,
+    )
+    val audioEncodingMode: AudioEncodingMode? = null,
+
+    @field:Schema(
+        description = "Length of audio segments in seconds when using ENCODE_SEPARATELY_SEGMENTED mode. If not specified, a value close to 256s will be calculated that is a multiple of the audio frame size.",
+        example = "256.0",
+        nullable = true,
+    )
+    @field:Positive
+    val audioSegmentLength: Double? = null,
+
+    @field:Schema(
+        description = "Properties for segmented encoding, or null if not used",
+        nullable = true,
+        readOnly = true,
+    )
+    var segmentedEncodingInfo: SegmentedEncodingInfo? = null,
 
     @field:Schema(
         description = "The exception message, if the EncoreJob failed",

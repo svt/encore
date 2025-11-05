@@ -12,7 +12,8 @@ private val log = KotlinLogging.logger { }
 abstract class AudioEncoder : OutputProducer {
 
     abstract val optional: Boolean
-    abstract val enabled: Boolean
+    abstract val codec: String
+    abstract override val enabled: Boolean
 
     fun logOrThrow(message: String): Output? {
         if (optional || !enabled) {

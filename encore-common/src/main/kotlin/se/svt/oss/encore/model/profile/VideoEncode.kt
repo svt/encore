@@ -34,7 +34,7 @@ interface VideoEncode : OutputProducer {
     val codec: String
     val inputLabel: String
     val optional: Boolean
-    val enabled: Boolean
+    override val enabled: Boolean
     val cropTo: FractionString?
     val padTo: FractionString?
 
