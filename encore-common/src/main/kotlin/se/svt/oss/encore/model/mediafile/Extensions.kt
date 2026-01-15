@@ -18,18 +18,21 @@ fun MediaContainer.audioLayout() = when {
     audioStreams.size == 1 -> AudioLayout.MULTI_TRACK
     audioStreams.all { it.channels == 1 } -> AudioLayout.MONO_STREAMS
     audioStreams.first().channels > 1 -> AudioLayout.MULTI_TRACK
-    else -> AudioLayout.INVALID
+    else -> AudioLayout.MIXED_MONO_MULTI
 }
 
-fun MediaContainer.channelCount() = if (audioLayout() == AudioLayout.MULTI_TRACK) {
-    audioStreams.first().channels
-} else {
-    audioStreams.size
+fun MediaContainer.channelCount() = when (audioLayout()) {
+    AudioLayout.MULTI_TRACK -> audioStreams.first().channels
+    AudioLayout.MONO_STREAMS -> audioStreams.size
+    // Return number of mono tracks before first multitrack stream,
+    // effectively ignoring all other streams
+    AudioLayout.MIXED_MONO_MULTI -> audioStreams.indexOfFirst { it.channels > 1 }
+    AudioLayout.NONE -> 0
 }
 
 fun AudioIn.channelLayout(defaultChannelLayouts: Map<Int, ChannelLayout>): ChannelLayout = when (analyzedAudio.audioLayout()) {
-    AudioLayout.NONE, AudioLayout.INVALID -> null
-    AudioLayout.MONO_STREAMS -> if (analyzedAudio.channelCount() == channelLayout?.channels?.size) {
+    AudioLayout.NONE -> null
+    AudioLayout.MONO_STREAMS, AudioLayout.MIXED_MONO_MULTI -> if (analyzedAudio.channelCount() == channelLayout?.channels?.size) {
         channelLayout
     } else {
         defaultChannelLayouts[analyzedAudio.channelCount()]

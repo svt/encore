@@ -6,7 +6,7 @@ package se.svt.oss.encore.model.mediafile
 
 enum class AudioLayout {
     NONE,
-    INVALID,
+    MIXED_MONO_MULTI,
     MONO_STREAMS,
     MULTI_TRACK,
 }

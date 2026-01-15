@@ -36,18 +36,6 @@ class AudioEncodeTest {
     }
 
     @Test
-    fun `not supported soundtype throws exception`() {
-        val job = job(getAudioStream(1), getAudioStream(2))
-        assertThatThrownBy {
-            audioEncode.getOutput(
-                job,
-                EncodingProperties(audioMixPresets = mapOf("default" to AudioMixPreset(fallbackToAuto = false))),
-            )
-        }.isInstanceOf(RuntimeException::class.java)
-            .hasMessage("Audio layout of audio input 'main' is not supported!")
-    }
-
-    @Test
     fun `valid output`() {
         val output = audioEncode.getOutput(
             job(getAudioStream(6)),

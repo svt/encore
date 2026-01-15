@@ -18,7 +18,7 @@ import se.svt.oss.mediaanalyzer.file.MediaFile
 internal class MediaFileExtensionsTest {
     private val noAudio = defaultVideoFile.copy(audioStreams = emptyList())
 
-    private val invalidAudio = defaultVideoFile.copy(
+    private val mixedMonoMultiAudio = defaultVideoFile.copy(
         audioStreams = defaultVideoFile.audioStreams.mapIndexed { index, audioStream ->
             if (index == 0) audioStream else audioStream.copy(channels = 2)
         },
@@ -53,9 +53,9 @@ internal class MediaFileExtensionsTest {
     }
 
     @Test
-    @DisplayName("Audio layout is invalid if first stream has one channel and the rest has two channels or more")
-    fun testAudioLayoutInvalid() {
-        assertThat(invalidAudio.audioLayout()).isEqualTo(AudioLayout.INVALID)
+    @DisplayName("Audio layout is MIXED_MONO_MULTI if first stream has one channel and the rest has two channels or more")
+    fun testAudioLayoutMonotracksFollowedByMultitrack() {
+        assertThat(mixedMonoMultiAudio.audioLayout()).isEqualTo(AudioLayout.MIXED_MONO_MULTI)
     }
 
     @Test
@@ -70,6 +70,12 @@ internal class MediaFileExtensionsTest {
     @DisplayName("Channel count for mono streams is number of streams")
     fun testChannelCountMonoSteams() {
         assertThat(defaultVideoFile.channelCount()).isEqualTo(8)
+    }
+
+    @Test
+    @DisplayName("Channel count for mono stream followed by multitrack streams is equal to number of leading mono streams")
+    fun testChannelCountMixedMonoMultiStreams() {
+        assertThat(mixedMonoMultiAudio.channelCount()).isEqualTo(1)
     }
 
     @Test
@@ -146,13 +152,6 @@ internal class MediaFileExtensionsTest {
     @DisplayName("Channel layout throws when no audio")
     fun channelLayoutNoAudio() {
         assertThatThrownBy { audioInput(noAudio).channelLayout(defaultChannelLayouts) }
-            .hasMessage("Could not determine channel layout for audio input 'main'!")
-    }
-
-    @Test
-    @DisplayName("Channel layout throws when invalid audio")
-    fun channelLayoutInvalidAudio() {
-        assertThatThrownBy { audioInput(invalidAudio).channelLayout(defaultChannelLayouts) }
             .hasMessage("Could not determine channel layout for audio input 'main'!")
     }
 
