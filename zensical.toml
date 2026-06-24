@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 Sveriges Television AB
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[project]
+site_name = "SVT Encore"
+site_url = "https://svt.github.io/encore/"
+site_description = "Scalable video transcoding tool built on FFmpeg and Spring Boot"
+site_author = "SVT – Team Videocore"
+repo_url = "https://github.com/svt/encore"
+repo_name = "svt/encore"
+edit_uri = "edit/master/docs"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = "getting-started.md" },
+  { "Deployment" = "deployment.md" },
+  { "Transcoding profiles" = "transcoding-profiles.md" },
+  { "API guide" = "api-guide.md" },
+  { "Configuration reference" = "configuration.md" },
+  { "Release history" = "release-history.md" },
+  { "About" = "about.md" },
+]
+
+[project.theme]
+logo = "assets/encore_symbol.png"
+favicon = "assets/favicon.ico"
+features = [
+  "content.code.copy",
+  "navigation.instant",
+  "navigation.tracking",
+  "navigation.top",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "green"
+accent = "green"
+toggle.icon = "material/brightness-7"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "light-green"
+accent = "light-green"
+toggle.icon = "material/brightness-4"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true

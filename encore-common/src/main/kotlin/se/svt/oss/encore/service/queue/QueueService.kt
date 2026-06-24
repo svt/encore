@@ -5,22 +5,19 @@ package se.svt.oss.encore.service.queue
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
-import org.springframework.data.redis.core.BoundZSetOperations
-import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ScanOptions
-import org.springframework.data.redis.core.script.RedisScript
-import org.springframework.data.redis.support.atomic.RedisAtomicInteger
-import org.springframework.data.repository.findByIdOrNull
+import io.lettuce.core.CompareCondition
+import io.lettuce.core.SetArgs
+import io.lettuce.core.api.StatefulRedisConnection
 import org.springframework.stereotype.Component
 import se.svt.oss.encore.config.EncoreProperties
+import se.svt.oss.encore.config.RedisProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.queue.QueueItem
-import se.svt.oss.encore.repository.EncoreJobRepository
+import se.svt.oss.encore.redis.RedisService
 import se.svt.oss.encore.service.ApplicationShutdownException
 import se.svt.oss.encore.service.queue.QueueUtil.getQueueNumberByPriority
 import java.util.UUID
-import java.util.concurrent.ConcurrentSkipListMap
 import kotlin.math.max
 import kotlin.math.min
 
@@ -29,17 +26,19 @@ private val log = KotlinLogging.logger { }
 @Component
 class QueueService(
     private val encoreProperties: EncoreProperties,
-    private val redisTemplate: RedisTemplate<String, QueueItem>,
-    private val repository: EncoreJobRepository,
-    private val redisQueueMigrationScript: RedisScript<Boolean>,
+    redisProperties: RedisProperties,
+    private val redisService: RedisService,
+    private val queueConnection: StatefulRedisConnection<String, QueueItem>,
+    private val stringConnection: StatefulRedisConnection<String, String>,
 ) {
-    private val queues = ConcurrentSkipListMap<Int, BoundZSetOperations<String, QueueItem>>()
+    private val queuePrefix = "${redisProperties.prefix}:queue:"
+    private val concurrencyKey = "${redisProperties.prefix}:concurrency"
 
     fun poll(queueNo: Int, action: (QueueItem, EncoreJob) -> Unit): Boolean {
         val queueItem = if (encoreProperties.pollHigherPrio) {
             pollUntil(queueNo)
         } else {
-            getQueue(queueNo).popMin()?.value
+            pollQueue(queueNo)
         }
         if (queueItem == null) {
             return false
@@ -47,7 +46,7 @@ class QueueService(
 
         log.info { "Picked up $queueItem" }
         val id = UUID.fromString(queueItem.id)
-        val job = repository.findByIdOrNull(id)
+        val job = redisService.findByIdOrNull(id)
             ?: retry(id) // Sometimes there has been sync issues
             ?: throw RuntimeException("Job ${queueItem.id} does not exist")
         if (job.status.isCancelled) {
@@ -70,21 +69,29 @@ class QueueService(
         return true
     }
 
+    private fun pollQueue(queueNo: Int) =
+        queueConnection.sync()
+            .zpopmin("$queuePrefix$queueNo")
+            .getValueOrElse(null)
+
+    private fun enqueue(queueNo: Int, item: QueueItem) =
+        queueConnection.sync()
+            .zadd(
+                "$queuePrefix$queueNo",
+                (100 - item.priority).toDouble(),
+                item,
+            )
+
     private fun pollUntil(queueNo: Int): QueueItem? =
         (0..queueNo)
-            .asSequence()
-            .mapNotNull {
-                val queue = getQueue(it)
-                queue.popMin()?.value?.also {
-                    log.debug { "Found item in ${queue.key}: $it" }
-                }
+            .firstNotNullOfOrNull {
+                pollQueue(it)?.also { log.debug { "Found item: $it" } }
             }
-            .firstOrNull()
 
     private fun retry(id: UUID): EncoreJob? {
-        Thread.sleep(5000)
+        Thread.sleep(2000)
         log.info { "Retrying read of job from repository " }
-        return repository.findByIdOrNull(id)
+        return redisService.findByIdOrNull(id)
     }
 
     private fun repostJob(queueItem: QueueItem, job: EncoreJob) {
@@ -92,17 +99,16 @@ class QueueService(
             log.info { "Adding job to queue (repost on interrupt)" }
             enqueue(queueItem)
             if (queueItem.segment == null) {
-                job.status = Status.QUEUED
-                repository.save(job)
+                job.updateStatus(Status.QUEUED)
+                redisService.save(job)
             }
             log.info { "Added job to queue (repost on interrupt)" }
         } catch (e: Exception) {
             if (queueItem.segment == null) {
                 val message = "Failed to add interrupted job to queue"
                 log.error(e) { message }
-                job.message = message
-                job.status = Status.FAILED
-                repository.save(job)
+                job.updateStatus(Status.FAILED, message)
+                redisService.save(job)
             }
         }
     }
@@ -116,56 +122,51 @@ class QueueService(
         enqueue(queueItem)
     }
 
-    fun enqueue(item: QueueItem) {
-        if (!queueByPrio(item.priority).add(item, (100 - item.priority).toDouble())!!) {
-            throw RuntimeException("Job could not be added to queue!")
-        }
-    }
+    fun enqueue(item: QueueItem) = enqueue(getQueueNumberByPriority(item.priority), item)
 
     fun getQueue(): List<QueueItem> = (0 until encoreProperties.concurrency).flatMap { queueNo ->
-        getQueue(queueNo).scan(ScanOptions.NONE).use { cursor ->
-            cursor.asSequence().mapNotNull { it.value }.toList()
-        }
+        queueConnection.sync().zrange("$queuePrefix$queueNo", 0, -1)
     }
 
-    private fun queueByPrio(priority: Int) =
-        getQueue(getQueueNumberByPriority(encoreProperties.concurrency, priority))
-
-    private fun getQueue(queueNo: Int) = queues.computeIfAbsent(queueNo) {
-        redisTemplate.boundZSetOps(getQueueKey(queueNo))
-    }
-
-    private fun getQueueKey(queueNo: Int) = "${encoreProperties.redisKeyPrefix}-queue-$queueNo"
-
-    fun migrateQueues() {
-        if (encoreProperties.queueMigrationScriptEnabled) {
-            val concurrency =
-                RedisAtomicInteger("${encoreProperties.redisKeyPrefix}-concurrency", redisTemplate.connectionFactory!!)
-                    .get()
-            (0 until concurrency).forEach {
-                val migrated = redisTemplate.execute(redisQueueMigrationScript, listOf(getQueueKey(it)))
-                if (migrated) {
-                    log.info { "Migrated queue ${getQueueKey(it)} from list to zset" }
-                }
+    fun getQueueCount(): Map<String, Long> =
+        buildMap {
+            var total = 0L
+            (0 until encoreProperties.concurrency).forEach { queueNo ->
+                val queueName = "$queuePrefix$queueNo"
+                val count = queueConnection.sync().zcard(queueName)
+                total += count
+                put(queueName, count)
             }
-        } else {
-            log.debug { "Queue migration is disabled" }
+            put("total", total)
         }
-    }
+
+    private fun getQueueNumberByPriority(priority: Int) =
+        getQueueNumberByPriority(encoreProperties.concurrency, priority)
 
     fun handleOrphanedQueues() {
         try {
-            val oldConcurrency =
-                RedisAtomicInteger("${encoreProperties.redisKeyPrefix}-concurrency", redisTemplate.connectionFactory!!)
-                    .getAndSet(encoreProperties.concurrency)
-            if (oldConcurrency > encoreProperties.concurrency) {
-                log.info { "Moving orphaned queue items to lowest priority queue. Old concurrency: $oldConcurrency, new concurrency: ${encoreProperties.concurrency}" }
-                val lowestPrioQueue = getQueue(encoreProperties.concurrency - 1)
-                (encoreProperties.concurrency until oldConcurrency).forEach { queueNo ->
-                    val orphanedQueue = getQueue(queueNo)
-                    orphanedQueue.popMin(Long.MAX_VALUE)?.let {
-                        lowestPrioQueue.add(it)
-                        log.info { "Moved ${it.size} orphaned items from queue $queueNo to lowest priority queue." }
+            val commands = stringConnection.sync()
+            val concurrencyAsString = encoreProperties.concurrency.toString()
+            if (commands.set(concurrencyKey, concurrencyAsString, SetArgs().nx()) == "OK") {
+                log.debug { "SET $concurrencyKey $concurrencyAsString" }
+                return
+            }
+            val oldConcurrency = commands.get(concurrencyKey).toInt()
+            if (oldConcurrency != encoreProperties.concurrency) {
+                val setArgs = SetArgs()
+                    .compareCondition(CompareCondition.valueNe(concurrencyAsString))
+
+                val resp = commands.set(concurrencyKey, concurrencyAsString, setArgs)
+
+                if (resp == "OK" && oldConcurrency > encoreProperties.concurrency) {
+                    log.info { "Moving orphaned queue items to lowest priority queue. Old concurrency: $oldConcurrency, new concurrency: ${encoreProperties.concurrency}" }
+                    val lowestPrioQueue = "$queuePrefix${encoreProperties.concurrency - 1}"
+                    (encoreProperties.concurrency until oldConcurrency).forEach { queueNo ->
+                        val orphaned = commands.zpopmin("$queuePrefix$queueNo", Long.MAX_VALUE)
+                        if (orphaned.isNotEmpty()) {
+                            commands.zadd(lowestPrioQueue, *orphaned.toTypedArray())
+                            log.info { "Moved ${orphaned.size} orphaned queue items from $queuePrefix$queueNo to $lowestPrioQueue" }
+                        }
                     }
                 }
             }

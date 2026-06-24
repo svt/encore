@@ -8,18 +8,14 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.ImportRuntimeHints
 import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.service.EncoreService
 import se.svt.oss.encore.service.queue.QueueService
 
 private val log = KotlinLogging.logger { }
 
-@EnableConfigurationProperties(EncoreProperties::class)
-@ImportRuntimeHints(EncoreRuntimeHints::class)
 @SpringBootApplication
 class EncoreWorkerApplication(
     private val queueService: QueueService,
@@ -28,7 +24,7 @@ class EncoreWorkerApplication(
     private val encoreProperties: EncoreProperties,
 ) : CommandLineRunner {
 
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         try {
             poll()
         } finally {

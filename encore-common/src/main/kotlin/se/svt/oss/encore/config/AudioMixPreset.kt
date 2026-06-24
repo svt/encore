@@ -5,11 +5,12 @@ package se.svt.oss.encore.config
 
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import se.svt.oss.encore.model.profile.ChannelLayout
+import java.util.Collections
 
 data class AudioMixPreset(
     val fallbackToAuto: Boolean = true,
     @NestedConfigurationProperty
-    val defaultPan: Map<ChannelLayout, String> = emptyMap(),
+    val defaultPan: Map<ChannelLayout, String> = Collections.emptyMap(),
     @NestedConfigurationProperty
-    val panMapping: Map<ChannelLayout, Map<ChannelLayout, String>> = emptyMap(),
+    val panMapping: Map<ChannelLayout, Map<ChannelLayout, String>> = Collections.emptyMap(),
 )

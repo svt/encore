@@ -13,16 +13,16 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Positive
 import org.springframework.data.annotation.Id
-import org.springframework.data.redis.core.RedisHash
-import org.springframework.data.redis.core.index.Indexed
 import org.springframework.validation.annotation.Validated
 import se.svt.oss.encore.model.input.Input
+import se.svt.oss.encore.model.output.PooledMetric
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.time.OffsetDateTime
+import java.time.temporal.ChronoUnit
+import java.util.Collections
 import java.util.UUID
 
 @Validated
-@RedisHash("encore-jobs", timeToLive = (60 * 60 * 24 * 7).toLong()) // 1 week ttl
 @Tag(name = "encorejob")
 data class EncoreJob(
 
@@ -55,7 +55,7 @@ data class EncoreJob(
         description = "Properties for evaluation of spring spel expressions in profile",
         defaultValue = "{}",
     )
-    val profileParams: Map<String, Any?> = emptyMap(),
+    val profileParams: Map<String, Any?> = Collections.emptyMap(),
 
     @field:Schema(
         description = "A directory path to where the output should be written",
@@ -79,8 +79,7 @@ data class EncoreJob(
         readOnly = true,
         defaultValue = "now()",
     )
-    @Indexed
-    val createdDate: OffsetDateTime = OffsetDateTime.now(),
+    val createdDate: OffsetDateTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
 
     @field:Schema(
         description = "An url to which the progress status callback should be directed",
@@ -157,9 +156,13 @@ data class EncoreJob(
         description = "Key/Values to append to the MDC log context",
         defaultValue = "{}",
     )
-    val logContext: Map<String, String> = emptyMap(),
+    val logContext: Map<String, String> = Collections.emptyMap(),
 
-    @field:Schema(description = "Seek to given time in seconds before encoding output.", nullable = true, example = "60.0")
+    @field:Schema(
+        description = "Seek to given time in seconds before encoding output.",
+        nullable = true,
+        example = "60.0",
+    )
     val seekTo: Double? = null,
 
     @field:Schema(description = "Limit output to given duration.", nullable = true, example = "60.0")
@@ -174,30 +177,40 @@ data class EncoreJob(
     val thumbnailTime: Double? = null,
 
     @field:NotEmpty
-    val inputs: List<Input> = emptyList(),
+    val inputs: List<Input> = Collections.emptyList(),
 ) {
 
     @Schema(
         description = "Analyzed models of the output files",
         readOnly = true,
     )
-    var output = emptyList<MediaFile>()
+    var output: List<MediaFile> = Collections.emptyList()
+
+    @Schema(
+        description = "Quality metrics of the output files",
+        readOnly = true,
+    )
+    var qualityMetrics: Map<String, Map<String, PooledMetric>> = Collections.emptyMap()
 
     @Schema(
         description = "The Job Status",
         readOnly = true,
     )
-    @Indexed
     var status = Status.NEW
-        set(value) {
-            field = value
-            if (value.isCompleted) {
-                completedDate = OffsetDateTime.now()
-            }
-            if (value == Status.IN_PROGRESS) {
-                startedDate = OffsetDateTime.now()
-            }
+
+    fun updateStatus(newStatus: Status, msg: String? = null) {
+        status = newStatus
+        message = msg
+        if (newStatus.isCompleted) {
+            completedDate = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS)
         }
+        if (newStatus == Status.SUCCESSFUL) {
+            progress = 100
+        }
+        if (newStatus == Status.IN_PROGRESS) {
+            startedDate = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+        }
+    }
 
     val contextMap: Map<String, String>
         @JsonIgnore

@@ -2,69 +2,91 @@
 //
 // SPDX-License-Identifier: EUPL-1.2
 
+@file:Suppress("DEPRECATION")
+
 package se.svt.oss.encore
 
-import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest
-import org.springframework.boot.actuate.health.HealthEndpoint
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.crypto.factory.PasswordEncoderFactories
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder
+import org.springframework.security.crypto.password.NoOpPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
 import se.svt.oss.encore.config.EncoreProperties
 
 private const val ROLE_USER = "USER"
 private const val ROLE_ADMIN = "ADMIN"
-private const val ROLE_ANON = "ANON"
+private const val ROLE_HIERARCHY = "ROLE_ADMIN > ROLE_USER"
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
-@ConditionalOnProperty(prefix = "encore-settings.security", name = ["enabled"])
 class SecurityConfiguration(private val encoreProperties: EncoreProperties) {
 
     @Bean
-    fun users(): UserDetailsService {
-        val user = User.builder()
-            .username("user")
-            .password(encoreProperties.security.userPassword)
-            .roles(ROLE_USER)
-            .build()
-        val admin = User.builder()
-            .username("admin")
-            .password(encoreProperties.security.adminPassword)
-            .roles(ROLE_USER, ROLE_ADMIN)
-            .build()
-        return InMemoryUserDetailsManager(user, admin)
+    fun passwordEncoder(): PasswordEncoder {
+        val encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder()
+        (encoder as? DelegatingPasswordEncoder)
+            ?.setDefaultPasswordEncoderForMatches(NoOpPasswordEncoder.getInstance())
+        return encoder
     }
 
     @Bean
-    fun filterChain(http: HttpSecurity, webEndPointProperties: WebEndpointProperties): SecurityFilterChain {
+    fun roleHierarchy(): RoleHierarchy =
+        RoleHierarchyImpl.fromHierarchy(ROLE_HIERARCHY)
+
+    @Bean
+    fun users(): UserDetailsService {
+        if (!encoreProperties.security.enabled) {
+            return InMemoryUserDetailsManager()
+        }
+        require(encoreProperties.security.users.isNotEmpty()) {
+            "Security is enabled but no users are configured"
+        }
+        val users = encoreProperties.security.users.map { (username, config) ->
+            User.builder()
+                .username(username)
+                .password(config.password)
+                .roles(config.role.name)
+                .build()
+        }
+        return InMemoryUserDetailsManager(users)
+    }
+
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http {
             headers { httpStrictTransportSecurity { } }
-            authorizeHttpRequests {
-                authorize(EndpointRequest.to(HealthEndpoint::class.java), permitAll)
-                authorize(HttpMethod.GET, "/**", hasRole(ROLE_USER))
-                authorize(HttpMethod.PUT, "/**", hasRole(ROLE_ADMIN))
-                authorize(HttpMethod.DELETE, "/**", hasRole(ROLE_ADMIN))
-                authorize(HttpMethod.POST, "/**", hasRole(ROLE_ADMIN))
-                authorize(HttpMethod.PATCH, "/**", hasRole(ROLE_ADMIN))
-                authorize(HttpMethod.OPTIONS, "/**", hasRole(ROLE_ADMIN))
-                authorize(HttpMethod.TRACE, "/**", hasRole(ROLE_ADMIN))
-                authorize(anyRequest, denyAll)
+            if (encoreProperties.security.enabled) {
+                authorizeHttpRequests {
+                    authorize(EndpointRequest.to(HealthEndpoint::class.java), permitAll)
+                    authorize("/swagger-ui/**", permitAll)
+                    authorize("/v3/api-docs/**", permitAll)
+                    authorize(HttpMethod.GET, "/encoreJobs/**", hasRole(ROLE_USER))
+                    authorize(HttpMethod.GET, "/queue", hasRole(ROLE_USER))
+                    authorize(HttpMethod.GET, "/queueCount", hasRole(ROLE_USER))
+                    authorize(HttpMethod.POST, "/encoreJobs", hasRole(ROLE_ADMIN))
+                    authorize(HttpMethod.POST, "/encoreJobs/*/cancel", hasRole(ROLE_ADMIN))
+                    authorize(anyRequest, denyAll)
+                }
+                httpBasic { }
+            } else {
+                authorizeHttpRequests {
+                    authorize(anyRequest, permitAll)
+                }
             }
-            httpBasic { }
             csrf { disable() }
-            anonymous {
-                authorities = listOf(SimpleGrantedAuthority(ROLE_ANON))
-            }
         }
         return http.build()
     }

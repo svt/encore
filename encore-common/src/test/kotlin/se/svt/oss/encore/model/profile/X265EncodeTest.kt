@@ -19,6 +19,7 @@ class X265EncodeTest : VideoEncodeTest<X265Encode>() {
         enabled: Boolean,
         cropTo: FractionString?,
         padTo: FractionString?,
+        vmaf: Vmaf?,
     ): X265Encode = X265Encode(
         width = width,
         height = height,
@@ -32,6 +33,7 @@ class X265EncodeTest : VideoEncodeTest<X265Encode>() {
         enabled = enabled,
         cropTo = cropTo,
         padTo = padTo,
+        vmaf = vmaf,
     )
 
     override fun verifyFirstPassParams(encode: VideoEncode, params: List<String>) {

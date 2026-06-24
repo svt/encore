@@ -1,12 +1,8 @@
 spring:
+  application:
+    name: encore
   main:
     allow-bean-definition-overriding: true
-
-management:
-  endpoint:
-    health:
-      show-details: when_authorized
-      roles: ADMIN
 
 logging:
   level:
@@ -20,7 +16,7 @@ encore-settings:
   shared-work-dir: ${java.io.tmpdir}/encore-shared
   encoding:
     default-channel-layouts:
-      3: "3.0"
+      3: '3.0'
     audio-mix-presets:
       default:
         default-pan:
@@ -33,10 +29,20 @@ encore-settings:
         default-pan:
           stereo: FL<FL+1.5*FC+0.707107*BL+0.707107*SL|FR<FR+1.5*FC+0.707107*BR+0.707107*SR
         pan-mapping:
-          "[5.1]":
-            "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
-          "[5.1(side)]":
-            "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
-
-profile:
-  location: classpath:profile/profiles.yml
+          '[5.1]':
+            '[5.1]': c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
+          '[5.1(side)]':
+            '[5.1]': c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
+    include-quality-metrics:
+      - vmaf
+      - vmaf4k
+      - psnr_y
+      - psnr_cb
+      - psnr_cr
+  security:
+    enabled: false
+    users:
+      user:
+        password: test
+  profile:
+    location: classpath:profile/profiles.yml

@@ -4,8 +4,6 @@
 
 package se.svt.oss.encore
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.post
@@ -27,6 +25,8 @@ import se.svt.oss.encore.model.Status
 import se.svt.oss.encore.model.callback.JobProgress
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.profile.ChannelLayout
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import java.io.File
 import java.time.Duration
 import java.util.UUID
@@ -41,7 +41,7 @@ class EncoreIntegrationTestBase(val wireMockRuntimeInfo: WireMockRuntimeInfo) {
     lateinit var encoreClient: EncoreClient
 
     @Autowired
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
 
     @Value("classpath:input/test.mp4")
     lateinit var testFileSurround: Resource
@@ -74,7 +74,7 @@ class EncoreIntegrationTestBase(val wireMockRuntimeInfo: WireMockRuntimeInfo) {
         val progressCalls =
             wireMockRuntimeInfo
                 .wireMock
-                .serveEvents.map { objectMapper.readValue<JobProgress>(it.request.bodyAsString) }
+                .serveEvents.map { jsonMapper.readValue<JobProgress>(it.request.bodyAsString) }
         assertThat(progressCalls.first())
             .hasStatus(Status.SUCCESSFUL)
 

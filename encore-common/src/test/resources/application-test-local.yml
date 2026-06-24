@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: encore
   main:
     allow-bean-definition-overriding: true
 
@@ -10,6 +12,8 @@ service:
   name: encore-test
 
 encore-settings:
+  profile:
+    location: classpath:profile/profiles.yml
   concurrency: 3
   local-temporary-encode: true
   poll-initial-delay: 1s
@@ -20,5 +24,3 @@ encore-settings:
         fallback-to-auto: true
       de:
         fallback-to-auto: false
-profile:
-  location: classpath:profile/profiles.yml

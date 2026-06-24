@@ -29,6 +29,7 @@ fun MediaContainer.channelCount() = if (audioLayout() == AudioLayout.MULTI_TRACK
 
 fun AudioIn.channelLayout(defaultChannelLayouts: Map<Int, ChannelLayout>): ChannelLayout = when (analyzedAudio.audioLayout()) {
     AudioLayout.NONE, AudioLayout.INVALID -> null
+
     AudioLayout.MONO_STREAMS -> if (analyzedAudio.channelCount() == channelLayout?.channels?.size) {
         channelLayout
     } else {

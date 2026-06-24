@@ -37,6 +37,7 @@ interface VideoEncode : OutputProducer {
     val enabled: Boolean
     val cropTo: FractionString?
     val padTo: FractionString?
+    val vmaf: Vmaf?
 
     override fun getOutput(job: EncoreJob, encodingProperties: EncodingProperties): Output? {
         if (!enabled) {
@@ -55,10 +56,38 @@ interface VideoEncode : OutputProducer {
                 inputLabels = listOf(inputLabel),
                 twoPass = twoPass,
                 filter = videoFilter(job.debugOverlay, encodingProperties, videoInput),
+                vmaf = vmafOpts(job),
             ),
             audioStreams = audio,
             output = "${job.baseName}$suffix.$format",
         )
+    }
+
+    fun vmafOpts(job: EncoreJob): Vmaf? {
+        val opts = vmaf
+        if (opts?.enabled != true) {
+            return null
+        }
+        if (job.segmentLength != null) {
+            log.debug { "Quality metrics not supported for segmented encode. Skipping." }
+            return null
+        }
+        val filtersToAdd = buildList {
+            job.seekTo?.let {
+                add("select=gte(t\\,$it)")
+            }
+            cropTo?.toFraction()?.let {
+                add("crop=min(iw\\,ih*${it.stringValue()}):min(ih\\,iw/(${it.stringValue()}))")
+            }
+            padTo?.toFraction()?.let {
+                add("pad=aspect=${it.stringValue()}:x=(ow-iw)/2:y=(oh-ih)/2")
+            }
+            filters?.let { addAll(it) }
+            if (job.debugOverlay) {
+                add(debugFilter())
+            }
+        }
+        return opts.copy(refFilters = filtersToAdd + opts.refFilters)
     }
 
     fun firstPassParams(): Map<String, String> = if (!twoPass) {
@@ -110,10 +139,13 @@ interface VideoEncode : OutputProducer {
         }
         filters?.let { videoFilters.addAll(it) }
         if (debugOverlay) {
-            videoFilters.add("drawtext=text=$suffix:fontcolor=white:fontsize=50:box=1:boxcolor=black@0.75:boxborderw=5:x=10:y=10")
+            videoFilters.add(debugFilter())
         }
         return if (videoFilters.isEmpty()) null else videoFilters.joinToString(",")
     }
+
+    fun debugFilter(): String =
+        "drawtext=text=$suffix:fontcolor=white:fontsize=50:box=1:boxcolor=black@0.75:boxborderw=5:x=10:y=10"
 
     fun logOrThrow(message: String): Output? {
         if (optional) {

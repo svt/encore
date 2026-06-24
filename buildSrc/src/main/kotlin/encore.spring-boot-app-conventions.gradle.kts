@@ -7,26 +7,24 @@ plugins {
     id("io.spring.dependency-management")
 }
 
-graalvmNative {
-    binaries.all {
-        buildArgs.add("--strict-image-heap")
-    }
-}
 tasks.named<BootJar>("bootJar") {
     archiveClassifier.set("boot")
 }
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.5")
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.0")
+graalvmNative {
+    binaries {
+        named("main") {
+            buildArgs.addAll(
+                "-H:+UnlockExperimentalVMOptions",
+                "-H:+StaticExecutableWithDynamicLibC",
+                "-H:+AddAllCharsets",
+                "-J-Dfile.encoding=UTF-8",
+            )
+        }
     }
 }
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("org.springframework.cloud:spring-cloud-starter-config")
     implementation("org.springframework.boot:spring-boot-starter-logging")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
+    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 }
-
-
-

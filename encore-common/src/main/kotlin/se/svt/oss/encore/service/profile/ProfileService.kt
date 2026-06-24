@@ -4,11 +4,6 @@
 
 package se.svt.oss.encore.service.profile
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -21,6 +16,7 @@ import se.svt.oss.encore.config.ProfileProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.profile.AudioEncode
 import se.svt.oss.encore.model.profile.ChannelLayout
+import se.svt.oss.encore.model.profile.DialogueEnhancement
 import se.svt.oss.encore.model.profile.GenericVideoEncode
 import se.svt.oss.encore.model.profile.OutputProducer
 import se.svt.oss.encore.model.profile.Profile
@@ -29,6 +25,9 @@ import se.svt.oss.encore.model.profile.ThumbnailEncode
 import se.svt.oss.encore.model.profile.ThumbnailMapEncode
 import se.svt.oss.encore.model.profile.X264Encode
 import se.svt.oss.encore.model.profile.X265Encode
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.dataformat.yaml.YAMLMapper
+import tools.jackson.module.kotlin.readValue
 import java.io.File
 import java.util.Locale
 
@@ -46,17 +45,18 @@ private val log = KotlinLogging.logger { }
     ThumbnailEncode::class,
     ThumbnailMapEncode::class,
     ChannelLayout::class,
+    DialogueEnhancement::class,
+    DialogueEnhancement.Native::class,
+    DialogueEnhancement.Dn::class,
+    DialogueEnhancement.DialogueEnhanceStereo::class,
+    DialogueEnhancement.SidechainCompress::class,
 )
 @EnableConfigurationProperties(ProfileProperties::class)
 class ProfileService(
     private val properties: ProfileProperties,
-    private val objectMapper: ObjectMapper,
+    private val jsonMapper: JsonMapper,
+    private val yamlMapper: YAMLMapper,
 ) {
-    private val yamlMapper: YAMLMapper =
-        YAMLMapper()
-            .findAndRegisterModules()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) as YAMLMapper
-
     private val spelExpressionParser = SpelExpressionParser(
         SpelParserConfiguration(
             null,
@@ -84,7 +84,7 @@ class ProfileService(
         ) {
             yamlMapper
         } else {
-            objectMapper
+            jsonMapper
         }
 
     fun getProfile(job: EncoreJob): Profile = try {
@@ -94,7 +94,7 @@ class ProfileService(
         profiles[job.profile]
             ?.let { readProfile(it, job) }
             ?: throw RuntimeException("Could not find location for profile ${job.profile}! Profiles: $profiles")
-    } catch (e: JsonProcessingException) {
+    } catch (e: Exception) {
         throw RuntimeException("Error parsing profile ${job.profile}: ${e.message}", e)
     }
 

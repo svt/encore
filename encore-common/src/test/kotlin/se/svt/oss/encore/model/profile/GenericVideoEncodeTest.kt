@@ -18,6 +18,7 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         enabled: Boolean,
         cropTo: FractionString?,
         padTo: FractionString?,
+        vmaf: Vmaf?,
     ) = GenericVideoEncode(
         width = width,
         height = height,
@@ -32,5 +33,6 @@ class GenericVideoEncodeTest : VideoEncodeTest<GenericVideoEncode>() {
         enabled = enabled,
         cropTo = cropTo,
         padTo = padTo,
+        vmaf = vmaf,
     )
 }

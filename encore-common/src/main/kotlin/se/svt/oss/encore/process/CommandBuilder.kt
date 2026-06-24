@@ -57,27 +57,79 @@ class CommandBuilder(
             .filter { input ->
                 outputs.any { it.video?.inputLabels?.contains(input.videoLabel) == true }
             }
-        val videoFilters = videoFilters(inputs, outputs)
+        val videoFilters = videoFilters(inputs, outputs, true)
         val outputParams = outputs.flatMap(this::firstPassParams)
         return inputParams(inputs) + filterParam(videoFilters) + outputParams
     }
 
     private fun secondPassCommand(outputs: List<Output>): List<String> {
         val (loopbackOutputs, mainOutputs) = outputs.partition { it.decodeOutputStream != null }
-        val videoFilters = videoFilters(encoreJob.inputs, mainOutputs)
+        val videoFilters = videoFilters(encoreJob.inputs, mainOutputs, false)
         val audioFilters = audioFilters(mainOutputs)
-        val outputParams = mainOutputs.flatMap(this::secondPassParams)
-        return inputParams(encoreJob.inputs) + filterParam(videoFilters + audioFilters) + outputParams + loopbackParams(loopbackOutputs)
+        val addedDecoders = mutableListOf<Int>()
+        val outputParams = mainOutputs.flatMapIndexed { index, output ->
+            buildList {
+                addAll(secondPassParams(output))
+                if (output.video?.vmaf?.enabled == true || loopbackOutputs.any { it.decodeOutputStream?.startsWith("$index:") == true }) {
+                    addAll(listOf("-dec", "$index:v:0"))
+                    addedDecoders.add(index)
+                }
+            }
+        }
+        val vmafParams = mainOutputs.withIndex()
+            .filter { (_, output) -> output.video?.vmaf?.enabled == true }
+            .flatMap { (index, output) -> vmafParams(addedDecoders.indexOf(index), output) }
+
+        return inputParams(encoreJob.inputs) + filterParam(videoFilters + audioFilters) + outputParams + loopbackParams(
+            loopbackOutputs,
+            addedDecoders,
+        ) + vmafParams
     }
 
-    private fun loopbackParams(outputs: List<Output>): List<String> =
-        outputs.flatMapIndexed { index: Int, output: Output ->
-            listOf(
-                "-dec",
-                output.decodeOutputStream ?: throw RuntimeException("No decodeOutputStream in $output!"),
-                "-filter_complex",
-                "[dec:$index]${output.video?.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}",
-            ) + secondPassParams(output)
+    private fun vmafParams(outputIndex: Int, output: Output): List<String> {
+        val options = output.video?.vmaf
+            ?: throw RuntimeException("Internal error! No vmaf options defined for ${output.output}")
+        val ref0 = MapName.VMAF.mapLabel(output.id)
+        val ref1 = MapName.VMAF.mapLabel("${output.id}1")
+        val ref2 = MapName.VMAF.mapLabel("${output.id}2")
+        val distScaled = MapName.VMAF.mapLabel("${output.id}dist-sc")
+        val mapVmaf = MapName.VMAF.mapLabel("${output.id}vmaf")
+        val refFilters = (options.refFilters + "setpts=PTS-STARTPTS" + "split=2").joinToString(",")
+        val logFile = File(outputFolder).resolve("${output.output}.vmaf.json")
+        val vmafOptions = buildMap {
+            put("log_fmt", "json")
+            put("log_path", logFile.absolutePath)
+            options.model?.let { put("model", it) }
+            options.feature?.let { put("feature", it) }
+            options.threads?.let { put("n_threads", "$it") }
+            options.subsample?.let { put("n_subsample", "$it") }
+        }.map { "${it.key}=${it.value}" }
+            .joinToString(":")
+
+        return listOf(
+            "-filter_complex",
+            "sws_flags=bicubic;$ref0$refFilters$ref1$ref2;[dec:$outputIndex]${ref1}scale=rw:rh,setpts=PTS-STARTPTS$distScaled;$distScaled${ref2}libvmaf=$vmafOptions$mapVmaf",
+            "-map",
+            mapVmaf,
+            "-f",
+            "null",
+            "-",
+        )
+    }
+
+    private fun loopbackParams(outputs: List<Output>, addedDecoders: List<Int>): List<String> =
+        outputs.flatMap { output: Output ->
+            val decode = output.decodeOutputStream ?: throw RuntimeException("No decodeOutputStream in $output!")
+            val indexOfFirst = addedDecoders.indexOfFirst { "$it:v:0" == decode }
+            if (indexOfFirst != -1) {
+                listOf(
+                    "-filter_complex",
+                    "[dec:$indexOfFirst]${output.video?.filter ?: ""}${MapName.VIDEO.mapLabel(output.id)}",
+                ) + secondPassParams(output)
+            } else {
+                log.warn { "Internal error finding output to decode for ${output.output}" }
+                emptyList()
+            }
         }
 
     private fun audioFilters(outputs: List<Output>): List<String> {
@@ -125,21 +177,28 @@ class CommandBuilder(
         if (analyzedAudio.audioLayout() == AudioLayout.MULTI_TRACK) {
             return "[$index:a:0]"
         }
-        return "[$index:a]"
+        return analyzedAudio.audioStreams.indices
+            .joinToString("") { "[$index:a:$it]" }
     }
 
     private fun AudioStreamEncode.usesInput(input: AudioIn) =
         this.inputLabels.contains(input.audioLabel)
 
-    private fun videoFilters(inputs: List<Input>, outputs: List<Output>): List<String> {
+    private fun videoFilters(inputs: List<Input>, outputs: List<Output>, firstPass: Boolean): List<String> {
         val videoSplits = inputs.mapIndexedNotNull { index, input ->
             if (input !is VideoIn) return@mapIndexedNotNull null
             val splits = outputs.filter { it.video.usesInput(input) }
-                .map { output ->
-                    output.video?.filter?.let {
-                        MapName.VIDEO.preFilterLabel(input.videoLabel, output.id)
+                .flatMap { output ->
+                    buildList {
+                        if (output.video?.filter != null) {
+                            add(MapName.VIDEO.preFilterLabel(input.videoLabel, output.id))
+                        } else {
+                            add(MapName.VIDEO.mapLabel(output.id))
+                        }
+                        if (!firstPass && output.video?.vmaf != null) {
+                            add(MapName.VMAF.mapLabel(output.id))
+                        }
                     }
-                        ?: MapName.VIDEO.mapLabel(output.id)
                 }
             if (splits.isEmpty()) {
                 log.debug { "No video outputs for video input ${input.videoLabel}" }
@@ -183,7 +242,7 @@ class CommandBuilder(
             }
             addAll(encodingProperties.globalParams.toParams())
             addAll(listOf("-hide_banner", "-loglevel", "+level", "-y"))
-            addAll(inputs.inputParams(readDuration))
+            addAll(inputs.inputParams(readDuration, encodingProperties.protocolInputParams))
         }
     }
 
@@ -217,13 +276,14 @@ class CommandBuilder(
         return filters + input.videoFilters
     }
 
-    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> = if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
-        val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
-        val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
-        listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
-    } else {
-        emptyList()
-    } + input.audioFilters
+    private fun globalAudioFilters(input: AudioIn, analyzed: MediaContainer): List<String> =
+        if (analyzed.audioLayout() == AudioLayout.MONO_STREAMS) {
+            val channelLayout = input.channelLayout(encodingProperties.defaultChannelLayouts)
+            val map = channelLayout.channels.withIndex().joinToString("|") { "${it.index}.0-${it.value}" }
+            listOf("join=inputs=${channelLayout.channels.size}:channel_layout=${channelLayout.layoutName}:map=$map")
+        } else {
+            emptyList()
+        } + input.audioFilters
 
     private fun firstPassParams(output: Output): List<String> {
         if (output.video == null) {
@@ -252,7 +312,8 @@ class CommandBuilder(
         val mapA: List<String> = output.audioStreams.flatMapIndexed { index, audioStream ->
             val mapLabel = if (preserveAudioLayout) {
                 val inputIndex = encoreJob.inputs.indexOfFirst { it is AudioIn && audioStream.usesInput(it) }
-                "$inputIndex:a"
+                val audioStreamIndex = (encoreJob.inputs[inputIndex] as AudioIn).audioStream?.let { ":$it" } ?: ""
+                "$inputIndex:a$audioStreamIndex"
             } else {
                 MapName.AUDIO.mapLabel("${output.id}-$index")
             }
@@ -299,6 +360,7 @@ class CommandBuilder(
     private enum class MapName {
         VIDEO,
         AUDIO,
+        VMAF,
         ;
 
         fun mapLabel(id: String) = "[$this-$id]"

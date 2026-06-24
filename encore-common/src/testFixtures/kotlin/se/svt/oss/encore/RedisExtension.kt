@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Sveriges Television AB
+//
+// SPDX-License-Identifier: EUPL-1.2
+
 package se.svt.oss.encore
 
 import com.redis.testcontainers.RedisContainer
@@ -7,22 +11,17 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.testcontainers.DockerClientFactory
 import org.testcontainers.utility.DockerImageName
 
-private const val DEFAULT_REDIS_DOCKER_IMAGE = "redis:6.2.13"
+private const val DEFAULT_REDIS_DOCKER_IMAGE = "redis:8.6-alpine"
 
 class RedisExtension : BeforeAllCallback {
     private val log = KotlinLogging.logger { }
-    override fun beforeAll(context: ExtensionContext?) {
+    override fun beforeAll(context: ExtensionContext) {
         if (isDockerAvailable()) {
             val dockerImageName = System.getenv("ENCORE_REDIS_DOCKER_IMAGE") ?: DEFAULT_REDIS_DOCKER_IMAGE
             val redisContainer = RedisContainer(DockerImageName.parse(dockerImageName))
-                .withKeyspaceNotifications()
             redisContainer.start()
-            val host = redisContainer.redisHost
-            val port = redisContainer.redisPort.toString()
-            log.info { "Setting spring.data.redis.host=$host" }
-            log.info { "Setting spring.data.redis.port=$port" }
-            System.setProperty("spring.data.redis.host", host)
-            System.setProperty("spring.data.redis.port", port)
+            log.info { "Setting encore-settings.redis.uri=${redisContainer.redisURI}" }
+            System.setProperty("encore-settings.redis.uri", redisContainer.redisURI)
         }
     }
 
@@ -31,8 +30,8 @@ class RedisExtension : BeforeAllCallback {
         DockerClientFactory.instance().client()
         log.info { "Docker is available" }
         true
-    } catch (ex: Throwable) {
-        log.warn { "Docker is not available! Make sure redis is available as configured by spring.data.redis (default localhost:6379)" }
+    } catch (_: Throwable) {
+        log.warn { "Docker is not available! Make sure redis is available as configured by encore-settings.redis.uri (default redis://localhost:6379)" }
         false
     }
 }

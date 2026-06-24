@@ -4,11 +4,13 @@
 
 package se.svt.oss.encore.model.output
 
+import se.svt.oss.encore.model.profile.Vmaf
 import java.io.File
+import java.util.Collections
 
 data class Output(
     val video: VideoStreamEncode?,
-    val audioStreams: List<AudioStreamEncode> = emptyList(),
+    val audioStreams: List<AudioStreamEncode> = Collections.emptyList(),
     val output: String,
     val format: String = "mp4",
     val postProcessor: PostProcessor = PostProcessor { outputFolder -> listOf(outputFolder.resolve(output)) },
@@ -30,10 +32,11 @@ interface StreamEncode {
 
 data class VideoStreamEncode(
     override val params: List<String>,
-    val firstPassParams: List<String> = emptyList(),
+    val firstPassParams: List<String> = Collections.emptyList(),
     override val filter: String? = null,
     override val twoPass: Boolean = false,
     override val inputLabels: List<String>,
+    val vmaf: Vmaf? = null,
 ) : StreamEncode
 
 data class AudioStreamEncode(

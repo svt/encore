@@ -4,20 +4,16 @@
 
 package se.svt.oss.encore
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.NoSuchBeanDefinitionException
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.assertj.AssertableApplicationContext
-import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.json.JsonCompareMode
 import org.springframework.test.web.reactive.server.WebTestClient
-import se.svt.oss.encore.config.EncoreProperties
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.AudioVideoInput
 
@@ -29,21 +25,14 @@ import se.svt.oss.encore.model.input.AudioVideoInput
 @ExtendWith(RedisExtension::class)
 class EncoreEndpointAccessIntegrationTest {
 
-    @Autowired
     lateinit var webTestClient: WebTestClient
 
-    @Test
-    fun `security configuration is not loaded in context when security disabled`() {
-        val contextRunner = ApplicationContextRunner()
-        contextRunner
-            .withBean(EncoreProperties::class.java)
-            .withPropertyValues("encore-settings.security.enabled=false")
-            .withUserConfiguration(SecurityConfiguration::class.java)
-            .run { context: AssertableApplicationContext ->
-                assertThrows<NoSuchBeanDefinitionException> {
-                    context.getBean(SecurityConfiguration::class.java)
-                }
-            }
+    @LocalServerPort
+    var localPort = 0
+
+    @BeforeEach
+    fun setUp() {
+        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:$localPort").build()
     }
 
     @Nested

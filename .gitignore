@@ -22,3 +22,5 @@ schema
 !.idea/sqldialects.xml
 !.idea/compiler.xml
 
+site/
+.venv-zensical/

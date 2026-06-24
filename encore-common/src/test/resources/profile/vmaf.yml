@@ -1,0 +1,61 @@
+name: simple
+description: bla
+encodes:
+  - type: X264Encode
+    suffix: '_720p'
+    width: 1280
+    height: 720
+    twoPass: false
+    vmaf:
+      enabled: true
+      threads: 4
+      feature: name=psnr
+      model: version=vmaf_4k_v0.6.1\\:name=vmaf4k|version=vmaf_v0.6.1\\:name=vmaf
+    params:
+      preset: veryfast
+      crf: 18
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+    x264-params:
+      keyint: 192
+      keyint_min: 96
+  - type: X264Encode
+    suffix: '_540p'
+    width: 960
+    height: 540
+    twoPass: false
+    vmaf:
+      enabled: true
+      threads: 4
+      feature: name=psnr
+      model: version=vmaf_4k_v0.6.1\\:name=vmaf4k|version=vmaf_v0.6.1\\:name=vmaf
+    params:
+      preset: veryfast
+      crf: 18
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+    x264-params:
+      keyint: 192
+      keyint_min: 96
+  - type: X264Encode
+    suffix: '_crop_and_pad_540p'
+    width: 960
+    height: 540
+    twoPass: false
+    cropTo: 1:1
+    padTo: 16:9
+    vmaf:
+      enabled: true
+      threads: 4
+      feature: name=psnr
+      model: version=vmaf_4k_v0.6.1\\:name=vmaf4k|version=vmaf_v0.6.1\\:name=vmaf
+    params:
+      preset: veryfast
+      crf: 18
+      pix_fmt: yuv420p
+      force_key_frames: expr:not(mod(n,96))
+    x264-params:
+      keyint: 192
+      keyint_min: 96
+  - type: ThumbnailMapEncode
+    decodeOutput: 0

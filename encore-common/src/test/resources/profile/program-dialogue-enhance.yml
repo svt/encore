@@ -1,0 +1,59 @@
+name: program-dialogue-enhance
+description: |
+  Demonstrates DialogueEnhancement deserialization. Not used by integration
+  tests (those would be nondeterministic across FFmpeg builds with or without
+  af_dnenhance) — referenced from ProfileServiceTest to verify that every
+  shape of the YAML config parses into the expected Kotlin object.
+encodes:
+  # Backward-compat: no `type:` field → defaults to Native via @JsonTypeInfo
+  # defaultImpl. Existing pre-refactor profiles deserialize without change.
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE_DEFAULT
+    dialogueEnhancement:
+      enabled: true
+    audioMixPreset: de
+    optional: true
+
+  # Explicit `type: native` with the dialogueEnhanceStereo block.
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE_NATIVE
+    dialogueEnhancement:
+      type: native
+      enabled: true
+      dialogueEnhanceStereo:
+        original: 1
+        enhance: 1
+        voice: 2
+    audioMixPreset: de
+    optional: true
+
+  # `type: dn` with all filter-target options at their defaults (null) —
+  # encore emits a bare `dnenhance` and the filter applies its own defaults.
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE_NEURAL
+    dialogueEnhancement:
+      type: dn
+      enabled: true
+    audioMixPreset: de
+    optional: true
+
+  # `type: dn` for live transcoding: explicit model, lookahead=0 for the
+  # DFN3-LL variant, post-filter off, attenuation cap loosened.
+  - type: AudioEncode
+    bitrate: 128k
+    suffix: _STEREO_DE_NEURAL_LL
+    dialogueEnhancement:
+      type: dn
+      enabled: true
+      model: /opt/homebrew/share/libdf/DeepFilterNet3_LL.tar.gz
+      lookahead: 0
+      postFilter: false
+      attenuationLimit: 50.0
+      sidechainCompress:
+        ratio: 6
+        threshold: 0.015
+    audioMixPreset: de
+    optional: true
