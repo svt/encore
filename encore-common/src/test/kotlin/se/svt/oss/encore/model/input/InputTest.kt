@@ -9,10 +9,13 @@ import se.svt.oss.encore.Assertions.assertThat
 import se.svt.oss.encore.Assertions.assertThatThrownBy
 import se.svt.oss.encore.defaultVideoFile
 import se.svt.oss.encore.multipleAudioFile
+import kotlin.to
 
 internal class InputTest {
 
     private val extraVideoFile = defaultVideoFile.copy(file = "extra.mp4", duration = 12.0)
+    private val protocolInputParams: Map<String, LinkedHashMap<String, String?>> =
+        mapOf("http" to linkedMapOf("reconnect" to "1", "reconnect_on_network_error" to "1"))
 
     private val inputs = listOf(
         VideoInput(
@@ -35,20 +38,20 @@ internal class InputTest {
 
     @Test
     fun testInputParamsWithDuration() {
-        val params = inputs.inputParams(60.5)
+        val params = inputs.inputParams(60.5, protocolInputParams)
         assertThat(params)
             .isEqualTo(
                 listOf(
                     "-a", "b", "-t", "60.5", "-i", "/input1.mp4",
-                    "-t", "60.5", "-i", "http://input2",
+                    "-reconnect", "1", "-reconnect_on_network_error", "1", "-t", "60.5", "-i", "http://input2",
                     "-c", "d", "-t", "60.5", "-i", "/input3.mxf",
                 ),
             )
     }
 
     @Test
-    fun testInputParamsWithOutDuration() {
-        val params = inputs.inputParams(null)
+    fun testInputParamsWithOutDurationAndWithoutProtocolInputParams() {
+        val params = inputs.inputParams(null, emptyMap())
         assertThat(params)
             .isEqualTo(
                 listOf(
@@ -81,14 +84,37 @@ internal class InputTest {
                 analyzed = multipleAudioFile,
                 seekTo = 47.11,
             ),
-        ).inputParams(60.5)
+        ).inputParams(60.5, protocolInputParams)
 
         assertThat(params)
             .isEqualTo(
                 listOf(
-                    "-a", "b", "-t", "60.5", "-ss", "47.11", "-i", "/input1.mp4",
-                    "-t", "60.5", "-ss", "47.11", "-i", "http://input2",
-                    "-c", "d", "-t", "60.5", "-ss", "47.11", "-i", "/input3.mxf",
+                    "-a",
+                    "b",
+                    "-t",
+                    "60.5",
+                    "-ss",
+                    "47.11",
+                    "-i",
+                    "/input1.mp4",
+                    "-reconnect",
+                    "1",
+                    "-reconnect_on_network_error",
+                    "1",
+                    "-t",
+                    "60.5",
+                    "-ss",
+                    "47.11",
+                    "-i",
+                    "http://input2",
+                    "-c",
+                    "d",
+                    "-t",
+                    "60.5",
+                    "-ss",
+                    "47.11",
+                    "-i",
+                    "/input3.mxf",
                 ),
             )
     }

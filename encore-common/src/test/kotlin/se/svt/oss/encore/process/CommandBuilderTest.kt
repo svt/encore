@@ -23,6 +23,7 @@ import se.svt.oss.encore.model.output.Output
 import se.svt.oss.encore.model.output.VideoStreamEncode
 import se.svt.oss.encore.model.profile.ChannelLayout
 import se.svt.oss.encore.model.profile.Profile
+import se.svt.oss.encore.model.profile.Vmaf
 import se.svt.oss.mediaanalyzer.file.AudioFile
 
 internal class CommandBuilderTest {
@@ -87,7 +88,7 @@ internal class CommandBuilderTest {
         )
         val buildCommands = commandBuilder.buildCommands(listOf(output))
         val command = buildCommands.first().joinToString(" ")
-        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:a]join=inputs=3:channel_layout=3.0:map=0.0-FL|1.0-FR|2.0-FC,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]aformat=channel_layouts=stereo[AUDIO-test-out-0] -map [AUDIO-test-out-0] -vn -c:a:0 aac -metadata comment=Transcoded using Encore /output/path/out.mp4")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:a:0][0:a:1][0:a:2]join=inputs=3:channel_layout=3.0:map=0.0-FL|1.0-FR|2.0-FC,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]aformat=channel_layouts=stereo[AUDIO-test-out-0] -map [AUDIO-test-out-0] -vn -c:a:0 aac -metadata comment=Transcoded using Encore /output/path/out.mp4")
     }
 
     @Test
@@ -97,7 +98,7 @@ internal class CommandBuilderTest {
         assertThat(buildCommands).hasSize(1)
 
         val command = buildCommands.first().joinToString(" ")
-        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
+        assertThat(command).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a:0][0:a:1][0:a:2][0:a:3][0:a:4][0:a:5][0:a:6][0:a:7]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=Transcoded using Encore /output/path/out.mp4")
     }
 
     @Test
@@ -109,7 +110,7 @@ internal class CommandBuilderTest {
         val secondPass = buildCommands[1].joinToString(" ")
 
         assertThat(firstPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -an first pass -f mp4 /dev/null")
-        assertThat(secondPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
+        assertThat(secondPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -i ${defaultVideoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a:0][0:a:1][0:a:2][0:a:3][0:a:4][0:a:5][0:a:6][0:a:7]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
     }
 
     @Test
@@ -132,7 +133,7 @@ internal class CommandBuilderTest {
         val secondPass = buildCommands[1].joinToString(" ")
 
         assertThat(firstPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -ss 47.11 -i ${videoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -an first pass -f mp4 /dev/null")
-        assertThat(secondPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -ss 47.11 -i ${videoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
+        assertThat(secondPass).isEqualTo("ffmpeg -xerror -hide_banner -loglevel +level -y -ss 47.11 -i ${videoFile.file} -filter_complex sws_flags=scaling;[0:v]split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[0:a:0][0:a:1][0:a:2][0:a:3][0:a:4][0:a:5][0:a:6][0:a:7]join=inputs=8:channel_layout=7.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-LFE|4.0-BL|5.0-BR|6.0-SL|7.0-SR,asplit=1[AUDIO-main-test-out-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0] -map [VIDEO-test-out] -map [AUDIO-test-out-0] video params audio params -metadata comment=$metadataComment /output/path/out.mp4")
     }
 
     @Test
@@ -210,7 +211,7 @@ internal class CommandBuilderTest {
         val secondPass = buildCommands[1].joinToString(" ")
 
         assertThat(firstPass).isEqualTo("ffmpeg -err_detect explode -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=min(iw\\,ih*1/1):min(ih\\,iw/(1/1)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out] -map [VIDEO-test-out] -ss 12.1 -an -t 10.4 first pass -f mp4 /dev/null")
-        assertThat(secondPass).isEqualTo("ffmpeg -err_detect explode -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -ac 4 -t 22.5 -i /input/main-audio.mp4 -t 22.5 -i /input/other-audio.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=min(iw\\,ih*1/1):min(ih\\,iw/(1/1)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[1:a]join=inputs=4:channel_layout=4.0:map=0.0-FL|1.0-FR|2.0-FC|3.0-BC,audio-main,main-filter,asplit=1[AUDIO-main-test-out-0];[2:a:3]asplit=1[AUDIO-other-extra-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0];[AUDIO-other-extra-0]audio-filter-extra[AUDIO-extra-0] -map [VIDEO-test-out] -ss 12.1 -map [AUDIO-test-out-0] -ss 12.1 -t 10.4 video params audio params -metadata comment=Transcoded using Encore /tmp/123/out.mp4 -map [AUDIO-extra-0] -ss 12.1 -t 10.4 -vn audio extra -metadata comment=Transcoded using Encore /tmp/123/extra.mp4 -dec 0:v:0 -filter_complex [dec:0]thumb-filter[VIDEO-thumb] -map [VIDEO-thumb] thumb thumb -an -metadata comment=Transcoded using Encore /tmp/123/thumb.jpg")
+        assertThat(secondPass).isEqualTo("ffmpeg -err_detect explode -hide_banner -loglevel +level -y -f mp4 -t 22.5 -i /input/test.mp4 -ac 4 -t 22.5 -i /input/main-audio.mp4 -t 22.5 -i /input/other-audio.mp4 -filter_complex sws_flags=scaling;[0:v:1]yadif,setdar=16/9,scale=iw*sar:ih,crop=min(iw\\,ih*1/1):min(ih\\,iw/(1/1)),pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,video,filter,split=1[VIDEO-main-test-out];[VIDEO-main-test-out]video-filter[VIDEO-test-out];[1:a:0][1:a:1][1:a:2][1:a:3]join=inputs=4:channel_layout=4.0:map=0.0-FL|1.0-FR|2.0-FC|3.0-BC,audio-main,main-filter,asplit=1[AUDIO-main-test-out-0];[2:a:3]asplit=1[AUDIO-other-extra-0];[AUDIO-main-test-out-0]audio-filter[AUDIO-test-out-0];[AUDIO-other-extra-0]audio-filter-extra[AUDIO-extra-0] -map [VIDEO-test-out] -ss 12.1 -map [AUDIO-test-out-0] -ss 12.1 -t 10.4 video params audio params -metadata comment=Transcoded using Encore /tmp/123/out.mp4 -dec 0:v:0 -map [AUDIO-extra-0] -ss 12.1 -t 10.4 -vn audio extra -metadata comment=Transcoded using Encore /tmp/123/extra.mp4 -filter_complex [dec:0]thumb-filter[VIDEO-thumb] -map [VIDEO-thumb] thumb thumb -an -metadata comment=Transcoded using Encore /tmp/123/thumb.jpg")
     }
 
     private fun output(twoPass: Boolean): Output {
@@ -246,6 +247,50 @@ internal class CommandBuilderTest {
             ),
         ),
     )
+
+    @Test
+    fun `two pass with vmaf uses correct decoder index when non-vmaf output also has decoder`() {
+        // Output 0: no VMAF, but a thumbnail decodes from it -> gets -dec 0:v:0 -> [dec:0]
+        // Output 1: VMAF enabled -> gets -dec 1:v:0 -> [dec:1]
+        // vmafParams must reference [dec:1], not [dec:0]
+        val noVmafOutput = Output(
+            id = "no-vmaf",
+            output = "no-vmaf.mp4",
+            video = VideoStreamEncode(
+                params = listOf("video", "params"),
+                firstPassParams = listOf("first", "pass"),
+                filter = "video-filter",
+                twoPass = true,
+                inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+            ),
+        )
+        val vmafOutput = Output(
+            id = "with-vmaf",
+            output = "with-vmaf.mp4",
+            video = VideoStreamEncode(
+                params = listOf("video", "params"),
+                firstPassParams = listOf("first", "pass"),
+                filter = "video-filter",
+                twoPass = true,
+                inputLabels = listOf(DEFAULT_VIDEO_LABEL),
+                vmaf = Vmaf(enabled = true),
+            ),
+        )
+        // Thumbnail decodes from output 0 (the non-VMAF output), forcing it to get a decoder
+        val thumbnailWithDecode = thumbnailOutput("thumb", "0:v:0")
+
+        val buildCommands = commandBuilder.buildCommands(listOf(noVmafOutput, vmafOutput, thumbnailWithDecode))
+        val secondPass = buildCommands[1].joinToString(" ")
+
+        println(secondPass)
+        // Both outputs should have decoders
+        assertThat(secondPass).contains("no-vmaf.mp4 -dec 0:v:0")
+        assertThat(secondPass).contains("with-vmaf.mp4 -dec 1:v:0")
+        // Thumbnail uses [dec:0] (first decoder, for output 0)
+        assertThat(secondPass).contains("[dec:0]thumb-filter")
+        // VMAF must use [dec:1] (second decoder, for output 1), not [dec:0]
+        assertThat(secondPass).contains("[dec:1][VMAF-with-vmaf1]scale=rw:rh")
+    }
 
     private fun thumbnailOutput(id: String, decodeOutputStream: String? = null): Output = Output(
         id = id,

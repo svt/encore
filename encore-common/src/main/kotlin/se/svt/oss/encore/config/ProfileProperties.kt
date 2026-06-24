@@ -7,7 +7,7 @@ package se.svt.oss.encore.config
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.core.io.Resource
 
-@ConfigurationProperties("profile")
+@ConfigurationProperties("encore-settings.profile")
 data class ProfileProperties(
     val location: Resource,
     val spelExpressionPrefix: String = "#{",

@@ -7,11 +7,25 @@ spring:
     config:
       import-check:
         enabled: false
+  mvc:
+    problemdetails:
+      enabled: true
   threads:
     virtual:
       enabled: true
+encore-settings:
+  redis:
+    prefix: ${spring.application.name}
 logging:
   config: classpath:logback-json.xml
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: ADMIN
+      probes:
+        enabled: true
 
 springdoc:
   paths-to-exclude: /profile/encoreJobs,/profile
@@ -19,6 +33,8 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
     disable-swagger-default-url: true
-  enable-kotlin: false # springdoc does not work with graalvm if enabled (v2.8.13)
 server:
   forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: application/vnd.hal+json, application/json, application/problem+json

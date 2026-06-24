@@ -43,7 +43,6 @@ data class EncoreProperties(
      * if true, encore-worker will poll the queue until empty before shutting down, otherwise just poll once
      */
     val workerDrainQueue: Boolean = false,
-    val redisKeyPrefix: String = "encore",
     /**
      * optional web security settings
      */
@@ -60,18 +59,21 @@ data class EncoreProperties(
      * timeout for segmented encode before failing
      */
     val segmentedEncodeTimeout: Duration = Duration.ofMinutes(120),
-    /***
-     * enable migration of queues from redis LIST to ZSET
-     */
-    val queueMigrationScriptEnabled: Boolean = true,
+
     @NestedConfigurationProperty
     val encoding: EncodingProperties = EncodingProperties(),
 ) {
     data class Security(
         val enabled: Boolean = false,
-        val userPassword: String = "",
-        val adminPassword: String = "",
+        val users: Map<String, UserConfig> = emptyMap(),
     )
+
+    data class UserConfig(
+        val password: String,
+        val role: Role = Role.USER,
+    )
+
+    enum class Role { USER, ADMIN }
 
     data class OpenApi(
         val title: String = "Encore OpenAPI",

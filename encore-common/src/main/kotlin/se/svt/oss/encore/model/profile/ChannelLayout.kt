@@ -9,6 +9,8 @@ import se.svt.oss.encore.model.profile.ChannelId.BC
 import se.svt.oss.encore.model.profile.ChannelId.BFC
 import se.svt.oss.encore.model.profile.ChannelId.BFL
 import se.svt.oss.encore.model.profile.ChannelId.BFR
+import se.svt.oss.encore.model.profile.ChannelId.BIL
+import se.svt.oss.encore.model.profile.ChannelId.BIR
 import se.svt.oss.encore.model.profile.ChannelId.BL
 import se.svt.oss.encore.model.profile.ChannelId.BR
 import se.svt.oss.encore.model.profile.ChannelId.DL
@@ -61,7 +63,8 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     CH_LAYOUT_7POINT1("7.1", listOf(FL, FR, FC, LFE, BL, BR, SL, SR)),
     CH_LAYOUT_7POINT1_WIDE("7.1(wide)", listOf(FL, FR, FC, LFE, BL, BR, FLC, FRC)),
     CH_LAYOUT_7POINT1_WIDE_SIDE("7.1(wide-side)", listOf(FL, FR, FC, LFE, FLC, FRC, SL, SR)),
-    CH_LAYOUT_5POINT1POINT2("5.1.2", listOf(FL, FR, FC, LFE, BL, BR, TFL, TFR)),
+    CH_LAYOUT_5POINT1POINT2("5.1.2", listOf(FL, FR, FC, LFE, SL, SR, TFL, TFR)),
+    CH_LAYOUT_5POINT1POINT2_BACK("5.1.2(back)", listOf(FL, FR, FC, LFE, BL, BR, TFL, TFR)),
     CH_LAYOUT_OCTAGONAL("octagonal", listOf(FL, FR, FC, BL, BR, BC, SL, SR)),
     CH_LAYOUT_CUBE("cube", listOf(FL, FR, BL, BR, TFL, TFR, TBL, TBR)),
     CH_LAYOUT_5POINT1POINT4("5.1.4", listOf(FL, FR, FC, LFE, BL, BR, TFL, TFR, TBL, TBR)),
@@ -69,13 +72,15 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
     CH_LAYOUT_7POINT1POINT4("7.1.4", listOf(FL, FR, FC, LFE, BL, BR, SL, SR, TFL, TFR, TBL, TBR)),
     CH_LAYOUT_7POINT2POINT3("7.2.3", listOf(FL, FR, FC, LFE, BL, BR, SL, SR, TFL, TFR, TBC, LFE2)),
     CH_LAYOUT_9POINT1POINT4("9.1.4", listOf(FL, FR, FC, LFE, BL, BR, FLC, FRC, SL, SR, TFL, TFR, TBL, TBR)),
+    CH_LAYOUT_9POINT1POINT6("9.1.6", listOf(FL, FR, FC, LFE, BL, BR, FLC, FRC, SL, SR, TFL, TFR, TBL, TBR, TSL, TSR)),
     CH_LAYOUT_HEXADECAGONAL(
         "hexadecagonal",
         listOf(
             FL, FR, FC, BL, BR, BC, SL, SR, TFL, TFC, TFR, TBL, TBC, TBR, WL, WR,
         ),
     ),
-    CH_LAYOUT_DOWNMIX("downmix)", listOf(DL, DR)),
+    CH_LAYOUT_BINAURAL("binaural", listOf(BIL, BIR)),
+    CH_LAYOUT_DOWNMIX("downmix", listOf(DL, DR)),
     CH_LAYOUT_22POINT2(
         "22.2",
         listOf(
@@ -106,6 +111,8 @@ enum class ChannelLayout(@JsonValue val layoutName: String, val channels: List<C
         ),
     ),
     ;
+
+    override fun toString(): String = layoutName
 
     companion object {
         fun defaultChannelLayout(numChannels: Int) = entries.firstOrNull { it.channels.size == numChannels }

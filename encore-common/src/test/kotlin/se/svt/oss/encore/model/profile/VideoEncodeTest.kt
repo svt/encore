@@ -32,6 +32,7 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         enabled: Boolean = true,
         cropTo: FractionString? = null,
         padTo: FractionString? = null,
+        vmaf: Vmaf? = null,
     ): T
 
     private val encodingProperties = EncodingProperties()
@@ -223,6 +224,89 @@ abstract class VideoEncodeTest<T : VideoEncode> {
         )
         val output = encode.getOutput(defaultEncoreJob(), encodingProperties)
         assertThat(output?.video).hasFilter("crop=min(iw\\,ih*9/16):min(ih\\,iw/(9/16)),scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1/1,pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2,afilter")
+    }
+
+    @Test
+    fun `vmafOpts returns null when vmaf is disabled`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, vmaf = Vmaf(enabled = false))
+
+        assertThat(encode.getOutput(defaultEncoreJob(), encodingProperties)?.video).hasVmaf(null)
+    }
+
+    @Test
+    fun `vmafOpts returns null when vmaf is null`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null)
+
+        assertThat(encode.getOutput(defaultEncoreJob(), encodingProperties)?.video).hasVmaf(null)
+    }
+
+    @Test
+    fun `vmafOpts returns null for segmented encode`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, vmaf = Vmaf(enabled = true))
+        val job = defaultEncoreJob().copy(segmentLength = 10.0)
+
+        assertThat(encode.getOutput(job, encodingProperties)?.video).hasVmaf(null)
+    }
+
+    @Test
+    fun `vmafOpts adds seek filter when seekTo is set`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, vmaf = Vmaf(enabled = true))
+        val job = defaultEncoreJob().copy(seekTo = 5.0)
+
+        val result = encode.getOutput(job, encodingProperties)?.video?.vmaf
+
+        assertThat(result)
+            .hasRefFilters("select=gte(t\\,5.0)")
+    }
+
+    @Test
+    fun `vmafOpts adds crop filter when cropTo is set`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, cropTo = "16:9", vmaf = Vmaf(enabled = true))
+
+        val result = encode.getOutput(defaultEncoreJob(), encodingProperties)?.video?.vmaf
+
+        assertThat(result)
+            .hasRefFilters("crop=min(iw\\,ih*16/9):min(ih\\,iw/(16/9))")
+    }
+
+    @Test
+    fun `vmafOpts adds pad filter when padTo is set`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, padTo = "16:9", vmaf = Vmaf(enabled = true))
+
+        val result = encode.getOutput(defaultEncoreJob(), encodingProperties)?.video?.vmaf
+
+        assertThat(result)
+            .hasRefFilters("pad=aspect=16/9:x=(ow-iw)/2:y=(oh-ih)/2")
+    }
+
+    @Test
+    fun `vmafOpts adds custom filters`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = listOf("myfilter"), audioEncode = null, vmaf = Vmaf(enabled = true))
+
+        val result = encode.getOutput(defaultEncoreJob(), encodingProperties)?.video?.vmaf
+
+        assertThat(result)
+            .hasRefFilters("myfilter")
+    }
+
+    @Test
+    fun `vmafOpts adds debug filter when debugOverlay is true`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, vmaf = Vmaf(enabled = true))
+        val job = defaultEncoreJob().copy(debugOverlay = true)
+
+        val result = encode.getOutput(job, encodingProperties)?.video?.vmaf
+
+        assertThat(result?.refFilters).anyMatch { it.contains("drawtext=") }
+    }
+
+    @Test
+    fun `vmafOpts preserves existing refFilters`() {
+        val encode = createEncode(width = 1920, height = 1080, twoPass = false, params = defaultParams, filters = emptyList(), audioEncode = null, vmaf = Vmaf(enabled = true, refFilters = listOf("existing")))
+
+        val result = encode.getOutput(defaultEncoreJob(), encodingProperties)?.video?.vmaf
+
+        assertThat(result)
+            .hasRefFilters("existing")
     }
 
     open fun verifyFirstPassParams(encode: VideoEncode, params: List<String>) {

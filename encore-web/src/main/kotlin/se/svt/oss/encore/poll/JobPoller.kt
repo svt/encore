@@ -27,8 +27,8 @@ class JobPoller(
 
     @PostConstruct
     fun init() {
-        queueService.migrateQueues()
         queueService.handleOrphanedQueues()
+
         if (encoreProperties.pollDisabled) {
             return
         }

@@ -28,6 +28,7 @@ fun EncoreJob.numSegments(): Int {
 fun EncoreJob.segmentDuration(segmentNumber: Int): Double = when {
     duration == null -> segmentLengthOrThrow()
     segmentNumber < numSegments() - 1 -> segmentLengthOrThrow()
+    duration!! % segmentLengthOrThrow() == 0.0 -> segmentLengthOrThrow()
     else -> duration!! % segmentLengthOrThrow()
 }
 

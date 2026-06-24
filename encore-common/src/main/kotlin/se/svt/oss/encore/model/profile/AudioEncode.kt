@@ -15,17 +15,18 @@ import se.svt.oss.encore.model.mediafile.channelLayout
 import se.svt.oss.encore.model.mediafile.toParams
 import se.svt.oss.encore.model.output.AudioStreamEncode
 import se.svt.oss.encore.model.output.Output
+import java.util.Collections
 
 data class AudioEncode(
-    val codec: String = "libfdk_aac",
+    val codec: String = "aac",
     val bitrate: String? = null,
     val samplerate: Int = 48000,
     val channelLayout: ChannelLayout = ChannelLayout.CH_LAYOUT_STEREO,
     val suffix: String = "_${codec}_${channelLayout.layoutName}",
     val params: LinkedHashMap<String, String> = linkedMapOf(),
-    val filters: List<String> = emptyList(),
+    val filters: List<String> = Collections.emptyList(),
     val audioMixPreset: String = "default",
-    val dialogueEnhancement: DialogueEnhancement = DialogueEnhancement(),
+    val dialogueEnhancement: DialogueEnhancement = DialogueEnhancement.Native(),
     override val optional: Boolean = false,
     val format: String = "mp4",
     val inputLabel: String = DEFAULT_AUDIO_LABEL,
@@ -50,17 +51,17 @@ data class AudioEncode(
             ?: throw RuntimeException("Audio mix preset '$audioMixPreset' not found!")
         val inputChannels = analyzed.channelCount()
         var inputChannelLayout = audioIn.channelLayout(encodingProperties.defaultChannelLayouts)
-        if (dialogueEnhancement.enabled && !dialogueEnhancePossible(inputChannelLayout)) {
-            return logOrThrow("Can not generate $outputName! Dialogue enhancement not possible for source channel layout ${inputChannelLayout.layoutName}")
-        }
 
         val dialogueEnhanceFilters = mutableListOf<String>()
-        if (shouldDialogueEnhanceStereo(inputChannelLayout)) {
-            inputChannelLayout = ChannelLayout.CH_LAYOUT_3POINT0
-            dialogueEnhanceFilters.add(dialogueEnhancement.dialogueEnhanceStereo.filterString)
-        }
         if (dialogueEnhancement.enabled) {
-            dialogueEnhanceFilters.add(dialogueEnhance(inputChannelLayout))
+            if (!dialogueEnhancement.supports(inputChannelLayout)) {
+                return logOrThrow(
+                    "Can not generate $outputName! Dialogue enhancement not possible for source channel layout ${inputChannelLayout.layoutName}",
+                )
+            }
+            val plan = dialogueEnhancement.build(inputChannelLayout, suffix)
+            dialogueEnhanceFilters.addAll(plan.filters)
+            inputChannelLayout = plan.effectiveChannelLayout
         }
 
         val mixFilters = mutableListOf<String>()
@@ -101,55 +102,5 @@ data class AudioEncode(
         )
     }
 
-    private fun shouldDialogueEnhanceStereo(inputChannelLayout: ChannelLayout): Boolean =
-        dialogueEnhancement.enabled &&
-            dialogueEnhancement.dialogueEnhanceStereo.enabled &&
-            inputChannelLayout == ChannelLayout.CH_LAYOUT_STEREO
-
-    private fun dialogueEnhancePossible(inputChannelLayout: ChannelLayout): Boolean =
-        inputChannelLayout.channels.size > 1 &&
-            (inputChannelLayout.channels.contains(ChannelId.FC) || shouldDialogueEnhanceStereo(inputChannelLayout))
-
-    private fun dialogueEnhance(inputChannelLayout: ChannelLayout): String {
-        val layoutName = inputChannelLayout.layoutName
-        val channels = inputChannelLayout.channels
-        val channelSplit =
-            "channelsplit=channel_layout=$layoutName${channels.joinToString(separator = "") { "[CH-$suffix-$it]" }}"
-        val centerSplit = "[CH-$suffix-FC]asplit=2[SC-$suffix][CH-$suffix-FC-OUT]"
-        val bgChannels = channels - ChannelId.FC
-        val bgMerge =
-            "${bgChannels.joinToString(separator = "") { "[CH-$suffix-$it]" }}amerge=inputs=${bgChannels.size}[BG-$suffix]"
-        val compress =
-            "[BG-$suffix][SC-$suffix]${dialogueEnhancement.sidechainCompress.filterString}[COMPR-$suffix]"
-        val mixMerge = "[COMPR-$suffix][CH-$suffix-FC-OUT]amerge"
-        return listOf(channelSplit, centerSplit, bgMerge, compress, mixMerge).joinToString(";")
-    }
-
     private fun isApplicable(channelCount: Int): Boolean = channelCount > 0 && (channelLayout == ChannelLayout.CH_LAYOUT_STEREO || channelLayout.channels.size in 1..channelCount)
-
-    data class DialogueEnhancement(
-        val enabled: Boolean = false,
-        val sidechainCompress: SidechainCompress = SidechainCompress(),
-        val dialogueEnhanceStereo: DialogueEnhanceStereo = DialogueEnhanceStereo(),
-    ) {
-        data class DialogueEnhanceStereo(
-            val enabled: Boolean = true,
-            val original: Int = 1,
-            val enhance: Int = 1,
-            val voice: Int = 2,
-        ) {
-            val filterString: String
-                get() = "dialoguenhance=original=$original:enhance=$enhance:voice=$voice"
-        }
-
-        data class SidechainCompress(
-            val ratio: Int = 8,
-            val threshold: Double = 0.012,
-            val release: Double = 1000.0,
-            val attack: Double = 100.0,
-        ) {
-            val filterString: String
-                get() = "sidechaincompress=threshold=$threshold:ratio=$ratio:release=$release:attack=$attack"
-        }
-    }
 }

@@ -19,6 +19,7 @@ class X264EncodeTest : VideoEncodeTest<X264Encode>() {
         enabled: Boolean,
         cropTo: FractionString?,
         padTo: FractionString?,
+        vmaf: Vmaf?,
     ): X264Encode = X264Encode(
         width = width,
         height = height,
@@ -32,6 +33,7 @@ class X264EncodeTest : VideoEncodeTest<X264Encode>() {
         enabled = enabled,
         cropTo = cropTo,
         padTo = padTo,
+        vmaf = vmaf,
     )
     override fun verifyFirstPassParams(encode: VideoEncode, params: List<String>) {
         if (encode.twoPass) {

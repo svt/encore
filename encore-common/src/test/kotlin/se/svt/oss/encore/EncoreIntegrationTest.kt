@@ -222,4 +222,43 @@ class EncoreIntegrationTest(wireMockRuntimeInfo: WireMockRuntimeInfo) : EncoreIn
         assertThat(createdJob.message)
             .contains("Coding might not be compatible on all devices")
     }
+
+    @Test
+    fun jobWithVmaf(@TempDir outputDir: File) {
+        val createdJob = createAndAwaitJob(
+            job = job(outputDir = outputDir, file = testFileStereo).copy(
+                profile = "vmaf",
+                seekTo = 1.0,
+                duration = 5.0,
+                debugOverlay = false,
+            ),
+        ) { it.status.isCompleted }
+
+        assertThat(createdJob)
+            .hasStatus(Status.SUCCESSFUL)
+        val qualityMetrics = createdJob.qualityMetrics
+        assertThat(qualityMetrics)
+            .containsOnlyKeys("test_stereo_720p.mp4", "test_stereo_540p.mp4", "test_stereo_crop_and_pad_540p.mp4")
+            .allSatisfy { _, metrics ->
+                assertThat(metrics)
+                    .containsOnlyKeys("vmaf", "vmaf4k", "psnr_y", "psnr_cb", "psnr_cr")
+            }
+        assertThat(qualityMetrics["test_stereo_720p.mp4"]!!["vmaf"])
+            .hasMinCloseTo(89.0, 1.0)
+            .hasMaxCloseTo(100.0, 1.0)
+            .hasMeanCloseTo(97.0, 1.0)
+            .hasHarmonicMeanCloseTo(97.0, 1.0)
+        assertThat(qualityMetrics["test_stereo_540p.mp4"]!!["vmaf"])
+            .hasMinCloseTo(83.0, 1.0)
+            .hasMaxCloseTo(95.0, 1.0)
+            .hasMeanCloseTo(90.5, 1.0)
+            .hasHarmonicMeanCloseTo(90.5, 1.0)
+        assertThat(qualityMetrics["test_stereo_crop_and_pad_540p.mp4"]!!["vmaf"])
+            .hasMinCloseTo(83.5, 1.0)
+            .hasMaxCloseTo(93.0, 1.0)
+            .hasMeanCloseTo(88.5, 1.0)
+            .hasHarmonicMeanCloseTo(88.5, 1.0)
+
+        assertThat(createdJob.output.filterIsInstance<ImageFile>()).isNotEmpty
+    }
 }

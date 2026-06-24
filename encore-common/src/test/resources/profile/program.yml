@@ -235,5 +235,3 @@ encodes:
 
   - type: ThumbnailEncode
     decodeOutput: 0
-
-

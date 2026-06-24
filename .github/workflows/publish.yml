@@ -1,0 +1,93 @@
+name: Create and publish Spring Boot jars, GraalVM native images and Docker images
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build JARs and native images
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          NATIVE_IMAGE_CONFIG_FILE: native-image.properties
+        run: |
+          echo 'NativeImageArgs = -J-Xmx14G' > $NATIVE_IMAGE_CONFIG_FILE
+          ./gradlew build nativeCompile -x test
+
+      - name: Release JARs and native images
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            encore-web/build/libs/encore-web*boot.jar
+            encore-web/build/native/nativeCompile/encore-web
+            encore-worker/build/libs/encore-worker*boot.jar
+            encore-worker/build/native/nativeCompile/encore-worker
+
+      - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata for encore-web
+        if: startsWith(github.ref, 'refs/tags/')
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/encore-web
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push encore-web
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/build-push-action@v6
+        with:
+          context: encore-web
+          file: encore-web/Dockerfile-public
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+
+      - name: Docker metadata for encore-worker
+        if: startsWith(github.ref, 'refs/tags/')
+        id: meta-worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/encore-worker
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push encore-worker
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/build-push-action@v6
+        with:
+          context: encore-worker
+          file: encore-worker/Dockerfile-public
+          push: true
+          tags: ${{ steps.meta-worker.outputs.tags }}

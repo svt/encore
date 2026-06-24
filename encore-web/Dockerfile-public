@@ -1,0 +1,25 @@
+FROM mwader/static-ffmpeg:8.1 AS ffmpeg
+
+FROM ubuntu:noble
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends mediainfo && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg /ffprobe /usr/local/bin/ffprobe
+
+LABEL org.opencontainers.image.url="https://github.com/svt/encore"
+LABEL org.opencontainers.image.source="https://github.com/svt/encore"
+
+# produced by gradle target nativeCompile
+COPY build/native/nativeCompile/encore-web /app/
+
+WORKDIR /app
+
+USER 1000
+
+CMD ["/app/encore-web"]

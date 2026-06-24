@@ -1,79 +1,31 @@
 # SVT Encore
+
 [![License](https://img.shields.io/badge/license-EUPL-brightgreen.svg)](https://eupl.eu/)
-[![REUSE status](https://api.reuse.software/badge/github.com/fsfe/reuse-tool)](https://api.reuse.software/info/github.com/fsfe/reuse-tool)
+[![REUSE status](https://api.reuse.software/badge/github.com/svt/encore)](https://api.reuse.software/info/github.com/svt/encore)
+[![Latest release](https://img.shields.io/github/v/release/svt/encore)](https://github.com/svt/encore/releases)
 
+<img align="center" width="30%" src="docs/assets/encore_logo.png">
 
-<img align="center" width="30%" src="https://raw.githubusercontent.com/svt/encore-doc/main/src/img/svt_encore_logo.png">
+**Scalable video transcoding as a service, built on [FFmpeg](https://www.ffmpeg.org/) and [Spring Boot](https://spring.io/projects/spring-boot).**
 
-&nbsp;
-&nbsp;
-  
-SVT *Encore* is a scalable video transcoding tool, built on Open Source giants like [FFmpeg](https://www.ffmpeg.org/) and [Spring Boot](https://spring.io/projects/spring-boot).
+Encore wraps FFmpeg behind a REST API and queues transcoding jobs in Redis, distributing work across a horizontally scalable pool of workers. Jobs are defined by reusable YAML transcoding profiles, routed through priority queues so urgent work stays unblocked, and report progress via HTTP callbacks.
 
+It targets advanced users integrating transcoding into automated pipelines — for example, as part of a VOD (Video On Demand) workflow. Encore has been in production at SVT since 2019 and open source since 2021.
 
-*Encore* was created to scale, and abstract the transcoding _power of FFmpeg_, and to offer a simple solution for Transcoding - Transcoding-as-a-Service.
+**Full documentation: [svt.github.io/encore](https://svt.github.io/encore/)**
 
-*Encore* is aimed at the advanced technical user that needs a scalable video transcoding tool - for example, as a part of their VOD (Video On Demand) transcoding pipeline.
+## Quickstart
 
-## Features
-
-- Scalable - queuing and concurrency options
-- Flexible profile configuration
-- Possibility to extend FFmpeg functionality
-- Tested and tried in production
-
-_Encore_ is not
-
-- A live/stream transcoder
-- A Video packager (see <<faq>>)
-- An GUI application
-
-_Built with_
-
-* Kotlin
-* Gradle
-* Spring Boot
-* FFmpeg
-* and many other great projects
-
-## Documentation
-
-Comprehensive documentation for _Encore_ can (and should) be read:
-
-[Online](https://svt.github.io/encore-doc/)
-
-or downloaded from the:
-
-[GitHub Repository](https://github.com/svt/encore-doc)
-
-If you have a running instance, you can also view the
-
-**OpenAPI Endpoints**:
-
-```
-http(s)://yourinstance/swagger-ui.html
-
-as json
-
-http(s)://yourinstance/v3/api-docs/
-
-or as yaml
-
-http(s)://yourinstance/v3/api-docs.yaml
+```bash
+docker compose up
 ```
 
-### Local development
+Starts Redis and `encore-web` using the bundled [`docker-compose.yml`](docker-compose.yml). See [Getting Started](https://svt.github.io/encore/getting-started/) for creating a profile and submitting your first job.
 
-Please see the [online documentation](https://svt.github.io/encore-doc/#the-user-guide)
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs and request features via [GitHub Issues](https://github.com/svt/encore/issues).
 
 ## License
 
-Copyright 2020 Sveriges Television AB.
-
-Encore is licensed under the 
-
-[EUPL-1.2-or-later](LICENSE) license
-
-## Primary maintainer
-
-SVT Videocore Team - (videocore svt se)
+Copyright 2020–2026 Sveriges Television AB. Licensed under [EUPL-1.2-or-later](LICENSE).

@@ -1,0 +1,18 @@
+services:
+  redis:
+    image: redis:8.6-alpine
+    ports:
+      - '6379:6379'
+
+  encore-web:
+    image: ghcr.io/svt/encore-web:latest
+    ports:
+      - '8080:8080'
+    environment:
+      ENCORE_SETTINGS_REDIS_URI: redis://redis:6379
+      ENCORE_SETTINGS_PROFILE_LOCATION: file:/profiles/profiles.yml
+    volumes:
+      - ./profiles:/profiles
+      - ./media:/media
+    depends_on:
+      - redis

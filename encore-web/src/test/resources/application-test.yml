@@ -1,29 +1,29 @@
 spring:
   main:
     allow-bean-definition-overriding: true
-management:
-  endpoint:
-    health:
-      show-details: when_authorized
-      roles: ADMIN
-      probes:
-        enabled: true
 
 logging:
   level:
     se.svt: debug
 
 encore-settings:
+  profile:
+    location: classpath:profile/profiles.yml
   concurrency: 3
   local-temporary-encode: false
   poll-initial-delay: 1s
   poll-delay: 1s
   security:
-    user-password: '{bcrypt}$2a$10$5UQDlMEE6PDHNtr.pY/Jh.06Dq0BTkFtQyYNQint/R0KhC4muu4PO' # 'upw' encypted with spring boot cli
-    admin-password: '{bcrypt}$2a$10$Yp8gtLGnpyFtlyOrL6/ajOO/hPXOCKMf4IpCW41ptMUzAUpJmmGOC' # 'apw' encypted with spring boot cli
+    users:
+      user:
+        password: '{bcrypt}$2a$10$5UQDlMEE6PDHNtr.pY/Jh.06Dq0BTkFtQyYNQint/R0KhC4muu4PO' # 'upw' encrypted with spring boot cli
+        role: USER
+      admin:
+        password: 'apw' # unencrypted also works without {noop} prefix
+        role: ADMIN
   encoding:
     default-channel-layouts:
-      3: "3.0"
+      3: '3.0'
     audio-mix-presets:
       default:
         default-pan:
@@ -36,10 +36,7 @@ encore-settings:
         default-pan:
           stereo: FL<FL+1.5*FC+0.707107*BL+0.707107*SL|FR<FR+1.5*FC+0.707107*BR+0.707107*SR
         pan-mapping:
-          "[5.1]":
-            "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
-          "[5.1(side)]":
-            "[5.1]": c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
-
-profile:
-  location: classpath:profile/profiles.yml
+          '[5.1]':
+            '[5.1]': c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5
+          '[5.1(side)]':
+            '[5.1]': c0=c0|c1=c1|c2<1.5*c2|c3=c3|c4=c4|c5=c5

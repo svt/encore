@@ -6,15 +6,16 @@ package se.svt.oss.encore.model.profile
 
 import se.svt.oss.encore.model.input.DEFAULT_VIDEO_LABEL
 import se.svt.oss.mediaanalyzer.file.FractionString
+import java.util.Collections
 
 data class GenericVideoEncode(
     override val width: Int?,
     override val height: Int?,
     override val twoPass: Boolean,
     override val params: LinkedHashMap<String, String>,
-    override val filters: List<String> = emptyList(),
+    override val filters: List<String> = Collections.emptyList(),
     override val audioEncode: AudioEncoder?,
-    override val audioEncodes: List<AudioEncoder> = emptyList(),
+    override val audioEncodes: List<AudioEncoder> = Collections.emptyList(),
     override val suffix: String,
     override val format: String,
     override val codec: String,
@@ -23,4 +24,5 @@ data class GenericVideoEncode(
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,
     override val enabled: Boolean = true,
+    override val vmaf: Vmaf? = null,
 ) : VideoEncode

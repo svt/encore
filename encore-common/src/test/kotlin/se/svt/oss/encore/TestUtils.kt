@@ -4,13 +4,13 @@
 
 package se.svt.oss.encore
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.core.io.ClassPathResource
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.mediaanalyzer.file.AudioFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
+import tools.jackson.module.kotlin.jsonMapper
+import tools.jackson.module.kotlin.readValue
 
 fun defaultEncoreJob(priority: Int = 0) =
     EncoreJob(
@@ -26,32 +26,34 @@ fun defaultEncoreJob(priority: Int = 0) =
         ),
     )
 
+private val jsonMapper = jsonMapper { findAndAddModules() }
+
 val defaultVideoFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<VideoFile>(ClassPathResource("/input/video-file.json").file.readText())
 }
 
 val portraitVideoFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<VideoFile>(ClassPathResource("/input/portrait-video-file.json").file.readText())
 }
 
 val rotateToPortraitVideoFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<VideoFile>(ClassPathResource("/input/rotate-to-portrait-video-file.json").file.readText())
 }
 
 val longVideoFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<VideoFile>(ClassPathResource("/input/video-file-long.json").file.readText())
 }
 
 val multipleAudioFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<AudioFile>(ClassPathResource("/input/multiple-audio-file.json").file.readText())
 }
 
 val multipleVideoFile by lazy {
-    ObjectMapper().findAndRegisterModules()
+    jsonMapper
         .readValue<VideoFile>(ClassPathResource("/input/multiple-video-file.json").file.readText())
 }

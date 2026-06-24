@@ -1,335 +1,249 @@
-// SPDX-FileCopyrightText: 2020 Sveriges Television AB
+// SPDX-FileCopyrightText: 2023 Sveriges Television AB
 //
 // SPDX-License-Identifier: EUPL-1.2
 
 package se.svt.oss.encore.service.queue
 
-import io.mockk.Called
+import com.ninjasquad.springmockk.MockkBean
+import com.ninjasquad.springmockk.MockkSpyBean
+import io.lettuce.core.FlushMode
+import io.lettuce.core.api.StatefulRedisConnection
 import io.mockk.Runs
 import io.mockk.every
-import io.mockk.impl.annotations.InjectMockKs
-import io.mockk.impl.annotations.MockK
-import io.mockk.junit5.MockKExtension
 import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkConstructor
+import io.mockk.runs
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.data.redis.connection.RedisConnectionFactory
-import org.springframework.data.redis.core.BoundZSetOperations
-import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ZSetOperations.TypedTuple
-import org.springframework.data.redis.core.script.RedisScript
-import org.springframework.data.redis.support.atomic.RedisAtomicInteger
-import org.springframework.data.repository.findByIdOrNull
-import se.svt.oss.encore.Assertions.assertThat
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import se.svt.oss.encore.RedisExtension
 import se.svt.oss.encore.config.EncoreProperties
-import se.svt.oss.encore.defaultEncoreJob
 import se.svt.oss.encore.model.EncoreJob
 import se.svt.oss.encore.model.Status
+import se.svt.oss.encore.model.input.AudioVideoInput
 import se.svt.oss.encore.model.queue.QueueItem
-import se.svt.oss.encore.repository.EncoreJobRepository
+import se.svt.oss.encore.redis.RedisService
 import se.svt.oss.encore.service.ApplicationShutdownException
 import java.util.UUID
 
-@ExtendWith(MockKExtension::class)
-internal class QueueServiceTest {
-    private val highPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
-    private val standardPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
-    private val lowPriorityQueue = mockk<BoundZSetOperations<String, QueueItem>>()
-    val keyPrefix = "encore"
-    private val encoreProperties = mockk<EncoreProperties> {
-        every { concurrency } returns 3
-        every { redisKeyPrefix } returns keyPrefix
-        every { pollHigherPrio } returns true
-    }
+@SpringBootTest
+@ExtendWith(RedisExtension::class)
+@ActiveProfiles("test")
+class QueueServiceTest {
 
-    @MockK
-    private lateinit var redisTemplate: RedisTemplate<String, QueueItem>
+    @MockkBean(relaxed = true)
+    lateinit var redisService: RedisService
 
-    @MockK
-    private lateinit var repository: EncoreJobRepository
+    @MockkSpyBean
+    lateinit var encoreProperties: EncoreProperties
 
-    @MockK
-    private lateinit var redisQueueMigrationScript: RedisScript<Boolean>
+    @Autowired
+    lateinit var redisConnection: StatefulRedisConnection<String, String>
 
-    @InjectMockKs
-    private lateinit var queueService: QueueService
+    @Autowired
+    lateinit var queueService: QueueService
 
-    private val queueItemHighPrio = QueueItem(UUID.randomUUID().toString(), 90)
-    private val queueItemStandardPrio = QueueItem(UUID.randomUUID().toString(), 51)
-    private val queueItemLowPrio = QueueItem(UUID.randomUUID().toString(), 10)
-    private val highPrioJob = mockk<EncoreJob> {
-        every { contextMap } returns emptyMap()
-        every { status } returns Status.QUEUED
-    }
-    private val standardPrioJob = mockk<EncoreJob> {
-        every { contextMap } returns emptyMap()
-        every { status } returns Status.QUEUED
-        every { status = any() } just Runs
-        every { message = any() } just Runs
-    }
-    private val lowPrioJob = mockk<EncoreJob> {
-        every { status } returns Status.QUEUED
-        every { contextMap } returns emptyMap()
-    }
-
-    private fun mockLambda(expectedQueueItem: QueueItem, expectedEncoreJob: EncoreJob): (QueueItem, EncoreJob) -> Unit =
-        { item, job ->
-            assertThat(item).isSameAs(expectedQueueItem)
-            assertThat(job).isSameAs(expectedEncoreJob)
-        }
-
-    private val expectHighPrio = mockLambda(queueItemHighPrio, highPrioJob)
-    private val expectStandardPrio = mockLambda(queueItemStandardPrio, standardPrioJob)
-    private val expectLowPrio = mockLambda(queueItemLowPrio, lowPrioJob)
-    private val expectNone: (QueueItem, EncoreJob) -> Unit = { queueItem, _ ->
-        throw RuntimeException("Unexpected call with $queueItem")
+    @AfterEach
+    fun tearDown() {
+        redisConnection.sync().flushdb(FlushMode.SYNC)
     }
 
     @BeforeEach
-    internal fun setUp() {
-        every { highPriorityQueue.popMin() } returns TypedTuple.of(queueItemHighPrio, null)
-        every { standardPriorityQueue.popMin() } returns TypedTuple.of(queueItemStandardPrio, null)
-        every { lowPriorityQueue.popMin() } returns TypedTuple.of(queueItemLowPrio, null)
-        every { repository.findByIdOrNull(UUID.fromString(queueItemHighPrio.id)) } returns highPrioJob
-        every { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) } returns standardPrioJob
-        every { repository.findByIdOrNull(UUID.fromString(queueItemLowPrio.id)) } returns lowPrioJob
-        every { redisTemplate.boundZSetOps("$keyPrefix-queue-0") } returns highPriorityQueue
-        every { redisTemplate.boundZSetOps("$keyPrefix-queue-1") } returns standardPriorityQueue
-        every { redisTemplate.boundZSetOps("$keyPrefix-queue-2") } returns lowPriorityQueue
-        every { redisTemplate.execute(redisQueueMigrationScript, any()) } returns false
+    fun setUp() {
+        every { encoreProperties.concurrency } returns 3
+        every { redisService.createIndex() } just Runs
     }
 
-    @Nested
-    inner class Init {
+    private fun job(priority: Int = 0, status: Status = Status.QUEUED) = EncoreJob(
+        profile = "test",
+        outputFolder = "/output",
+        baseName = "TEST",
+        priority = priority,
+        inputs = listOf(AudioVideoInput(uri = "/input/test.mp4")),
+    ).apply { this.status = status }
 
-        @Test
-        fun concurrencyReduced() {
-            val concurrency = encoreProperties.concurrency
-            mockkConstructor(RedisAtomicInteger::class)
-            val connectionFactory = mockk<RedisConnectionFactory>(relaxed = true, relaxUnitFun = true)
-            every { redisTemplate.connectionFactory } returns connectionFactory
-            every { anyConstructed<RedisAtomicInteger>().getAndSet(concurrency) } returns concurrency + 2
+    @Test
+    fun `enqueue adds job to correct queue and getQueue returns it`() {
+        val job = job(priority = 0)
+        queueService.enqueue(job)
 
-            every { lowPriorityQueue.add(any()) } returns 1
-            val orphanedQueue1 = mockk<BoundZSetOperations<String, QueueItem>>()
-            val orphanedQueue2 = mockk<BoundZSetOperations<String, QueueItem>>()
-            val orphanedQueue1Items = mockk<Set<TypedTuple<QueueItem>>> {
-                every { size } returns 4
-            }
-            val orphanedQueue2Items = mockk<Set<TypedTuple<QueueItem>>> {
-                every { size } returns 2
-            }
-            every { orphanedQueue1.popMin(Long.MAX_VALUE) } returns orphanedQueue1Items
-            every { orphanedQueue2.popMin(Long.MAX_VALUE) } returns orphanedQueue2Items
+        val queue = queueService.getQueue()
 
-            every { redisTemplate.boundZSetOps("$keyPrefix-queue-$concurrency") } returns orphanedQueue1
-            every { redisTemplate.boundZSetOps("$keyPrefix-queue-${concurrency + 1}") } returns orphanedQueue2
-
-            queueService.handleOrphanedQueues()
-
-            verify { orphanedQueue1.popMin(Long.MAX_VALUE) }
-            verify { orphanedQueue2.popMin(Long.MAX_VALUE) }
-            verify { lowPriorityQueue.add(orphanedQueue1Items) }
-            verify { lowPriorityQueue.add(orphanedQueue2Items) }
-        }
+        assertThat(queue).hasSize(1)
+        assertThat(queue.first().id).isEqualTo(job.id.toString())
     }
 
-    @Nested
-    inner class PollHighPriorityQueue {
+    @Test
+    fun `enqueue high-priority job goes to lower queue number`() {
+        val lowPrioJob = job(priority = 0)
+        val highPrioJob = job(priority = 100)
+        queueService.enqueue(lowPrioJob)
+        queueService.enqueue(highPrioJob)
 
-        @AfterEach
-        fun tearDown() {
-            verify { highPriorityQueue.popMin() }
-            verify { standardPriorityQueue wasNot Called }
-            verify { lowPriorityQueue wasNot Called }
-        }
+        val queue = queueService.getQueue()
 
-        @Test
-        fun `returns item from high priority queue if any present`() {
-            assertThat(queueService.poll(0, expectHighPrio)).isTrue
-        }
-
-        @Test
-        fun `returns null if high priority queue is empty`() {
-            every { highPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(0, expectNone)).isFalse
-        }
+        assertThat(queue).hasSize(2)
+        // high priority (100) -> queue 0, low priority (0) -> queue 2
+        assertThat(queue.first().id).isEqualTo(highPrioJob.id.toString())
     }
 
-    @Nested
-    inner class PollHighOrStandardPriorityQueue {
+    @Test
+    fun `getQueueCount returns count per queue and total`() {
+        queueService.enqueue(job(priority = 0))
+        queueService.enqueue(job(priority = 100))
 
-        @AfterEach
-        fun tearDown() {
-            verify { highPriorityQueue.popMin() }
-            verify { lowPriorityQueue wasNot Called }
-        }
+        val counts = queueService.getQueueCount()
 
-        @Test
-        fun `returns item from high priority queue if any present`() {
-            assertThat(queueService.poll(1, expectHighPrio)).isTrue
-            verify { standardPriorityQueue wasNot Called }
-        }
-
-        @Test
-        fun `returns items from standard priority queue if high priority queue is empty`() {
-            every { highPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(1, expectStandardPrio)).isTrue
-            verify { standardPriorityQueue.popMin() }
-        }
-
-        @Test
-        fun `returns null if both queues empty`() {
-            every { highPriorityQueue.popMin() } returns null
-            every { standardPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(1, expectNone)).isFalse
-            verify { standardPriorityQueue.popMin() }
-        }
+        assertThat(counts["total"]).isEqualTo(2)
     }
 
-    @Nested
-    inner class PollStandardPriorityQueue {
+    @Test
+    fun `poll returns false when queue is empty`() {
+        val result = queueService.poll(2) { _, _ -> }
 
-        @BeforeEach
-        fun setUp() {
-            every { encoreProperties.pollHigherPrio } returns false
-        }
-
-        @AfterEach
-        fun tearDown() {
-            verify { standardPriorityQueue.popMin() }
-            verify { highPriorityQueue wasNot Called }
-            verify { lowPriorityQueue wasNot Called }
-        }
-
-        @Test
-        fun `returns item from queue`() {
-            assertThat(queueService.poll(1, expectStandardPrio)).isTrue
-        }
-
-        @Test
-        fun `empty queue`() {
-            every { standardPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(1, expectNone)).isFalse
-        }
-
-        @Test
-        fun `job not synced yet is retried`() {
-            every { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) } returns null andThen standardPrioJob
-            assertThat(queueService.poll(1, expectStandardPrio)).isTrue
-            verify(exactly = 2) { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) }
-        }
-
-        @Test
-        fun `non-existing job throws`() {
-            every { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) } returns null
-            assertThatThrownBy { queueService.poll(1, expectStandardPrio) }
-                .hasMessageEndingWith("does not exist")
-            verify(exactly = 2) { repository.findByIdOrNull(UUID.fromString(queueItemStandardPrio.id)) }
-        }
-
-        @Test
-        fun `reenqueue on shutdown`() {
-            every { standardPriorityQueue.add(any(), any()) } returns true
-            every { repository.save(any()) } answers { firstArg() }
-            assertThat(queueService.poll(1) { _, _ -> throw ApplicationShutdownException() }).isFalse()
-            verify { standardPriorityQueue.add(queueItemStandardPrio, (100 - queueItemStandardPrio.priority).toDouble()) }
-            verify { standardPrioJob.status = Status.QUEUED }
-            verify { repository.save(standardPrioJob) }
-        }
-
-        @Test
-        fun `reenqueue on shutdown fails`() {
-            every { standardPriorityQueue.add(any(), any()) } returns false
-            every { repository.save(any()) } answers { firstArg() }
-            assertThat(queueService.poll(1) { _, _ -> throw ApplicationShutdownException() }).isFalse()
-            verify { standardPriorityQueue.add(queueItemStandardPrio, (100 - queueItemStandardPrio.priority).toDouble()) }
-            verify { standardPrioJob.status = Status.FAILED }
-            verify { repository.save(standardPrioJob) }
-        }
+        assertThat(result).isFalse()
     }
 
-    @Nested
-    inner class PollHighOrLowPriorityQueue {
+    @Test
+    fun `poll invokes action and returns true when job is found`() {
+        val job = job()
+        queueService.enqueue(job)
+        every { redisService.findByIdOrNull(job.id) } returns job
 
-        @AfterEach
-        fun tearDown() {
-            verify { highPriorityQueue.popMin() }
-        }
+        var invokedWith: EncoreJob? = null
+        val result = queueService.poll(2) { _, encoreJob -> invokedWith = encoreJob }
 
-        @Test
-        fun `returns item from high priority queue if any present`() {
-            assertThat(queueService.poll(2, expectHighPrio)).isTrue
-            verify { standardPriorityQueue wasNot Called }
-            verify { lowPriorityQueue wasNot Called }
-        }
-
-        @Test
-        fun `returns items from low priority queue if present and high priority queue is empty`() {
-            every { highPriorityQueue.popMin() } returns null
-            every { standardPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(2, expectLowPrio)).isTrue
-            verify { standardPriorityQueue.popMin() }
-            verify { lowPriorityQueue.popMin() }
-        }
-
-        @Test
-        fun `returns null if all queues are empty`() {
-            every { highPriorityQueue.popMin() } returns null
-            every { standardPriorityQueue.popMin() } returns null
-            every { lowPriorityQueue.popMin() } returns null
-            assertThat(queueService.poll(2, expectNone)).isFalse
-            verify { standardPriorityQueue.popMin() }
-            verify { lowPriorityQueue.popMin() }
-        }
+        assertThat(result).isTrue()
+        assertThat(invokedWith?.id).isEqualTo(job.id)
     }
 
-    @Nested
-    inner class Enqueue {
+    @Test
+    fun `poll retries when job not found at first`() {
+        val job = job()
+        queueService.enqueue(job)
+        every { redisService.findByIdOrNull(job.id) } returns null andThen job
 
-        @Test
-        fun `low priority job is enqueued on low priority queue`() {
-            val job = defaultEncoreJob(10)
-            every { lowPriorityQueue.add(any(), any()) } returns true
-            queueService.enqueue(job)
-            val expectedQueueItem = expectedQueueItem(job)
-            verify { lowPriorityQueue.add(expectedQueueItem, (100 - expectedQueueItem.priority).toDouble()) }
-            verify(exactly = 0) { standardPriorityQueue.add(any(), any()) }
-            verify(exactly = 0) { highPriorityQueue.add(any(), any()) }
-        }
+        var invokedWith: EncoreJob? = null
+        val result = queueService.poll(2) { _, encoreJob -> invokedWith = encoreJob }
 
-        @Test
-        fun `standard priority job is enqueued on standard priority queue`() {
-            val job = defaultEncoreJob(55)
-            every { standardPriorityQueue.add(any(), any()) } returns true
-            queueService.enqueue(job)
-            verify { standardPriorityQueue.add(expectedQueueItem(job), 45.0) }
-            verify(exactly = 0) { highPriorityQueue.add(any(), any()) }
-            verify(exactly = 0) { lowPriorityQueue.add(any(), any()) }
-        }
+        assertThat(result).isTrue()
+        assertThat(invokedWith?.id).isEqualTo(job.id)
+    }
 
-        @Test
-        fun `high priority job is enqueued on high priority queue`() {
-            val job = defaultEncoreJob(priority = 90)
-            every { highPriorityQueue.add(any(), any()) } returns true
-            queueService.enqueue(job)
-            verify { highPriorityQueue.add(expectedQueueItem(job), 10.0) }
-            verify(exactly = 0) { standardPriorityQueue.add(any(), any()) }
-            verify(exactly = 0) { lowPriorityQueue.add(any(), any()) }
-        }
+    @Test
+    fun `poll retries when job not found and fails at last`() {
+        val job = job()
+        queueService.enqueue(job)
+        every { redisService.findByIdOrNull(job.id) } returns null
 
-        private fun expectedQueueItem(job: EncoreJob) =
-            QueueItem(
-                id = job.id.toString(),
-                priority = job.priority,
-                created = job.createdDate.toLocalDateTime(),
-            )
+        assertThatThrownBy { queueService.poll(2) { _, _ -> } }
+            .hasMessage("Job ${job.id} does not exist")
+        verify(exactly = 2) { redisService.findByIdOrNull(job.id) }
+    }
+
+    @Test
+    fun `poll skips cancelled job and returns true`() {
+        val job = job(status = Status.CANCELLED)
+        queueService.enqueue(job)
+        every { redisService.findByIdOrNull(job.id) } returns job
+
+        val result = queueService.poll(2) { _, _ -> error("should not be called") }
+
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `poll with pollHigherPrio polls lower queue numbers first`() {
+        val highPrioJob = job(priority = 100) // goes to queue 0
+        queueService.enqueue(highPrioJob)
+        every { encoreProperties.pollHigherPrio } returns true
+        every { redisService.findByIdOrNull(highPrioJob.id) } returns highPrioJob
+
+        var invokedWith: EncoreJob? = null
+        val result = queueService.poll(2) { _, encoreJob -> invokedWith = encoreJob }
+
+        assertThat(result).isTrue()
+        assertThat(invokedWith?.id).isEqualTo(highPrioJob.id)
+    }
+
+    @Test
+    fun `poll with pollHigherPrio false polls only requested queue`() {
+        val highPrioJob = job(priority = 100) // goes to queue 0
+        queueService.enqueue(highPrioJob)
+        val lowPrioJob = job(priority = 0) // goes to queue 2
+        queueService.enqueue(lowPrioJob)
+        every { encoreProperties.pollHigherPrio } returns false
+        every { redisService.findByIdOrNull(lowPrioJob.id) } returns lowPrioJob
+
+        var invokedWith: EncoreJob? = null
+        val result = queueService.poll(2) { _, encoreJob -> invokedWith = encoreJob }
+
+        assertThat(result).isTrue()
+        assertThat(invokedWith?.id).isEqualTo(lowPrioJob.id)
+    }
+
+    @Test
+    fun `poll re-enqueues job and returns false on ApplicationShutdownException`() {
+        val job = job()
+        queueService.enqueue(job)
+        every { redisService.findByIdOrNull(job.id) } returns job
+        every { redisService.save(any()) } just runs
+
+        val result = queueService.poll(2) { _, _ -> throw ApplicationShutdownException() }
+
+        assertThat(result).isFalse()
+        assertThat(queueService.getQueue()).hasSize(1)
+        verify { redisService.save(any()) }
+    }
+
+    @Test
+    fun `poll skips failed segment job`() {
+        val job = job(status = Status.FAILED)
+        val segmentItem = QueueItem(id = job.id.toString(), priority = 0, segment = 1)
+        queueService.enqueue(segmentItem)
+        every { redisService.findByIdOrNull(job.id) } returns job
+
+        val result = queueService.poll(2) { _, _ -> error("should not be called") }
+
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `handle orphaned queues move items to higher prio queues`() {
+        queueService.handleOrphanedQueues() // init concurrency in empty redis
+        val queueItemLowPrio = QueueItem(id = UUID.randomUUID().toString(), priority = 0)
+        val queueItemMediumPrio = QueueItem(id = UUID.randomUUID().toString(), priority = 50)
+        val queueItemHighPrio = QueueItem(id = UUID.randomUUID().toString(), priority = 100)
+        queueService.enqueue(queueItemLowPrio)
+        queueService.enqueue(queueItemMediumPrio)
+        queueService.enqueue(queueItemHighPrio)
+        assertThat(queueService.getQueueCount()).isEqualTo(
+            mapOf(
+                "encore:queue:0" to 1L,
+                "encore:queue:1" to 1L,
+                "encore:queue:2" to 1L,
+                "total" to 3L,
+            ),
+        )
+
+        every { encoreProperties.concurrency } returns 2
+        queueService.handleOrphanedQueues()
+
+        assertThat(queueService.getQueueCount()).isEqualTo(
+            mapOf(
+                "encore:queue:0" to 1L,
+                "encore:queue:1" to 2L,
+                "total" to 3L,
+            ),
+        )
+
+        assertThat(queueService.getQueue())
+            .containsExactlyInAnyOrder(queueItemLowPrio, queueItemMediumPrio, queueItemHighPrio)
     }
 }

@@ -1,0 +1,97 @@
+version = 1
+
+[[annotations]]
+path = "**.sh"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["Dockerfile", "encore-**/Dockerfile**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ".gitignore"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.kts"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.xml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.yml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.json"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.txt"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.gradle"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.properties"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**.yuv"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Sveriges Television AB"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "docs/assets/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 Sveriges Television AB"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "**.mp4"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 Sveriges Television AB"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "gradlew**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2007-2020 The original author or authors <info@gradle.com>"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "gradle/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2007-2020 The original author or authors <info@gradle.com>"
+SPDX-License-Identifier = "Apache-2.0"

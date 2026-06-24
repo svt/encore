@@ -35,4 +35,10 @@ enum class ChannelId {
     BFC,
     BFL,
     BFR,
+    SSL,
+    SSR,
+    TTL,
+    TTR,
+    BIL,
+    BIR,
 }

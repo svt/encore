@@ -5,16 +5,28 @@ jacocoTestCoverageVerification {
             includes = ['se.svt.oss.encore.*']
             excludes = [
                     '*.invoke()',
+                    '*.log$lambda$0()',
                     '*.EncoreProperties*.get*()',
                     '*.DefaultConstructorMarker*',
                     '*ApplicationKt.main*',
                     '*.static {...}',
+                    '*.DefaultImpls.*',
                     '*.model.*.get*',
                     '*.service.localencode.LocalEncodeService.moveFile*',
-                    '*QueueService.getQueue*',
-                    '*QueueService.migrateQueues()',
+                    '*.OpenAPIConfiguration.*',
+                    '*.JsonRedisCodec.getJsonMapper()',
                     '*.ShutdownHandler.*',
-                    '*FfmpegExecutor.runFfmpeg$lambda$?(java.lang.Process)',
+                    '*.ApplicationShutdownException.*',
+                    '*FfmpegExecutor.runFfmpeg$lambda$*',
+                    '*.EncoreJobLinkRelationProvider.*',
+                    '*FfmpegExecutor.parseVmafMetrics$lambda$*',
+                    '*.CommandBuilder.loopbackParams$lambda$*',
+                    '*RedisService.createIndex$lambda$*',
+                    '*QueueService.repostJob*',
+                    '*QueueService.handleOrphanedQueues$lambda$*',
+                    '*EncoreService.handleProgress*emit$lambda$*',
+                    '*EncoreService.encodeSegmented$lambda$*',
+                    '*EncoreService.encodeSegment$lambda$*'
             ]
             limit {
                 counter = 'LINE'

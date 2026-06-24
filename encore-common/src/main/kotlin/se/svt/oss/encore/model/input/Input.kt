@@ -16,6 +16,8 @@ import se.svt.oss.mediaanalyzer.file.FractionString
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import se.svt.oss.mediaanalyzer.file.VideoFile
+import java.net.URI
+import java.util.Collections
 
 const val TYPE_AUDIO_VIDEO = "AudioVideo"
 const val TYPE_AUDIO = "Audio"
@@ -153,7 +155,7 @@ data class AudioInput(
     override val uri: String,
     override val audioLabel: String = DEFAULT_AUDIO_LABEL,
     override val params: LinkedHashMap<String, String?> = linkedMapOf(),
-    override val audioFilters: List<String> = emptyList(),
+    override val audioFilters: List<String> = Collections.emptyList(),
     override var analyzed: MediaFile? = null,
     override val audioStream: Int? = null,
     override val channelLayout: ChannelLayout? = null,
@@ -181,7 +183,7 @@ data class VideoInput(
     override val dar: FractionString? = null,
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,
-    override val videoFilters: List<String> = emptyList(),
+    override val videoFilters: List<String> = Collections.emptyList(),
     override var analyzed: MediaFile? = null,
     override val videoStream: Int? = null,
     override val probeInterlaced: Boolean = true,
@@ -210,8 +212,8 @@ data class AudioVideoInput(
     override val dar: FractionString? = null,
     override val cropTo: FractionString? = null,
     override val padTo: FractionString? = null,
-    override val videoFilters: List<String> = emptyList(),
-    override val audioFilters: List<String> = emptyList(),
+    override val videoFilters: List<String> = Collections.emptyList(),
+    override val audioFilters: List<String> = Collections.emptyList(),
     override var analyzed: MediaFile? = null,
     override val videoStream: Int? = null,
     override val audioStream: Int? = null,
@@ -239,9 +241,25 @@ data class AudioVideoInput(
         get() = analyzedVideo.duration
 }
 
-fun List<Input>.inputParams(readDuration: Double?): List<String> =
+fun Input.protocol(): String {
+    val scheme = try {
+        URI.create(uri).scheme
+    } catch (_: Throwable) {
+        null
+    }
+    return when (scheme) {
+        null -> "file"
+        "https" -> "http"
+        else -> scheme
+    }
+}
+
+fun List<Input>.inputParams(
+    readDuration: Double?,
+    protocolInputParams: Map<String, LinkedHashMap<String, String?>>,
+): List<String> =
     flatMap { input ->
-        input.params.toParams() +
+        (protocolInputParams[input.protocol()].orEmpty() + input.params).toParams() +
             (readDuration?.let { listOf("-t", "$it") } ?: emptyList()) +
             (input.seekTo?.let { listOf("-ss", "$it") } ?: emptyList()) +
             (if (input.copyTs) listOf("-copyts") else emptyList()) +

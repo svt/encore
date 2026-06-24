@@ -12,5 +12,10 @@ spring:
   threads:
     virtual:
       enabled: true
+
+encore-settings:
+  redis:
+    prefix: ${spring.application.name}
+
 logging:
   config: classpath:logback-json.xml

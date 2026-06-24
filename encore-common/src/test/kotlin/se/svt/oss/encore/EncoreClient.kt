@@ -4,7 +4,6 @@
 
 package se.svt.oss.encore
 
-import org.springframework.data.domain.Pageable
 import org.springframework.hateoas.PagedModel
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PathVariable
@@ -22,30 +21,37 @@ import java.util.UUID
 interface EncoreClient {
 
     @GetExchange("/encoreJobs")
-    fun jobs(): PagedModel<EncoreJob>
+    fun allJobs(
+        @RequestParam("page") page: Int? = null,
+        @RequestParam("size") size: Int? = null,
+        @RequestParam("sort") sort: String? = null,
+    ): PagedModel<EncoreJob>
 
     @GetExchange("/encoreJobs/search/findByStatus")
-    fun findByStatus(@RequestParam("status") status: Status, pageable: Pageable): PagedModel<EncoreJob>
+    fun findByStatus(
+        @RequestParam("status") status: Status,
+        @RequestParam("page") page: Int? = null,
+        @RequestParam("size") size: Int? = null,
+        @RequestParam("sort") sort: String? = null,
+    ): PagedModel<EncoreJob>
+
+    @GetExchange("/encoreJobs/search/findByExternalId")
+    fun findByExternalId(
+        @RequestParam("externalId") externalId: String,
+        @RequestParam("page") page: Int? = null,
+        @RequestParam("size") size: Int? = null,
+        @RequestParam("sort") sort: String? = null,
+    ): PagedModel<EncoreJob>
 
     @PostExchange("/encoreJobs/{jobId}/cancel")
     fun cancel(@PathVariable("jobId") jobId: UUID)
 
-    @PostExchange(
-        "/encoreJobs",
-    )
+    @PostExchange("/encoreJobs")
     fun createJob(@RequestBody jobRequest: EncoreJob): EncoreJob
-
-    @GetExchange("/health")
-    fun health(): String
-
-    @PostExchange(
-        "/encoreJobs",
-    )
-    fun postJson(@RequestBody json: String): EncoreJob
 
     @GetExchange("/encoreJobs/{jobId}")
     fun getJob(@PathVariable("jobId") jobId: UUID): EncoreJob
 
     @GetExchange("/queue")
-    fun queue(): List<QueueItem>
+    fun getQueue(): List<QueueItem>
 }

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Sveriges Television AB
+//
+// SPDX-License-Identifier: EUPL-1.2
+
 package se.svt.oss.encore.process
 
 import java.nio.file.Path

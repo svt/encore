@@ -68,7 +68,6 @@ class JobPollerTest {
             true
         }
         every { queueService.handleOrphanedQueues() } just Runs
-        every { queueService.migrateQueues() } just Runs
         every { encoreProperties.concurrency } returns 3
         every { encoreProperties.pollDelay } returns Duration.ofSeconds(1)
         every { encoreProperties.pollInitialDelay } returns Duration.ofSeconds(10)
@@ -94,7 +93,6 @@ class JobPollerTest {
         capturedRunnables[thread].run()
 
         verifySequence {
-            queueService.migrateQueues()
             queueService.handleOrphanedQueues()
             queueService.poll(thread, any())
             encoreService.encode(queueItem, encoreJob)
@@ -109,7 +107,6 @@ class JobPollerTest {
         assertThat(capturedRunnables).hasSize(1)
         capturedRunnables.first().run()
         verifySequence {
-            queueService.migrateQueues()
             queueService.handleOrphanedQueues()
             queueService.poll(queueNo, any())
             encoreService.encode(queueItem, encoreJob)
@@ -125,7 +122,6 @@ class JobPollerTest {
         capturedRunnables[thread].run()
 
         verifySequence {
-            queueService.migrateQueues()
             queueService.handleOrphanedQueues()
             queueService.poll(thread, any())
         }
