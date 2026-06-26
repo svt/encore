@@ -10,7 +10,6 @@ plugins {
     jacoco
     kotlin("jvm")
     kotlin("plugin.spring")
-    id("pl.allegro.tech.build.axion-release")
     id("com.github.fhermansson.assertj-generator")
     id("org.jmailen.kotlinter")
     id("com.github.ben-manes.versions")
@@ -18,7 +17,7 @@ plugins {
 }
 
 group = "se.svt.oss"
-project.version = scmVersion.version
+version = rootProject.version
 
 tasks.withType<Test> {
     useJUnitPlatform()
