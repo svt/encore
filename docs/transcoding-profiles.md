@@ -429,6 +429,22 @@ encodes:
 !!! note "Performance"
     Calculating VMAF runs `libvmaf` alongside the encode and adds CPU work to every encoded frame. Depending on hardware, this can noticeably slow the overall transcode.
 
+<!-- prettier-ignore -->
+!!! warning "Memory use on fast encodes"
+    `libvmaf` runs in the same FFmpeg process as the encode and queues frames for scoring with no upper bound. When the encoder produces frames faster than VMAF can score them, the backlog grows for the whole job and can exhaust memory (OOM) on long inputs. The risk grows with input duration, source resolution (VMAF runs at the **source** resolution, not the output resolution), and the number of VMAF-enabled outputs in the profile.
+
+    Raise `subsample` so VMAF scores fewer frames and keeps pace with the encoder. Lowering `threads` makes it *worse* (VMAF drains more slowly) — `subsample` is the lever. Slow, encoder-bound profiles are naturally safe: the encode paces the job and VMAF keeps up on its own.
+
+    **Rule of thumb**, keyed on the job's reported encode speed relative to realtime (the whole-profile speed Encore records). Starting points for a 1080p source with `threads: 4` and the default model — use a lower threshold for higher-resolution sources, profiles with many VMAF-enabled outputs, or single-pass profiles (where VMAF runs across the whole encode rather than only the second pass):
+
+    | Reported encode speed    | `subsample` |
+    | ------------------------ | ----------- |
+    | up to ~1× realtime       | not needed  |
+    | ~1–2× realtime           | `3`         |
+    | faster than ~2× realtime | `5`         |
+
+    When in doubt, watch process memory over a long job: flat is fine; steadily climbing means the queue is growing — raise `subsample`, or disable VMAF for that profile.
+
 Video encodes can optionally calculate [VMAF](https://github.com/Netflix/vmaf) quality scores by comparing the encoded output against the source.
 
 ```yaml
@@ -455,7 +471,7 @@ The `model` field accepts a pipe-separated list of VMAF models in FFmpeg's `vers
 | `enabled`    | `false`            | Enable VMAF calculation                                                |
 | `model`      | _(FFmpeg default)_ | VMAF model(s) in FFmpeg `version=...\:name=...` format, pipe-separated |
 | `threads`    | _(auto)_           | Number of threads for VMAF calculation                                 |
-| `subsample`  | _(none)_           | Subsample rate (higher = faster but less accurate)                     |
+| `subsample`  | _(none)_           | Score every Nth frame (higher = faster, less accurate; bounds memory on fast encodes — see warning above) |
 | `feature`    | _(none)_           | Additional feature metrics (e.g. `name=psnr`)                          |
 | `refFilters` | `[]`               | Filters to apply to the reference stream before comparison             |
 
@@ -471,7 +487,7 @@ encore-settings:
 
 ## Complete example
 
-SVT's production profile for long-form programmes — a five-rung x264 ABR ladder, stereo and surround audio variants with optional dialogue enhancement, and thumbnails:
+SVT's production profile for long-form programmes — a five-rung x264 ABR ladder, stereo and surround audio variants with optional dialogue enhancement, and thumbnails. Each video rung enables VMAF with `subsample: 5`, since a fast x264 ladder on long inputs is exactly the case where unbounded VMAF scoring can exhaust memory (see the warning above):
 
 ```yaml
 name: program
@@ -486,6 +502,7 @@ encodes:
     vmaf:
       enabled: true
       threads: 4
+      subsample: 5
     params:
       b:v: #{(profileParams['fps'] ?: 25) > 30 ? "3800k" : "3100k"}
       maxrate: #{(profileParams['fps'] ?: 25) > 30 ? "5700k" : "4700k"}
@@ -531,6 +548,7 @@ encodes:
     vmaf:
       enabled: true
       threads: 4
+      subsample: 5
     params:
       b:v: #{(profileParams['fps'] ?: 25) > 30 ? "2550k" : "2069k"}
       maxrate: #{(profileParams['fps'] ?: 25) > 30 ? "3825k" : "3104k"}
@@ -576,6 +594,7 @@ encodes:
     vmaf:
       enabled: true
       threads: 4
+      subsample: 5
     params:
       b:v: #{(profileParams['fps'] ?: 25) > 30 ? "1410k" : "1312k"}
       maxrate: #{(profileParams['fps'] ?: 25) > 30 ? "2115k" : "1968k"}
@@ -621,6 +640,7 @@ encodes:
     vmaf:
       enabled: true
       threads: 4
+      subsample: 5
     params:
       b:v: #{(profileParams['fps'] ?: 25) > 30 ? "910412" : "806121"}
       maxrate: #{(profileParams['fps'] ?: 25) > 30 ? "1365618" : "1209182"}
@@ -666,6 +686,7 @@ encodes:
     vmaf:
       enabled: true
       threads: 4
+      subsample: 5
     params:
       b:v: #{(profileParams['fps'] ?: 25) > 30 ? "410450" : "324051"}
       maxrate: #{(profileParams['fps'] ?: 25) > 30 ? "615675" : "486077"}
