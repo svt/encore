@@ -5,10 +5,12 @@
 package se.svt.oss.encore.config
 
 import org.springframework.boot.context.properties.NestedConfigurationProperty
+import org.springframework.core.io.Resource
 import se.svt.oss.encore.model.profile.ChannelLayout
 import java.util.Collections
 
 data class EncodingProperties(
+    val audioMixPresetLocation: Resource? = null,
     @NestedConfigurationProperty
     val audioMixPresets: Map<String, AudioMixPreset> = mapOf("default" to AudioMixPreset()),
     @NestedConfigurationProperty
