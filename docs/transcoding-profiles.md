@@ -229,20 +229,45 @@ For full control:
     model: /opt/homebrew/share/libdf/DeepFilterNet3.tar.gz
     postFilter: true
     attenuationLimit: 100.0
+    fcAttenuationLimit: 6.0
     lookahead: 2
     sidechainCompress:
       ratio: 8
       threshold: 0.012
 ```
 
-| Field                 | Default                   | Description                                                 |
-| --------------------- | ------------------------- | ----------------------------------------------------------- |
-| `enabled`             | `false`                   | Master switch for the variant                               |
-| `model`               | _(filter auto-discovers)_ | Path to a DeepFilterNet 3 model tarball                     |
-| `postFilter`          | _(filter default)_        | Enable the DFN3 post-filter                                 |
-| `attenuationLimit`    | _(filter default)_        | Maximum suppression in dB — caps the model's gain reduction |
-| `lookahead`           | _(filter default)_        | Algorithmic lookahead in 480-sample hops                    |
-| `sidechainCompress.*` | _(see Native)_            | Same fields and defaults as the native variant              |
+| Field                 | Default                   | Description                                                        |
+| --------------------- | ------------------------- | ------------------------------------------------------------------ |
+| `enabled`             | `false`                   | Master switch for the variant                                      |
+| `model`               | _(filter auto-discovers)_ | Path to a DeepFilterNet 3 model tarball                            |
+| `postFilter`          | _(filter default)_        | Enable the DFN3 post-filter                                        |
+| `attenuationLimit`    | _(filter default)_        | Maximum suppression in dB for mono/stereo (bridged) sources        |
+| `fcAttenuationLimit`  | `6.0`                     | Maximum suppression in dB for sources with an FC channel (5.1 etc) |
+| `lookahead`           | _(filter default)_        | Algorithmic lookahead in 480-sample hops                           |
+| `sidechainCompress.*` | _(see Native)_            | Same fields and defaults as the native variant                     |
+
+**Attenuation limits.** The suppression cap works differently depending on the source layout:
+
+- **Sources with an FC channel** (5.1 etc) get `fcAttenuationLimit` — always applied, and an
+  explicitly set `attenuationLimit` is ignored for these sources. The default `6.0` is a
+  deliberate compromise: FC channels are expected to be mostly dialogue already, and the
+  model has a known tendency to over-suppress singing, shouting and some languages when
+  given free rein. At 6 dB the model cleans gently but never removes content. The default
+  is provisional — it may be retuned in a later release based on listening tests, so
+  profiles that rely on a specific value should set it explicitly.
+- **Mono and stereo sources** are bridged to a synthetic centre and get `attenuationLimit`
+  (or the filter's near-unlimited default when unset). This is deliberately aggressive —
+  the model was trained on noisy speech and needs headroom for real background noise.
+  Sources with mixed music and speech (music-heavy programmes, concerts) may lose
+  too much of the music. As a starting point, try around 20 dB and raise or lower it
+  after evaluating the result — lower keeps more of the original mix, higher cleans
+  harder. If only certain content needs a different limit, set it per job via
+  `profileParams` (e.g. `"#{profileParams['deAttenuationLimit'] ?: 100.0}"`, see
+  [SpEL expressions](#spel-expressions)) instead of duplicating the profile.
+
+Regardless of the limit, suppression is applied by mixing the original signal back in
+(after the model and post-filter have run), so the cap is a hard guarantee on the final
+output — the post-filter cannot push suppression past the configured limit.
 
 The neural variant works on mono, stereo, and any surround layout with a centre channel. Mono and stereo sources are bridged to a 3.0 layout (mono via equal-power duplication into a stereo background; stereo via a downmix into a synthesised centre) and `dnenhance` is applied to that centre. Surround sources with an existing centre channel use it directly and the effective layout is unchanged. Surround layouts without a centre channel are not supported — the encode is skipped when `optional: true`, otherwise it fails. After enhancement the audio mix preset (`audioMixPreset`) handles the final downmix from the post-enhancement layout to the encode's target `channelLayout` — the same downstream path the native variant uses, so a single mix preset can drive both.
 

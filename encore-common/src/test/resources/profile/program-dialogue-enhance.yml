@@ -52,6 +52,7 @@ encodes:
       lookahead: 0
       postFilter: false
       attenuationLimit: 50.0
+      fcAttenuationLimit: 8.0
       sidechainCompress:
         ratio: 6
         threshold: 0.015

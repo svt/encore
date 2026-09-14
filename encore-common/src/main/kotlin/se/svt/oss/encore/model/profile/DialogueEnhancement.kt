@@ -76,6 +76,12 @@ sealed class DialogueEnhancement {
      * via libdf). Requires a patched FFmpeg build that includes the filter —
      * profiles using this variant against vanilla FFmpeg fail at encode time
      * with "No such filter: 'dnenhance'".
+     *
+     * Which attenuation limit applies depends on the source layout: sources with
+     * an FC channel (5.1 etc) always use [fcAttenuationLimit] — an explicitly set
+     * [attenuationLimit] is ignored for them. Mono and stereo sources (bridged to
+     * a synthetic centre) use [attenuationLimit], falling back to the filter's
+     * near-unlimited default when unset.
      */
     data class Dn(
         override val enabled: Boolean = false,
@@ -83,8 +89,23 @@ sealed class DialogueEnhancement {
         val model: String? = null,
         /** Enable DFN3 post-filter. Null → use filter default. */
         val postFilter: Boolean? = null,
-        /** Maximum suppression in dB (filter caps the model's gain reduction). Null → use filter default. */
+        /**
+         * Maximum suppression in dB for mono/stereo (bridged) sources.
+         * The filter default (100) is near-unlimited — intentionally aggressive for
+         * noisy sources, but may suppress music/singing too much on mixed content.
+         * Ignored for sources with an FC channel; see [fcAttenuationLimit].
+         */
         val attenuationLimit: Double? = null,
+        /**
+         * Maximum suppression in dB for source layouts with an FC channel (5.1 etc).
+         * Default 6.0 — a provisional value chosen because FC channels are expected
+         * to be mostly clean dialogue, while the model tends to over-suppress singing,
+         * shouting and some languages when uncapped. May be retuned in a later
+         * release based on listening tests; set explicitly if a profile needs a
+         * specific value. Suppression is capped by mixing the original signal back
+         * in, so this is a hard limit on the final output.
+         */
+        val fcAttenuationLimit: Double = 6.0,
         /** Algorithmic lookahead in 480-sample hops (0 for DFN3-LL, 2 for DFN3). Null → use filter default. */
         val lookahead: Int? = null,
         override val sidechainCompress: SidechainCompress = SidechainCompress(),
@@ -98,7 +119,7 @@ sealed class DialogueEnhancement {
                 FilterPlan(
                     listOf(
                         monoBridge(suffix),
-                        sidechainPipeline(ChannelLayout.CH_LAYOUT_3POINT0, suffix, enhancedFC = dnenhanceCall()),
+                        sidechainPipeline(ChannelLayout.CH_LAYOUT_3POINT0, suffix, enhancedFC = dnenhanceCall(false)),
                     ),
                     ChannelLayout.CH_LAYOUT_3POINT0,
                 )
@@ -107,22 +128,26 @@ sealed class DialogueEnhancement {
                 FilterPlan(
                     listOf(
                         stereoBridge(suffix),
-                        sidechainPipeline(ChannelLayout.CH_LAYOUT_3POINT0, suffix, enhancedFC = dnenhanceCall()),
+                        sidechainPipeline(ChannelLayout.CH_LAYOUT_3POINT0, suffix, enhancedFC = dnenhanceCall(false)),
                     ),
                     ChannelLayout.CH_LAYOUT_3POINT0,
                 )
 
             else -> FilterPlan(
-                listOf(sidechainPipeline(inputChannelLayout, suffix, enhancedFC = dnenhanceCall())),
+                listOf(sidechainPipeline(inputChannelLayout, suffix, enhancedFC = dnenhanceCall(true))),
                 inputChannelLayout,
             )
         }
 
-        private fun dnenhanceCall(): String {
+        private fun dnenhanceCall(hasFc: Boolean): String {
             val args = buildList {
                 if (!model.isNullOrBlank()) add("model=$model")
                 postFilter?.let { add("post_filter=${if (it) 1 else 0}") }
-                attenuationLimit?.let { add("attenuation_limit=$it") }
+                if (hasFc) {
+                    add("attenuation_limit=$fcAttenuationLimit")
+                } else {
+                    attenuationLimit?.let { add("attenuation_limit=$it") }
+                }
                 lookahead?.let { add("lookahead=$it") }
             }
             return if (args.isEmpty()) "dnenhance" else "dnenhance=${args.joinToString(":")}"
