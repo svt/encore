@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.json.JsonCompareMode
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -23,6 +24,7 @@ import se.svt.oss.encore.model.input.AudioVideoInput
 )
 @ActiveProfiles("test")
 @ExtendWith(RedisExtension::class)
+@DirtiesContext
 class EncoreEndpointAccessIntegrationTest {
 
     lateinit var webTestClient: WebTestClient

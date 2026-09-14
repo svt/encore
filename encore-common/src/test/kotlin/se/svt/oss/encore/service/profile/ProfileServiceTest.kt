@@ -63,6 +63,7 @@ class ProfileServiceTest {
         assertThat(dnDefaultsTyped.model).isNull()
         assertThat(dnDefaultsTyped.postFilter).isNull()
         assertThat(dnDefaultsTyped.attenuationLimit).isNull()
+        assertThat(dnDefaultsTyped.fcAttenuationLimit).isEqualTo(6.0)
         assertThat(dnDefaultsTyped.lookahead).isNull()
 
         val dnLl = audioEncodes.first { it.suffix == "_STEREO_DE_NEURAL_LL" }
@@ -71,6 +72,7 @@ class ProfileServiceTest {
         assertThat(dnLlTyped.lookahead).isEqualTo(0)
         assertThat(dnLlTyped.postFilter).isFalse()
         assertThat(dnLlTyped.attenuationLimit).isEqualTo(50.0)
+        assertThat(dnLlTyped.fcAttenuationLimit).isEqualTo(8.0)
         assertThat(dnLlTyped.sidechainCompress.ratio).isEqualTo(6)
         assertThat(dnLlTyped.sidechainCompress.threshold).isEqualTo(0.015)
     }

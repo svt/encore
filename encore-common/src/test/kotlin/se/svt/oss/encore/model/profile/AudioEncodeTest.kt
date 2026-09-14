@@ -232,9 +232,19 @@ class AudioEncodeTest {
         val filter = encode.getOutput(job(getAudioStream(6)), encodingProperties)!!
             .audioStreams.single().filter
         assertThat(filter)
-            .contains("[CH-_aac_5.1-FC]dnenhance,asplit=2")
+            .contains("[CH-_aac_5.1-FC]dnenhance=attenuation_limit=6.0,asplit=2")
             .contains("sidechaincompress")
             .contains(dePreset.panMapping[ChannelLayout.CH_LAYOUT_5POINT1]!![ChannelLayout.CH_LAYOUT_5POINT1]!!)
+    }
+
+    @Test
+    fun `dialogue enhance Dn 5dot1 ignores explicit attenuationLimit in favour of fcAttenuationLimit`() {
+        val encode = surroundDialogueEnhance(
+            DialogueEnhancement.Dn(enabled = true, attenuationLimit = 50.0, fcAttenuationLimit = 8.0),
+        )
+        val filter = encode.getOutput(job(getAudioStream(6)), encodingProperties)!!
+            .audioStreams.single().filter
+        assertThat(filter).contains("dnenhance=attenuation_limit=8.0")
     }
 
     @Test
