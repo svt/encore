@@ -10,6 +10,14 @@ plugins {
 tasks.named<BootJar>("bootJar") {
     archiveClassifier.set("boot")
 }
+dependencyManagement {
+    imports {
+        mavenBom("io.netty:netty-bom:4.2.17.Final")
+    }
+    dependencies {
+        dependency("org.bouncycastle:bcprov-jdk18on:1.85")
+    }
+}
 graalvmNative {
     binaries {
         named("main") {
