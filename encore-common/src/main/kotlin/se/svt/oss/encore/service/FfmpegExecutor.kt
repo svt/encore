@@ -23,6 +23,8 @@ import se.svt.oss.mediaanalyzer.file.MediaFile
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
@@ -70,7 +72,7 @@ class FfmpegExecutor(
         val workDir = createTempDir("encore_").toFile()
         val duration = encoreJob.duration ?: encoreJob.inputs.maxDuration()
         return try {
-            File(outputFolder).mkdirs()
+            Files.createDirectories(Paths.get(outputFolder))
             commands.forEachIndexed { index, command ->
                 runFfmpeg(command, workDir, duration) { progress ->
                     progressChannel?.trySendBlocking(totalProgress(progress, index, commands.size))?.getOrThrow()

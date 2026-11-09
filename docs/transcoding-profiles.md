@@ -204,7 +204,11 @@ The native variant works on stereo inputs (when `dialogueEnhanceStereo.enabled` 
 
 <!-- prettier-ignore -->
 !!! warning "Requires a patched FFmpeg build"
-    `type: dn` invokes the `af_dnenhance` FFmpeg filter, which is not part of upstream FFmpeg. The pre-built `ghcr.io/svt/encore-*` images do **not** include it, and profiles using `type: dn` against vanilla FFmpeg fail at encode time with `No such filter: 'dnenhance'`. The filter source — together with build instructions — lives at [svt/ffmpeg-filter-dnenhance](https://github.com/svt/ffmpeg-filter-dnenhance).
+    `type: dn` invokes the `af_dnenhance` FFmpeg filter, which is not part of upstream FFmpeg. The pre-built `ghcr.io/svt/encore-*` images do **not** include it, and profiles using `type: dn` against vanilla FFmpeg fail at encode time with `No such filter: 'dnenhance'`. The easiest way to get it is SVT's [`ffmpeg-encore` Homebrew formula](https://github.com/svt/homebrew-avtools). The filter source — together with instructions for building it into your own FFmpeg — lives at [svt/ffmpeg-filter-dnenhance](https://github.com/svt/ffmpeg-filter-dnenhance).
+
+<!-- prettier-ignore -->
+!!! note "`sidechaincompress` and end of stream"
+    `dnenhance` emits its last few buffered hops after the main input has ended, and upstream FFmpeg's `sidechaincompress` closes its output at the main input's EOF without draining its own buffers. As a result the enhanced audio can end slightly short: 20 ms at the default lookahead, and in the worst cases we have seen up to roughly 0.7 s under a heavily loaded filter graph (e.g. parallel video encodes). Whether that matters depends on your use case. SVT's `ffmpeg-encore` formula carries a [small patch](https://github.com/svt/homebrew-avtools#patches) that avoids it, and you can apply the same patch to your own FFmpeg build. This is not fixed in upstream FFmpeg at the time of writing, and the patch becomes unnecessary if it is.
 
 All filter parameters are optional — omitting them lets the filter pick its own defaults, which is the common case:
 
@@ -452,23 +456,11 @@ encodes:
 
 <!-- prettier-ignore -->
 !!! note "Performance"
-    Calculating VMAF runs `libvmaf` alongside the encode and adds CPU work to every encoded frame. Depending on hardware, this can noticeably slow the overall transcode.
+    Calculating VMAF runs `libvmaf` alongside the encode and adds CPU work to every encoded frame. VMAF runs at the **source** resolution (not the output resolution) and scores every frame by default, so on fast encodes it is often slower than the encode itself and the whole transcode can take noticeably longer than without VMAF. If encodes are slower after enabling VMAF, raise `subsample` so that VMAF scores fewer frames and keeps pace with the encoder. Lowering `threads` makes it *worse* (VMAF drains more slowly) — `subsample` is the lever.
 
 <!-- prettier-ignore -->
-!!! warning "Memory use on fast encodes"
-    `libvmaf` runs in the same FFmpeg process as the encode and queues frames for scoring with no upper bound. When the encoder produces frames faster than VMAF can score them, the backlog grows for the whole job and can exhaust memory (OOM) on long inputs. The risk grows with input duration, source resolution (VMAF runs at the **source** resolution, not the output resolution), and the number of VMAF-enabled outputs in the profile.
-
-    Raise `subsample` so VMAF scores fewer frames and keeps pace with the encoder. Lowering `threads` makes it *worse* (VMAF drains more slowly) — `subsample` is the lever. Slow, encoder-bound profiles are naturally safe: the encode paces the job and VMAF keeps up on its own.
-
-    **Rule of thumb**, keyed on the job's reported encode speed relative to realtime (the whole-profile speed Encore records). Starting points for a 1080p source with `threads: 4` and the default model — use a lower threshold for higher-resolution sources, profiles with many VMAF-enabled outputs, or single-pass profiles (where VMAF runs across the whole encode rather than only the second pass):
-
-    | Reported encode speed    | `subsample` |
-    | ------------------------ | ----------- |
-    | up to ~1× realtime       | not needed  |
-    | ~1–2× realtime           | `3`         |
-    | faster than ~2× realtime | `5`         |
-
-    When in doubt, watch process memory over a long job: flat is fine; steadily climbing means the queue is growing — raise `subsample`, or disable VMAF for that profile.
+!!! warning "Memory use with libvmaf 3.2.0"
+    `libvmaf` 3.2.0 lost its backpressure: it queued frames for scoring with no upper bound, so when the encoder produced frames faster than VMAF could score them the backlog grew for the whole job and could exhaust memory (OOM) on long inputs. This was fixed in libvmaf 3.2.1 (3.1.0 and earlier are not affected). Make sure the FFmpeg you run is linked against libvmaf 3.1.0 or older, or 3.2.1 or newer. If you must use 3.2.0, raise `subsample` as above, and watch process memory over a long job: flat is fine; steadily climbing means the queue is growing — raise `subsample` further, or disable VMAF for that profile.
 
 Video encodes can optionally calculate [VMAF](https://github.com/Netflix/vmaf) quality scores by comparing the encoded output against the source.
 
@@ -496,7 +488,7 @@ The `model` field accepts a pipe-separated list of VMAF models in FFmpeg's `vers
 | `enabled`    | `false`            | Enable VMAF calculation                                                |
 | `model`      | _(FFmpeg default)_ | VMAF model(s) in FFmpeg `version=...\:name=...` format, pipe-separated |
 | `threads`    | _(auto)_           | Number of threads for VMAF calculation                                 |
-| `subsample`  | _(none)_           | Score every Nth frame (higher = faster, less accurate; bounds memory on fast encodes — see warning above) |
+| `subsample`  | _(none)_           | Score every Nth frame (higher = faster, less accurate; keeps VMAF from slowing down fast encodes — see performance note above) |
 | `feature`    | _(none)_           | Additional feature metrics (e.g. `name=psnr`)                          |
 | `refFilters` | `[]`               | Filters to apply to the reference stream before comparison             |
 
@@ -512,7 +504,7 @@ encore-settings:
 
 ## Complete example
 
-SVT's production profile for long-form programmes — a five-rung x264 ABR ladder, stereo and surround audio variants with optional dialogue enhancement, and thumbnails. Each video rung enables VMAF with `subsample: 5`, since a fast x264 ladder on long inputs is exactly the case where unbounded VMAF scoring can exhaust memory (see the warning above):
+SVT's production profile for long-form programmes — a five-rung x264 ABR ladder, stereo and surround audio variants with optional dialogue enhancement, and thumbnails. Each video rung enables VMAF with `subsample: 5`, since a fast x264 ladder on long inputs is exactly the case where VMAF scoring would otherwise slow down the encode (see the performance note above):
 
 ```yaml
 name: program

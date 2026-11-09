@@ -12,7 +12,7 @@ plugins {
     kotlin("plugin.spring")
     id("com.github.fhermansson.assertj-generator")
     id("org.jmailen.kotlinter")
-    id("com.github.ben-manes.versions")
+    id("io.github.ben-manes.versions")
     id("io.spring.dependency-management")
 }
 
@@ -47,30 +47,22 @@ tasks.withType<DependencyUpdatesTask> {
         isNonStable(candidate.version)
     }
 }
-tasks.withType<LintTask> {
-    exclude { it.file.path.contains("generated-java") }
-    mustRunAfter(tasks.withType<GenerateAssertions>())
-}
-tasks.withType<FormatTask> {
-    exclude { it.file.path.contains("generated-java") }
-    mustRunAfter(tasks.withType<GenerateAssertions>())
-}
+
 
 assertjGenerator {
-    classOrPackageNames = arrayOf(
+    classOrPackageNames = listOf(
         "se.svt.oss.encore.model",
         "se.svt.oss.mediaanalyzer.file"
     )
     entryPointPackage = "se.svt.oss.encore"
-    useJakartaAnnotations = true
 }
 tasks.test {
     jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:4.0.6")
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.1")
+        mavenBom("org.springframework.boot:spring-boot-dependencies:4.1.2")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.4")
     }
 }
 
@@ -78,12 +70,12 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.14")
+    implementation("io.github.oshai:kotlin-logging-jvm:8.0.4")
     implementation("io.lettuce:lettuce-core")
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.mockito")
     }
     testImplementation("org.assertj:assertj-core")
-    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
 }
