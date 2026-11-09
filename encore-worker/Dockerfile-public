@@ -1,4 +1,4 @@
-FROM mwader/static-ffmpeg:8.1 AS ffmpeg
+FROM mwader/static-ffmpeg:9.0.2 AS ffmpeg
 
 FROM ubuntu:noble
 

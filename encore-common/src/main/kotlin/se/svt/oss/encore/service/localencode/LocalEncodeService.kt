@@ -41,7 +41,7 @@ class LocalEncodeService(
         if (encoreProperties.localTemporaryEncode) {
             val destination = File(encoreJob.outputFolder)
             log.debug { "Moving files to correct outputFolder ${encoreJob.outputFolder}, from local temp $outputFolder" }
-            if (!destination.exists()) destination.mkdirs()
+            Files.createDirectories(destination.toPath())
             moveTempLocalFiles(destination, outputFolder)
             val files = resolveMovedOutputFiles(output, encoreJob)
             log.debug { "Locally encoded files have been successfully moved to output folder." }

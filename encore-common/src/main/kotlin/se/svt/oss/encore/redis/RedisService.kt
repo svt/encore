@@ -67,17 +67,17 @@ class RedisService(
             if (reply == "OK") {
                 log.debug { "Acquired lock" }
                 try {
-                    val createArgs = CreateArgs.builder<String, String>()
+                    val createArgs = CreateArgs.builder()
                         .on(CreateArgs.TargetType.JSON)
                         .withPrefix(jobPrefix)
                         .build()
                     val fieldArgs = listOf(
-                        TagFieldArgs.builder<String>().name("$.status").`as`("status").build(),
-                        NumericFieldArgs.builder<String>().name("$.createdDate").`as`("createdDate").sortable().build(),
-                        NumericFieldArgs.builder<String>().name("$.priority").`as`("priority").sortable().build(),
-                        TagFieldArgs.builder<String>().name("$.baseName").`as`("baseName").build(),
-                        TagFieldArgs.builder<String>().name("$.profile").`as`("profile").build(),
-                        TagFieldArgs.builder<String>().name("$.externalId").`as`("externalId").build(),
+                        TagFieldArgs.builder().name("$.status").`as`("status").build(),
+                        NumericFieldArgs.builder().name("$.createdDate").`as`("createdDate").sortable().build(),
+                        NumericFieldArgs.builder().name("$.priority").`as`("priority").sortable().build(),
+                        TagFieldArgs.builder().name("$.baseName").`as`("baseName").build(),
+                        TagFieldArgs.builder().name("$.profile").`as`("profile").build(),
+                        TagFieldArgs.builder().name("$.externalId").`as`("externalId").build(),
                     )
                     if (commands.ftCreate(indexKey, createArgs, fieldArgs) != "OK") {
                         throw RuntimeException("Failed to create index!")
@@ -157,16 +157,16 @@ class RedisService(
         val searchReply = commands.ftSearch(indexKey, query, searchArgs)
         val count = searchReply.count
         val jobs = searchReply.results.mapNotNull { res ->
-            res.fields["$"]?.let { jsonMapper.readValue<EncoreJob>(it) }
+            res.fields["$"]?.let { jsonMapper.readValue<EncoreJob>(it.asString()) }
         }
         return PageImpl(jobs, pageable, count)
     }
 
-    private fun searchArgs(pageable: Pageable): SearchArgs<String, String> {
-        val builder = SearchArgs.builder<String, String>()
+    private fun searchArgs(pageable: Pageable): SearchArgs<String> {
+        val builder = SearchArgs.builder<String>()
             .limit(pageable.offset, pageable.pageSize.toLong())
         val sort = pageable.getSortOr(Sort.by("createdDate").descending())
-        val sortBuilder = SortByArgs.builder<String>()
+        val sortBuilder = SortByArgs.builder()
         if (sort.count() > 1) {
             throw InvalidQueryException("Illegal sort: $sort. Only one sort property is allowed.")
         }

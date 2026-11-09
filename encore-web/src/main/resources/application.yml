@@ -33,6 +33,7 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
     disable-swagger-default-url: true
+  enable-kotlin: false # springdoc kotlin introspection needs kotlin-reflect proxy classes that are not registered in the native image; keep off for GraalVM builds
 server:
   forward-headers-strategy: framework
   compression:

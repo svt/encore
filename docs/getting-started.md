@@ -9,7 +9,7 @@
 
 <!-- prettier-ignore -->
 !!! tip "Reference FFmpeg build"
-    At SVT we build and run FFmpeg via our [`ffmpeg-encore`](https://github.com/svt/homebrew-avtools) Homebrew formula, which bundles the [`af_dnenhance`](https://github.com/svt/ffmpeg-filter-dnenhance) filter used for neural dialogue enhancement. See its [releases](https://github.com/svt/homebrew-avtools/releases) for the FFmpeg version we currently run. The pre-built Docker images instead bundle FFmpeg from [static-ffmpeg](https://github.com/wader/static-ffmpeg).
+    At SVT we build and run FFmpeg via our [`ffmpeg-encore`](https://github.com/svt/homebrew-avtools) Homebrew formula, which bundles the [`af_dnenhance`](https://github.com/svt/ffmpeg-filter-dnenhance) filter used for neural dialogue enhancement, along with a few [patches](https://github.com/svt/homebrew-avtools#patches) to FFmpeg (including a fix for `sidechaincompress` that matters for [dialogue enhancement](transcoding-profiles.md#audioencode)). See its [releases](https://github.com/svt/homebrew-avtools/releases) for the FFmpeg version we currently run. The pre-built Docker images instead bundle FFmpeg from [static-ffmpeg](https://github.com/wader/static-ffmpeg).
 
 ## Running Encore
 

@@ -17,6 +17,7 @@ graalvmNative {
                 "-H:+UnlockExperimentalVMOptions",
                 "-H:+StaticExecutableWithDynamicLibC",
                 "-H:+AddAllCharsets",
+                "-H:+SharedArenaSupport",
                 "-J-Dfile.encoding=UTF-8",
             )
         }

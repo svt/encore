@@ -42,6 +42,7 @@ import se.svt.oss.encore.service.queue.QueueService
 import se.svt.oss.mediaanalyzer.file.MediaContainer
 import se.svt.oss.mediaanalyzer.file.MediaFile
 import java.io.File
+import java.nio.file.Files
 import java.util.Collections
 import java.util.Locale
 import kotlin.time.TimedValue
@@ -90,7 +91,7 @@ class EncoreService(
                 SegmentProgressListener(encoreJob.id, coroutineJob, numSegments, progressChannel)
             redisService.addSegmentProgressListener(progressListener)
             val timedOutput = measureTimedValue {
-                sharedWorkDir(encoreJob).mkdirs()
+                Files.createDirectories(sharedWorkDir(encoreJob).toPath())
                 repeat(numSegments) {
                     queueService.enqueue(
                         QueueItem(
@@ -128,7 +129,7 @@ class EncoreService(
                         }
                 }
                 val outputFolder = File(encoreJob.outputFolder)
-                outputFolder.mkdirs()
+                Files.createDirectories(outputFolder.toPath())
                 val outputFiles = suffixes.map {
                     val targetName = encoreJob.baseName + it
                     log.info { "Joining segments for $targetName" }
